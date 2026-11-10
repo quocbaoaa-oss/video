@@ -30,6 +30,7 @@
 | 12 | Bộ kiểm thử đơn vị (`ViDoiTests`): kiểm tra máy tính số tiền, cân bằng 60/40, chuyển ví, chống xung đột offline và phê duyệt tỷ lệ | `ViDoi/ViDoiTests/ViDoiTests.swift` | **Đạt 100% (5/5 PASS)** |
 | 13 | Biên dịch (`BUILD SUCCEEDED`) và khởi chạy ứng dụng lên máy ảo iPhone 16 | `ViDoi.app` trên Simulator | Hoàn thành (Đang chạy live) |
 | 14 | Ký số tự động bằng Apple ID (`baotq49.aa@gmail.com`) và cài đặt trực tiếp lên iPhone thật qua cáp | iPhone 16 Pro ("Quốc Bảo") | **Hoàn thành** |
+| 15 | Khởi tạo Git repository và đẩy toàn bộ mã nguồn lên GitHub | `quocbaoaa-oss/video` | **Hoàn thành** |
 
 ### 1.3. Chi tiết các tính năng nghiệp vụ đã chạy thực tế
 - **Góc nhìn linh hoạt:** Chuyển đổi tức thì giữa tài khoản **Hùng** và **Lan** ngay trên thanh đầu trang để kiểm thử phân quyền.
