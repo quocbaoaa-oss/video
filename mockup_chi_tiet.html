@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ví Đôi – Màn hình chi tiết</title>
+<style>
+:root{--coral:#FF6B6B;--teal:#2EC4B6;--him:#4C8DFF;--her:#FF7EB6;--shared:#7C5CFF;--inc:#22C55E;--exp:#EF4444;--warn:#F59E0B;--bg:#F2F2F7}
+*{box-sizing:border-box;margin:0;font-family:-apple-system,"SF Pro Text",Segoe UI,Roboto,sans-serif}
+body{background:#dfe3ea;padding:24px}
+h2{margin:24px 0 12px;font-size:20px;color:#333}
+.flow{display:flex;gap:20px;overflow-x:auto;padding:10px 4px 20px}
+.phone{flex:0 0 360px;height:740px;background:var(--bg);border-radius:44px;border:9px solid #111;position:relative;overflow:hidden;box-shadow:0 14px 36px #0004}
+.phone::before{content:"";position:absolute;top:8px;left:50%;transform:translateX(-50%);width:100px;height:26px;background:#111;border-radius:20px;z-index:5}
+.in{position:absolute;inset:0;padding:54px 16px 16px;overflow-y:auto}
+.lbl{font-size:12px;color:#666;text-align:center;margin-top:6px}
+h1{font-size:28px;margin:4px 0 10px}
+.card{background:#fff;border-radius:20px;padding:14px;margin-bottom:12px;box-shadow:0 1px 3px #0001}
+.sub{font-size:12px;color:#8e8e93}
+.btn{display:block;width:100%;padding:15px;border:0;border-radius:16px;background:var(--coral);color:#fff;font-size:16px;font-weight:600;text-align:center;margin-top:10px}
+.btn.alt{background:#fff;color:var(--coral);border:1.5px solid var(--coral)}
+.btn.apple{background:#000}
+.center{text-align:center}.big{font-size:80px;margin:30px 0 10px}
+.dots{display:flex;gap:6px;justify-content:center;margin:14px 0}.dots i{width:8px;height:8px;border-radius:50%;background:#ccc}.dots i.on{background:var(--coral);width:22px;border-radius:4px}
+.grad{background:linear-gradient(160deg,#fff1ef,#f0ebff)}
+.input{background:#fff;border-radius:14px;padding:14px;margin:8px 0;border:1px solid #e5e5ea}
+.code{display:flex;gap:8px;justify-content:center;margin:14px 0}.code b{width:42px;height:54px;background:#fff;border-radius:12px;display:grid;place-items:center;font-size:24px;border:2px solid #e5e5ea}
+.code b.f{border-color:var(--shared)}
+.av{width:56px;height:56px;border-radius:50%;display:inline-grid;place-items:center;color:#fff;font-size:24px;font-weight:700}
+.row{display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid #f0f0f3}.row:last-child{border:0}
+.ic{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;background:#f3f3f7;font-size:19px}
+.grow{flex:1}.neg{color:var(--exp)}.pos{color:var(--inc)}.amt{font-weight:600}
+.bar{height:8px;border-radius:4px;background:#eee;overflow:hidden;margin-top:6px}.bar i{display:block;height:100%}
+.seg{display:flex;background:#e5e5ea;border-radius:10px;padding:2px;margin:8px 0}.seg div{flex:1;text-align:center;padding:7px;border-radius:8px;font-size:13px;font-weight:600}.seg .on{background:#fff}
+.donut{width:150px;height:150px;border-radius:50%;margin:10px auto;background:conic-gradient(var(--coral) 0 35%,var(--teal) 0 55%,var(--shared) 0 72%,var(--warn) 0 85%,#ccc 0);display:grid;place-items:center}
+.donut div{width:98px;height:98px;border-radius:50%;background:#fff;display:grid;place-items:center;text-align:center;font-weight:700;font-size:15px}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px}
+.cols{display:flex;align-items:flex-end;gap:10px;height:120px;margin-top:8px}
+.cols div{flex:1;text-align:center;font-size:11px;color:#8e8e93}
+.cols span{display:flex;gap:2px;align-items:flex-end;height:96px;justify-content:center}
+.cols i{width:11px;border-radius:4px 4px 0 0;display:block}
+.tip{background:#fff8e6;border-radius:14px;padding:12px;font-size:13px;margin-bottom:12px;color:#7a5a00}
+.sw{width:46px;height:28px;border-radius:14px;background:#ccc;position:relative}.sw i{position:absolute;top:2px;left:2px;width:24px;height:24px;border-radius:50%;background:#fff}.sw.on{background:var(--shared)}.sw.on i{left:20px}
+.tog{display:flex;justify-content:space-between;align-items:center;padding:8px 0;font-size:14px}
+.slider{height:8px;background:linear-gradient(90deg,var(--him) 60%,var(--her) 60%);border-radius:4px;position:relative;margin:14px 0}
+.slider::after{content:"";position:absolute;left:60%;top:-8px;width:24px;height:24px;background:#fff;border-radius:50%;box-shadow:0 1px 5px #0005;transform:translateX(-50%)}
+.perm{display:flex;gap:10px;align-items:center;padding:10px 0}
+</style></head><body>
+<h1 style="font-size:26px">Ví Đôi – Thiết kế chi tiết</h1>
+
+<h2>1. Onboarding & liên kết gia đình</h2>
+<div class="flow">
+ <div><div class="phone grad"><div class="in center">
+  <div class="big">💞</div><h1>Chi tiêu cùng nhau,<br>không còn cãi vã</h1><p class="sub" style="font-size:15px">Hai người, một gia đình, một bức tranh tài chính rõ ràng.</p>
+  <div class="dots"><i class="on"></i><i></i><i></i></div>
+  <div style="position:absolute;bottom:24px;left:16px;right:16px"><div class="btn">Tiếp tục</div><p class="sub" style="margin-top:12px">Bỏ qua</p></div></div></div><div class="lbl">1.1 Giới thiệu (3 slide)</div></div>
+
+ <div><div class="phone"><div class="in">
+  <div class="center big" style="font-size:56px;margin:20px 0 6px">🔐</div><h1 class="center">Đăng nhập</h1><p class="sub center">Mỗi người một tài khoản riêng</p>
+  <div style="margin-top:24px"><div class="btn apple"> Tiếp tục với Apple</div><div class="btn alt">Dùng số điện thoại</div><div class="btn alt">Dùng Email</div></div>
+  <p class="sub center" style="margin-top:20px">Bằng việc tiếp tục, bạn đồng ý Điều khoản & Chính sách bảo mật. Dữ liệu được mã hóa; mở app bằng Face ID.</p></div></div><div class="lbl">1.2 Đăng nhập</div></div>
+
+ <div><div class="phone"><div class="in">
+  <h1>Hồ sơ của bạn</h1><p class="sub">Để vợ/chồng nhận ra bạn trong app</p>
+  <div class="center" style="margin:20px"><span class="av" style="background:var(--him);width:90px;height:90px;font-size:38px">M</span><div class="sub" style="margin-top:6px">Đổi ảnh</div></div>
+  <div class="input">Minh</div><div class="input">Anh/Chồng ▾</div>
+  <div class="sub" style="margin:10px 0 4px">Màu của bạn trong app</div>
+  <div style="display:flex;gap:10px"><span class="av" style="background:var(--him);width:36px;height:36px"></span><span class="av" style="background:var(--her);width:36px;height:36px"></span><span class="av" style="background:var(--teal);width:36px;height:36px"></span><span class="av" style="background:var(--warn);width:36px;height:36px"></span></div>
+  <div style="position:absolute;bottom:24px;left:16px;right:16px"><div class="btn">Tiếp tục</div></div></div></div><div class="lbl">1.3 Hồ sơ</div></div>
+
+ <div><div class="phone grad"><div class="in center">
+  <h1>Kết nối gia đình</h1><p class="sub">Chọn một trong hai</p>
+  <div class="card" style="margin-top:24px"><div style="font-size:36px">🏡</div><b>Tạo gia đình mới</b><p class="sub">Bạn sẽ nhận mã mời để gửi cho vợ/chồng</p><div class="btn">Tạo gia đình</div></div>
+  <div class="card"><div style="font-size:36px">🔑</div><b>Tham gia bằng mã</b><p class="sub">Vợ/chồng đã tạo gia đình rồi?</p><div class="btn alt">Nhập mã mời</div></div></div></div><div class="lbl">1.4 Tạo / Tham gia</div></div>
+
+ <div><div class="phone"><div class="in center">
+  <h1>Mời vợ/chồng</h1><p class="sub">Gửi mã này, hiệu lực 48 giờ</p>
+  <div class="code"><b>X</b><b>K</b><b>7</b><b>P</b><b>2</b><b>A</b></div>
+  <div class="card" style="width:170px;height:170px;margin:16px auto;display:grid;place-items:center;font-size:90px">▦</div>
+  <div class="btn">Chia sẻ qua Zalo / iMessage</div><div class="btn alt">Sao chép mã</div>
+  <div class="tip" style="margin-top:16px;text-align:left">⏳ Đang chờ Lan tham gia… Bạn sẽ nhận thông báo để xác nhận.</div></div></div><div class="lbl">1.5 Gửi mã mời</div></div>
+
+ <div><div class="phone"><div class="in center">
+  <h1>Nhập mã mời</h1><p class="sub">Mã 6 ký tự từ vợ/chồng bạn</p>
+  <div class="code"><b>X</b><b>K</b><b>7</b><b class="f">P</b><b></b><b></b></div>
+  <div class="btn alt">📷 Quét mã QR</div>
+  <div class="card" style="margin-top:24px"><span class="av" style="background:var(--him)">M</span><p style="margin:8px 0"><b>Minh</b> mời bạn vào<br>“Gia đình Minh & Lan”</p><div class="btn">Tham gia</div></div></div></div><div class="lbl">1.6 Người 2 tham gia</div></div>
+
+ <div><div class="phone"><div class="in">
+  <h1>Thiết lập chia sẻ</h1><p class="sub">Có thể đổi bất cứ lúc nào</p>
+  <div class="card"><div class="perm"><div class="ic">👥</div><div class="grow"><b>Ví chung</b><div class="sub">Tiền sinh hoạt, hóa đơn, tiết kiệm</div></div><div class="sw on"><i></i></div></div>
+  <div class="perm"><div class="ic">🔒</div><div class="grow"><b>Ví riêng của tôi</b><div class="sub">Chỉ mình tôi xem chi tiết</div></div><div class="sw on"><i></i></div></div></div>
+  <div class="card"><b>Giao dịch riêng hiển thị với vợ/chồng</b><div class="seg"><div>Ẩn hẳn</div><div class="on">Chỉ tổng</div><div>Chi tiết</div></div><div class="sub">“Chỉ tổng”: hiện “Chi riêng” và số tiền, không lộ mô tả.</div></div>
+  <div class="card"><b>Thông báo</b><div class="tog">Khi vợ/chồng chi chung &gt; 2tr<div class="sw on"><i></i></div></div><div class="tog">Nhắc ghi chép lúc 21:00<div class="sw on"><i></i></div></div></div>
+  <div class="btn">Bắt đầu 🎉</div></div></div><div class="lbl">1.7 Quyền riêng tư</div></div>
+</div>
+
+<h2>2. Báo cáo</h2>
+<div class="flow">
+ <div><div class="phone"><div class="in">
+  <h1>Báo cáo</h1>
+  <div style="display:flex;justify-content:space-between;align-items:center"><b>‹</b><b>Tháng 11/2026</b><b>›</b></div>
+  <div class="seg"><div>Tuần</div><div class="on">Tháng</div><div>Năm</div></div>
+  <div class="seg"><div class="on">Chúng ta</div><div>Minh</div><div>Lan</div></div>
+  <div class="card"><div class="donut"><div>12,45tr<br><span class="sub">đã chi</span></div></div>
+  <div class="row"><span class="dot" style="background:var(--coral)"></span><span class="grow">Ăn uống</span><b>4,4tr</b><span class="sub">35%</span></div>
+  <div class="row"><span class="dot" style="background:var(--teal)"></span><span class="grow">Chợ/Siêu thị</span><b>2,5tr</b><span class="sub">20%</span></div>
+  <div class="row"><span class="dot" style="background:var(--shared)"></span><span class="grow">Nhà cửa</span><b>2,1tr</b><span class="sub">17%</span></div>
+  <div class="row"><span class="dot" style="background:var(--warn)"></span><span class="grow">Hóa đơn</span><b>1,6tr</b><span class="sub">13%</span></div></div></div></div><div class="lbl">2.1 Theo danh mục</div></div>
+
+ <div><div class="phone"><div class="in">
+  <h1>Xu hướng</h1>
+  <div class="card"><b>Chi 6 tháng gần nhất</b>
+  <div class="cols"><div><span><i style="height:50px;background:var(--him)"></i><i style="height:40px;background:var(--her)"></i></span>6</div><div><span><i style="height:60px;background:var(--him)"></i><i style="height:45px;background:var(--her)"></i></span>7</div><div><span><i style="height:45px;background:var(--him)"></i><i style="height:50px;background:var(--her)"></i></span>8</div><div><span><i style="height:70px;background:var(--him)"></i><i style="height:48px;background:var(--her)"></i></span>9</div><div><span><i style="height:55px;background:var(--him)"></i><i style="height:42px;background:var(--her)"></i></span>10</div><div><span><i style="height:66px;background:var(--him)"></i><i style="height:52px;background:var(--her)"></i></span>11</div></div>
+  <div class="sub" style="margin-top:8px"><span class="dot" style="background:var(--him)"></span>Minh <span class="dot" style="background:var(--her);margin-left:10px"></span>Lan</div></div>
+  <div class="card"><b>💡 Nhận xét</b><div class="tip" style="margin:8px 0 0">Chi ăn uống tăng 18% so với tháng 10.</div><div class="tip" style="background:#e9fbf0;color:#14693a;margin:8px 0 0">Bạn tiết kiệm được 8,2tr (26% thu nhập) – tốt hơn tháng trước!</div></div>
+  <div class="card"><b>Thu – Chi – Tiết kiệm</b><div class="row"><span class="grow">Thu</span><b class="pos">32.000.000</b></div><div class="row"><span class="grow">Chi</span><b class="neg">12.450.000</b></div><div class="row"><span class="grow">Còn lại</span><b>19.550.000</b></div></div></div></div><div class="lbl">2.2 Xu hướng & nhận xét</div></div>
+
+ <div><div class="phone"><div class="in">
+  <h1>Chúng ta vs Riêng</h1>
+  <div class="card"><b>Ai chi bao nhiêu</b>
+  <div style="margin-top:10px">Minh · 6,85tr<div class="bar"><i style="width:55%;background:var(--him)"></i></div></div>
+  <div style="margin-top:10px">Lan · 5,6tr<div class="bar"><i style="width:45%;background:var(--her)"></i></div></div></div>
+  <div class="card"><b>Chung / Riêng</b><div style="display:flex;height:22px;border-radius:11px;overflow:hidden;margin:10px 0"><div style="width:78%;background:var(--shared)"></div><div style="width:22%;background:#bbb"></div></div>
+  <div class="sub"><span class="dot" style="background:var(--shared)"></span>Chung 9,7tr (78%) <span class="dot" style="background:#bbb;margin-left:8px"></span>Riêng 2,75tr (22%)</div></div>
+  <div class="card"><b>Giao dịch lớn nhất</b>
+  <div class="row"><div class="ic">💡</div><div class="grow">Tiền điện<div class="sub">Minh · Chung</div></div><b class="neg">-1.250.000</b></div>
+  <div class="row"><div class="ic">🛒</div><div class="grow">Siêu thị<div class="sub">Lan · Chung</div></div><b class="neg">-840.000</b></div></div>
+  <div class="btn alt">⬇ Xuất PDF / CSV</div></div></div><div class="lbl">2.3 So sánh hai người</div></div>
+</div>
+
+<h2>3. Cân đối chi tiêu chung</h2>
+<div class="flow">
+ <div><div class="phone"><div class="in">
+  <h1>Cân đối</h1><p class="sub">Tháng 11 · chỉ tính khoản chi <b>chung</b></p>
+  <div class="card center" style="margin-top:10px"><span class="av" style="background:var(--him)">M</span> <span style="font-size:22px">⇄</span> <span class="av" style="background:var(--her)">L</span>
+  <div style="font-size:15px;margin:12px 0 4px">Lan nên chuyển cho Minh</div><div style="font-size:34px;font-weight:700;color:var(--shared)">1.200.000 ₫</div><div class="sub">để cân bằng theo tỷ lệ 60/40</div>
+  <div class="btn">Đánh dấu đã chuyển</div><div class="btn alt">Nhắc Lan</div></div>
+  <div class="card"><b>Đã chi cho khoản chung</b>
+  <div style="margin-top:10px">Minh · 6,2tr (64%)<div class="bar"><i style="width:64%;background:var(--him)"></i></div></div>
+  <div style="margin-top:10px">Lan · 3,5tr (36%)<div class="bar"><i style="width:36%;background:var(--her)"></i></div></div>
+  <div class="sub" style="margin-top:8px">Tỷ lệ đóng góp mục tiêu: 60 / 40 (theo thu nhập)</div></div></div></div><div class="lbl">3.1 Tổng quan cân đối</div></div>
+
+ <div><div class="phone"><div class="in">
+  <h1>Tỷ lệ đóng góp</h1><p class="sub">Chọn cách chia khoản chung</p>
+  <div class="card"><div class="seg"><div>50/50</div><div class="on">Theo thu nhập</div><div>Tùy chỉnh</div></div>
+  <div style="display:flex;justify-content:space-between;margin-top:10px"><b style="color:var(--him)">Minh 60%</b><b style="color:var(--her)">Lan 40%</b></div><div class="slider"></div>
+  <div class="sub">Thu nhập: Minh 20tr · Lan 12tr → 62,5 / 37,5, làm tròn 60/40</div></div>
+  <div class="card"><b>Công thức</b><div class="tog">Tự cập nhật khi thu nhập đổi<div class="sw on"><i></i></div></div><div class="tog">Chu kỳ tất toán: <b>Cuối tháng ▾</b><span></span></div><div class="tog">Nhắc tất toán<div class="sw on"><i></i></div></div></div>
+  <div class="tip">Cả hai cần đồng ý khi đổi tỷ lệ. Lan sẽ nhận yêu cầu xác nhận.</div>
+  <div class="btn">Gửi yêu cầu thay đổi</div></div></div><div class="lbl">3.2 Cài đặt tỷ lệ</div></div>
+
+ <div><div class="phone"><div class="in">
+  <h1>Lịch sử tất toán</h1>
+  <div class="card"><div class="row"><div class="ic">✅</div><div class="grow">Tháng 10<div class="sub">Lan → Minh · 0,9tr · 31/10</div></div><b class="pos">Đã xong</b></div>
+  <div class="row"><div class="ic">✅</div><div class="grow">Tháng 9<div class="sub">Minh → Lan · 0,3tr · 30/9</div></div><b class="pos">Đã xong</b></div>
+  <div class="row"><div class="ic">⏳</div><div class="grow">Tháng 11<div class="sub">Lan → Minh · 1,2tr</div></div><b style="color:var(--warn)">Chờ</b></div></div>
+  <div class="card"><b>Chi tiết khoản chung tháng 11</b>
+  <div class="row"><div class="ic">💡</div><div class="grow">Tiền điện<div class="sub">Minh trả</div></div><b>1.250.000</b></div>
+  <div class="row"><div class="ic">🛒</div><div class="grow">Siêu thị<div class="sub">Lan trả</div></div><b>840.000</b></div>
+  <div class="row"><div class="ic">🏠</div><div class="grow">Tiền nhà<div class="sub">Minh trả</div></div><b>2.100.000</b></div></div>
+  <div class="sub center">Chạm vào giao dịch để loại khỏi cân đối</div></div></div><div class="lbl">3.3 Lịch sử & chi tiết</div></div>
+</div>
+</body></html>

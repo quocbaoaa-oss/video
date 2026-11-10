@@ -1,0 +1,32 @@
+name: ViDoi
+options:
+  bundleIdPrefix: vn.vidoi
+  deploymentTarget:
+    iOS: "17.0"
+targets:
+  ViDoi:
+    type: application
+    platform: iOS
+    sources: [ViDoi]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: vn.vidoi.app.quocbao
+        DEVELOPMENT_TEAM: 7SWD44767U
+        SWIFT_VERSION: "5.9"
+        CODE_SIGN_STYLE: Automatic
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_NSFaceIDUsageDescription: "Mở Ví Đôi bằng Face ID"
+        INFOPLIST_KEY_NSPhotoLibraryUsageDescription: "Đính kèm ảnh hóa đơn vào giao dịch"
+        INFOPLIST_KEY_CFBundleDisplayName: "Ví Đôi"
+        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: UIInterfaceOrientationPortrait
+  ViDoiTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources: [ViDoiTests]
+    dependencies:
+      - target: ViDoi
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        SWIFT_VERSION: "5.9"

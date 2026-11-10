@@ -1,0 +1,16 @@
+# macOS
+.DS_Store
+
+# Xcode
+xcuserdata/
+*.xcworkspace
+!default.xcworkspace
+DerivedData/
+*.moved-aside
+*.xcuserstate
+*.ipa
+.build/
+
+# Temporary / Scratch files
+*.tmp
+*.log
