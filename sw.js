@@ -1,4 +1,4 @@
-const CACHE_NAME = 'vidoi-pwa-v9-exec-overview-events';
+const CACHE_NAME = 'vidoi-pwa-v10-e2ee-idb-reports-gdrive';
 const ASSETS = [
   './',
   './index.html',

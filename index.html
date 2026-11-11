@@ -1476,6 +1476,7 @@
 
     <!-- 1. URGENT 1-DAY BEFORE / TODAY FAMILY EVENT BANNER (Auto-appears 1 day prior) -->
     <div id="home-urgent-events"></div>
+    <div id="home-backup-reminder" style="display:none"></div>
 
     <!-- 2. EXECUTIVE CASHFLOW OVERVIEW: TỔNG THU NHẬP · TỔNG CHI · CÒN LẠI -->
     <div class="card hero" style="margin-bottom:10px;padding:16px 18px">
@@ -1635,30 +1636,80 @@
         </div>
       </div>
 
-      <!-- Rep 3: Comparison -->
+      <!-- Rep 3: Comparison (Chồng Bảo vs Vợ Oanh) -->
       <div id="rep-pane-2" style="display:none">
-        <div class="card">
-          <b>Ai chi bao nhiêu (Khoản chung)</b>
-          <div style="margin-top:10px">
-            <span id="rep-cmp-him-lbl">Chồng</span> · <span id="rep-cmp-him-val">0 ₫</span>
-            <div class="bar"><i id="rep-cmp-him-bar" style="background:var(--him)"></i></div>
+        <!-- Dual Member Executive Cards -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+          <div class="card" style="padding:12px;margin:0;border:1px solid rgba(0,113,227,0.35);background:linear-gradient(145deg,rgba(0,113,227,0.08),rgba(15,23,42,0.6))">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+              <span class="av s" style="background:var(--him);width:22px;height:22px;font-size:11px" id="cmp-him-av">B</span>
+              <b style="font-size:13px;color:var(--him)" id="cmp-him-title">Chồng Bảo</b>
+            </div>
+            <div class="sub" style="font-size:10px;text-transform:uppercase;letter-spacing:0.4px">Tổng đã chi</div>
+            <b style="font-size:16px;letter-spacing:-0.3px;color:var(--txt);display:block;margin:2px 0" id="cmp-him-spent">0 ₫</b>
+            <div style="font-size:11px;color:var(--him);font-weight:600" id="cmp-him-ratio">0% tổng chi</div>
+            <div style="margin-top:6px;font-size:11px;opacity:0.8" id="cmp-him-inc">Thu: 0 ₫</div>
           </div>
-          <div style="margin-top:10px">
-            <span id="rep-cmp-her-lbl">Vợ</span> · <span id="rep-cmp-her-val">0 ₫</span>
-            <div class="bar"><i id="rep-cmp-her-bar" style="background:var(--her)"></i></div>
+
+          <div class="card" style="padding:12px;margin:0;border:1px solid rgba(255,45,85,0.35);background:linear-gradient(145deg,rgba(255,45,85,0.08),rgba(15,23,42,0.6))">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+              <span class="av s" style="background:var(--her);width:22px;height:22px;font-size:11px" id="cmp-her-av">O</span>
+              <b style="font-size:13px;color:var(--her)" id="cmp-her-title">Vợ Oanh</b>
+            </div>
+            <div class="sub" style="font-size:10px;text-transform:uppercase;letter-spacing:0.4px">Tổng đã chi</div>
+            <b style="font-size:16px;letter-spacing:-0.3px;color:var(--txt);display:block;margin:2px 0" id="cmp-her-spent">0 ₫</b>
+            <div style="font-size:11px;color:var(--her);font-weight:600" id="cmp-her-ratio">0% tổng chi</div>
+            <div style="margin-top:6px;font-size:11px;opacity:0.8" id="cmp-her-inc">Thu: 0 ₫</div>
           </div>
         </div>
+
+        <!-- Proportion Meter Card -->
         <div class="card">
-          <b>Chung vs Riêng</b>
-          <div style="display:flex;height:20px;border-radius:10px;overflow:hidden;margin:10px 0">
-            <div id="rep-bar-shared" style="background:var(--shared);width:60%"></div>
-            <div id="rep-bar-priv" style="background:#CCC;flex:1"></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <b style="font-size:13px">⚖️ Cân đối chi tiêu vợ chồng</b>
+            <span class="event-pill-badge" id="cmp-vs-badge" style="background:rgba(255,255,255,0.1);color:var(--txt)">Cân bằng</span>
           </div>
-          <div class="sub" id="rep-shared-txt">Chung: 0 ₫ · Riêng: 0 ₫</div>
+          <div style="display:flex;height:16px;border-radius:8px;overflow:hidden;background:rgba(255,255,255,0.08)">
+            <div id="cmp-meter-him" style="background:var(--him);width:50%;transition:width 0.4s ease"></div>
+            <div id="cmp-meter-her" style="background:var(--her);width:50%;transition:width 0.4s ease"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:11px;margin-top:6px">
+            <span style="color:var(--him);font-weight:600" id="cmp-meter-him-txt">Chồng: 50%</span>
+            <span style="color:var(--her);font-weight:600" id="cmp-meter-her-txt">Vợ: 50%</span>
+          </div>
         </div>
+
+        <!-- Top Categories Breakdown for Him & Her -->
         <div class="card">
-          <b>Giao dịch lớn nhất tháng</b>
-          <div id="rep-biggest-list"></div>
+          <b style="font-size:13px">🎯 Danh mục chi nhiều nhất</b>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px">
+            <div>
+              <div class="sub" style="font-weight:600;color:var(--him);margin-bottom:6px;font-size:11px" id="cmp-top-him-lbl">Chồng Bảo chi</div>
+              <div id="cmp-top-him-list" style="font-size:11px"></div>
+            </div>
+            <div>
+              <div class="sub" style="font-weight:600;color:var(--her);margin-bottom:6px;font-size:11px" id="cmp-top-her-lbl">Vợ Oanh chi</div>
+              <div id="cmp-top-her-list" style="font-size:11px"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Shared vs Private Breakdown -->
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <b style="font-size:13px">👥 Khoản Chung gia đình vs 🔒 Khoản Riêng</b>
+          </div>
+          <div style="display:flex;height:14px;border-radius:7px;overflow:hidden;margin:8px 0;background:rgba(255,255,255,0.08)">
+            <div id="rep-bar-shared" style="background:var(--shared);width:60%;transition:width 0.4s ease"></div>
+            <div id="rep-bar-priv" style="background:#8E8E93;flex:1;transition:width 0.4s ease"></div>
+          </div>
+          <div class="sub" id="rep-shared-txt" style="font-size:12px">Chung: 0 ₫ · Riêng: 0 ₫</div>
+        </div>
+
+        <!-- Biggest transactions -->
+        <div class="card">
+          <b style="font-size:13px">🏆 Khoản chi tiêu lớn nhất tháng</b>
+          <div id="rep-biggest-list" style="margin-top:8px"></div>
         </div>
       </div>
     </div>
@@ -1847,13 +1898,39 @@
     </div>
 
     <div class="card">
-      <h2>Dữ liệu & Sao lưu</h2>
-      <div class="btn alt sm" style="margin:8px 0;width:100%" onclick="exportCSV()">⬇ Xuất file báo cáo CSV</div>
-      <div class="btn alt sm" style="margin:8px 0;width:100%" onclick="exportJSON()">💾 Sao lưu toàn bộ dữ liệu (JSON)</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <h2>💾 Sao lưu & Google Drive</h2>
+        <span class="event-pill-badge" id="backup-status-badge" style="background:rgba(52,199,89,0.18);color:#34C759;border:1px solid rgba(52,199,89,0.3)">Đã an toàn</span>
+      </div>
+      <div class="sub" style="margin-bottom:10px" id="backup-last-time-txt">Lần sao lưu gần nhất: Chưa thực hiện</div>
+      
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+        <div class="btn sm" style="width:100%" onclick="backupToGoogleDrivePrompt()">☁️ Lưu Google Drive</div>
+        <div class="btn sm alt" style="width:100%" onclick="exportJSON()">💾 Tải JSON về máy</div>
+      </div>
+      <div class="btn alt sm" style="margin:4px 0 8px;width:100%" onclick="exportCSV()">📊 Xuất báo cáo Excel (CSV)</div>
+      
       <input type="file" id="import-json-input" accept=".json,application/json" style="display:none" onchange="importJSONFile(event)">
-      <div class="btn alt sm" style="margin:8px 0;width:100%" onclick="$('#import-json-input').click()">📥 Khôi phục dữ liệu từ file JSON</div>
-      <div class="btn alt sm red" style="margin:8px 0;width:100%;color:#fff" onclick="confirmResetData()">🗑 Xóa dữ liệu mẫu (Ghi chép thật từ 0 ₫)</div>
-      <div class="btn alt sm" style="margin:8px 0;width:100%" onclick="restoreSampleData()">↺ Nạp lại dữ liệu mẫu (Demo)</div>
+      <div class="btn alt sm" style="margin:4px 0 8px;width:100%" onclick="$('#import-json-input').click()">📥 Khôi phục từ file JSON</div>
+
+      <!-- Google Apps Script Webhook config (Optional 1-click sync to Google Drive Folder) -->
+      <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--sep)">
+        <div class="sub clickable" style="color:var(--tint);font-weight:600" onclick="toggleGDriveWebhookBox()">
+          ⚙️ Cấu hình đẩy tự động vào thư mục Google Drive ▾
+        </div>
+        <div id="gdrive-webhook-box" style="display:none;margin-top:8px">
+          <input class="input" id="cfg-gdrive-webhook" placeholder="Dán link Webhook Google Apps Script (nếu có)" style="font-size:12px">
+          <div class="btn sm" style="margin-top:6px;width:100%" onclick="saveGDriveWebhook()">Lưu Webhook Google Drive</div>
+          <div class="sub" style="font-size:11px;margin-top:6px;line-height:1.4">
+            💡 Tích hợp Google Apps Script giúp hai vợ chồng chỉ cần bấm 1 chạm là tự động lưu bản sao lưu vào thư mục <b>App chi tieu gia dinh</b> trên Google Drive.
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--sep)">
+        <div class="btn alt sm red" style="margin:4px 0;width:100%;color:#fff" onclick="confirmResetData()">🗑 Xóa dữ liệu mẫu (Ghi chép thật từ 0 ₫)</div>
+        <div class="btn alt sm" style="margin:4px 0;width:100%" onclick="restoreSampleData()">↺ Nạp lại dữ liệu mẫu (Demo)</div>
+      </div>
     </div>
   </div>
 
@@ -2772,6 +2849,8 @@ function renderHome() {
   const rec = getFilteredTransactions().slice().sort((a, b) => b.day - a.day || b.id - a.id).slice(0, 5);
   $('#home-recent').innerHTML = rec.length ? rec.map(t => renderTxRowHTML(t)).join('') : '<div class="center sub" style="padding:20px">Chưa có giao dịch nào</div>';
   bindSwipeRows($('#home-recent'));
+
+  updateBackupStatusUI();
 }
 
 /* ==========================================================================
@@ -3358,27 +3437,100 @@ function renderReportPanes() {
     <div class="tip g">Đang tiết kiệm được ~${Math.max(15, Math.min(45, Math.round((1 - total / 36000000) * 100)))}% tổng thu nhập gia đình.</div>
   `;
 
-  // Comparison
-  const b = calculateBalance();
-  const shTotal = b.total || 1;
-  $('#rep-cmp-him-lbl').textContent = DB.users.him.name;
-  $('#rep-cmp-her-lbl').textContent = DB.users.her.name;
-  $('#rep-cmp-him-val').textContent = formatVND(b.paidHim) + ' ₫';
-  $('#rep-cmp-her-val').textContent = formatVND(b.paidHer) + ' ₫';
-  $('#rep-cmp-him-bar').style.width = (b.paidHim / shTotal * 100) + '%';
-  $('#rep-cmp-her-bar').style.width = (b.paidHer / shTotal * 100) + '%';
+  // Comparison metrics (Chồng Bảo vs Vợ Oanh)
+  const allCmpTxs = getFilteredTransactions();
+  const himTxs = allCmpTxs.filter(t => t.who === 'him');
+  const herTxs = allCmpTxs.filter(t => t.who === 'her');
 
+  const himSpent = himTxs.filter(t => t.kind === 'e').reduce((s, t) => s + t.amount, 0);
+  const herSpent = herTxs.filter(t => t.kind === 'e').reduce((s, t) => s + t.amount, 0);
+  const himInc = himTxs.filter(t => t.kind === 'i').reduce((s, t) => s + t.amount, 0);
+  const herInc = herTxs.filter(t => t.kind === 'i').reduce((s, t) => s + t.amount, 0);
+
+  const totalSpentAll = (himSpent + herSpent) || 1;
+  const himPct = Math.round((himSpent / totalSpentAll) * 100);
+  const herPct = 100 - himPct;
+
+  if ($('#cmp-him-title')) $('#cmp-him-title').textContent = DB.users.him.name;
+  if ($('#cmp-her-title')) $('#cmp-her-title').textContent = DB.users.her.name;
+  if ($('#cmp-him-av')) $('#cmp-him-av').textContent = DB.users.him.name[0];
+  if ($('#cmp-her-av')) $('#cmp-her-av').textContent = DB.users.her.name[0];
+
+  if ($('#cmp-him-spent')) $('#cmp-him-spent').textContent = formatVND(himSpent) + ' ₫';
+  if ($('#cmp-her-spent')) $('#cmp-her-spent').textContent = formatVND(herSpent) + ' ₫';
+  if ($('#cmp-him-ratio')) $('#cmp-him-ratio').textContent = `${himPct}% tổng chi (${himTxs.filter(t => t.kind === 'e').length} khoản)`;
+  if ($('#cmp-her-ratio')) $('#cmp-her-ratio').textContent = `${herPct}% tổng chi (${herTxs.filter(t => t.kind === 'e').length} khoản)`;
+  if ($('#cmp-him-inc')) $('#cmp-him-inc').textContent = `Thu: ${formatShort(himInc)}`;
+  if ($('#cmp-her-inc')) $('#cmp-her-inc').textContent = `Thu: ${formatShort(herInc)}`;
+
+  if ($('#cmp-meter-him')) $('#cmp-meter-him').style.width = himPct + '%';
+  if ($('#cmp-meter-her')) $('#cmp-meter-her').style.width = herPct + '%';
+  if ($('#cmp-meter-him-txt')) $('#cmp-meter-him-txt').textContent = `${DB.users.him.name}: ${himPct}% (${formatShort(himSpent)})`;
+  if ($('#cmp-meter-her-txt')) $('#cmp-meter-her-txt').textContent = `${DB.users.her.name}: ${herPct}% (${formatShort(herSpent)})`;
+
+  if ($('#cmp-vs-badge')) {
+    if (Math.abs(himPct - 50) <= 5) {
+      $('#cmp-vs-badge').textContent = '⚖️ Rất cân bằng';
+      $('#cmp-vs-badge').style.color = '#34C759';
+    } else if (himPct > 55) {
+      $('#cmp-vs-badge').textContent = `👨 ${DB.users.him.name} chi nhiều hơn`;
+      $('#cmp-vs-badge').style.color = 'var(--him)';
+    } else {
+      $('#cmp-vs-badge').textContent = `👩 ${DB.users.her.name} chi nhiều hơn`;
+      $('#cmp-vs-badge').style.color = 'var(--her)';
+    }
+  }
+
+  // Top categories for Him
+  const himCatSpends = {};
+  himTxs.filter(t => t.kind === 'e').forEach(t => {
+    himCatSpends[t.category] = (himCatSpends[t.category] || { amt: 0, icon: t.icon });
+    himCatSpends[t.category].amt += t.amount;
+  });
+  const topHimEntries = Object.entries(himCatSpends).sort((a, b) => b[1].amt - a[1].amt).slice(0, 3);
+  if ($('#cmp-top-him-lbl')) $('#cmp-top-him-lbl').textContent = `${DB.users.him.name} chi nhiều nhất`;
+  if ($('#cmp-top-him-list')) {
+    $('#cmp-top-him-list').innerHTML = topHimEntries.length ? topHimEntries.map(([cat, val]) => `
+      <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px dashed var(--sep)">
+        <span>${val.icon} ${cat}</span>
+        <b>${formatShort(val.amt)}</b>
+      </div>
+    `).join('') : '<div class="sub">Chưa có chi tiêu</div>';
+  }
+
+  // Top categories for Her
+  const herCatSpends = {};
+  herTxs.filter(t => t.kind === 'e').forEach(t => {
+    herCatSpends[t.category] = (herCatSpends[t.category] || { amt: 0, icon: t.icon });
+    herCatSpends[t.category].amt += t.amount;
+  });
+  const topHerEntries = Object.entries(herCatSpends).sort((a, b) => b[1].amt - a[1].amt).slice(0, 3);
+  if ($('#cmp-top-her-lbl')) $('#cmp-top-her-lbl').textContent = `${DB.users.her.name} chi nhiều nhất`;
+  if ($('#cmp-top-her-list')) {
+    $('#cmp-top-her-list').innerHTML = topHerEntries.length ? topHerEntries.map(([cat, val]) => `
+      <div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px dashed var(--sep)">
+        <span>${val.icon} ${cat}</span>
+        <b>${formatShort(val.amt)}</b>
+      </div>
+    `).join('') : '<div class="sub">Chưa có chi tiêu</div>';
+  }
+
+  // Shared vs Private breakdown
+  const b = calculateBalance();
   const sharedSum = b.total;
-  const privSum = total - sharedSum;
-  $('#rep-bar-shared').style.width = (sharedSum / total * 100) + '%';
-  $('#rep-shared-txt').innerHTML = `
-    <span class="dot" style="background:var(--shared)"></span>Chung: ${formatShort(sharedSum)} (${Math.round(sharedSum / total * 100)}%) · 
-    <span class="dot" style="background:#CCC"></span>Riêng: ${formatShort(privSum)}
-  `;
+  const privSum = Math.max(0, total - sharedSum);
+  if ($('#rep-bar-shared')) $('#rep-bar-shared').style.width = (sharedSum / total * 100) + '%';
+  if ($('#rep-bar-priv')) $('#rep-bar-priv').style.width = (privSum / total * 100) + '%';
+  if ($('#rep-shared-txt')) {
+    $('#rep-shared-txt').innerHTML = `
+      <span class="dot" style="background:var(--shared)"></span>Chung: ${formatShort(sharedSum)} (${Math.round(sharedSum / total * 100)}%) · 
+      <span class="dot" style="background:#8E8E93"></span>Riêng: ${formatShort(privSum)} (${Math.round(privSum / total * 100)}%)
+    `;
+  }
 
   // Biggest transactions
-  const biggest = getFilteredTransactions().filter(t => t.kind === 'e').slice().sort((a, b) => b.amount - a.amount).slice(0, 4);
-  $('#rep-biggest-list').innerHTML = biggest.map(t => renderTxRowHTML(t)).join('');
+  const biggest = allCmpTxs.filter(t => t.kind === 'e').slice().sort((a, b) => b.amount - a.amount).slice(0, 4);
+  if ($('#rep-biggest-list')) $('#rep-biggest-list').innerHTML = biggest.map(t => renderTxRowHTML(t)).join('');
 }
 
 function filterByCat(cat) {
@@ -3474,6 +3626,8 @@ function renderFamilyAndBalance() {
   ];
   $('#privacy-hint').textContent = hints[DB.privacy];
   $$('#privacy-seg div').forEach((d, i) => d.classList.toggle('on', i === DB.privacy));
+
+  updateBackupStatusUI();
 }
 
 function settleBalance() {
@@ -3688,9 +3842,20 @@ function openAddSheet(editTx = null) {
   }
   closeNumberPad();
   if (STATE.addReceipt) {
-    $('#receipt-preview-img').src = STATE.addReceipt;
-    $('#receipt-preview-img').style.display = 'block';
-    $('#receipt-remove-btn').style.display = 'block';
+    if (typeof STATE.addReceipt === 'string' && STATE.addReceipt.startsWith('rcpt_')) {
+      ReceiptDB.getReceipt(STATE.addReceipt).then(imgData => {
+        if (imgData) {
+          $('#receipt-preview-img').src = imgData;
+          $('#receipt-preview-img').style.display = 'block';
+          $('#receipt-remove-btn').style.display = 'block';
+          STATE.addReceipt = imgData;
+        }
+      });
+    } else {
+      $('#receipt-preview-img').src = STATE.addReceipt;
+      $('#receipt-preview-img').style.display = 'block';
+      $('#receipt-remove-btn').style.display = 'block';
+    }
   } else {
     $('#receipt-preview-img').style.display = 'none';
     $('#receipt-remove-btn').style.display = 'none';
@@ -4031,7 +4196,7 @@ function onKeypadPress(k) {
   updateAddAmountDisplay();
 }
 
-// Photo attachment with camera or library (auto-compressed for fast cloud sync)
+// Photo attachment with camera or library (auto-compressed for fast cloud sync & stored in IndexedDB)
 function onReceiptFileSelected(e) {
   const file = e.target.files[0];
   if (!file) return;
@@ -4040,7 +4205,7 @@ function onReceiptFileSelected(e) {
     const rawImg = new Image();
     rawImg.onload = () => {
       const canvas = document.createElement('canvas');
-      const maxDim = 640;
+      const maxDim = 800;
       let w = rawImg.width, h = rawImg.height;
       if (w > maxDim || h > maxDim) {
         if (w > h) { h = Math.round(h * maxDim / w); w = maxDim; }
@@ -4049,7 +4214,7 @@ function onReceiptFileSelected(e) {
       canvas.width = w;
       canvas.height = h;
       canvas.getContext('2d').drawImage(rawImg, 0, 0, w, h);
-      STATE.addReceipt = canvas.toDataURL('image/jpeg', 0.65);
+      STATE.addReceipt = canvas.toDataURL('image/jpeg', 0.70);
       const img = $('#receipt-preview-img');
       img.src = STATE.addReceipt;
       img.style.display = 'block';
@@ -4087,6 +4252,14 @@ function saveTransaction() {
   const cat = activeCats[STATE.addCatIdx] || activeCats[0] || ['💼', 'Khác'];
   const note = $('#add-note-input').value.trim();
 
+  const curTxId = STATE.editingTxId || Date.now();
+  let receiptRef = STATE.addReceipt;
+  if (STATE.addReceipt && typeof STATE.addReceipt === 'string' && STATE.addReceipt.startsWith('data:image')) {
+    const rcptId = 'rcpt_' + curTxId;
+    ReceiptDB.saveReceipt(rcptId, STATE.addReceipt);
+    receiptRef = rcptId;
+  }
+
   if (STATE.editingTxId) {
     const existing = DB.transactions.find(x => x.id === STATE.editingTxId);
     if (existing) {
@@ -4104,7 +4277,7 @@ function saveTransaction() {
       existing.wallet = STATE.addWalletId;
       existing.kind = STATE.addKind;
       existing.note = note;
-      existing.receipt = STATE.addReceipt;
+      existing.receipt = receiptRef;
       existing.updatedAt = Date.now();
 
       const newW = DB.wallets.find(x => x.id === STATE.addWalletId);
@@ -4122,7 +4295,7 @@ function saveTransaction() {
   }
 
   const newTx = {
-    id: Date.now(),
+    id: curTxId,
     day: STATE.addDay,
     icon: cat[0],
     title: note || cat[1],
@@ -4133,7 +4306,7 @@ function saveTransaction() {
     wallet: STATE.addWalletId,
     kind: STATE.addKind,
     note: note,
-    receipt: STATE.addReceipt,
+    receipt: receiptRef,
     comments: [],
     updatedAt: Date.now()
   };
@@ -4201,6 +4374,9 @@ function deleteTransaction(id, promptConfirm = false) {
     DB.transactions.splice(idx, 1);
     if (!Array.isArray(DB.deletedTxIds)) DB.deletedTxIds = [];
     if (!DB.deletedTxIds.includes(removed.id)) DB.deletedTxIds.push(removed.id);
+    if (removed.receipt && typeof removed.receipt === 'string' && removed.receipt.startsWith('rcpt_')) {
+      ReceiptDB.deleteReceipt(removed.receipt);
+    }
     const w = DB.wallets.find(x => x.id === removed.wallet);
     if (w) w.balance += (removed.kind === 'e' ? removed.amount : -removed.amount);
     saveData();
@@ -4258,7 +4434,7 @@ function openTxDetail(id) {
     ${t.receipt ? `
       <div class="card">
         <b>📎 Hóa đơn đính kèm</b>
-        <img src="${t.receipt}" style="width:100%;max-height:220px;object-fit:cover;border-radius:12px;margin-top:8px;cursor:pointer" onclick="viewPhotoZoom(this.src)">
+        <img id="detail-receipt-img" src="${t.receipt.startsWith('rcpt_') ? '' : t.receipt}" style="${t.receipt.startsWith('rcpt_') ? 'display:none;' : ''}width:100%;max-height:220px;object-fit:cover;border-radius:12px;margin-top:8px;cursor:pointer" onclick="viewPhotoZoom(this.src)">
       </div>
     ` : ''}
 
@@ -4282,6 +4458,16 @@ function openTxDetail(id) {
       </div>
     </div>
   `;
+
+  if (t.receipt && t.receipt.startsWith('rcpt_')) {
+    ReceiptDB.getReceipt(t.receipt).then(imgData => {
+      const rcptImg = $('#detail-receipt-img');
+      if (rcptImg && imgData) {
+        rcptImg.src = imgData;
+        rcptImg.style.display = 'block';
+      }
+    });
+  }
 
   goTab('tab-detail');
 }
@@ -4573,10 +4759,296 @@ function exportJSON() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `ViDoi_Backup_${new Date().toISOString().slice(0, 10)}.json`;
+  a.download = `ViDoi_BaoOanh_Backup_${new Date().toISOString().slice(0, 10)}.json`;
   a.click();
+  localStorage.setItem('vidoi_last_backup_time', String(Date.now()));
+  updateBackupStatusUI();
   toast('Đã tải file sao lưu JSON 💾');
 }
+
+async function backupToGoogleDrivePrompt() {
+  const webhook = (localStorage.getItem('vidoi_gdrive_webhook') || '').trim();
+  if (webhook) {
+    toast('Đang gửi bản sao lưu lên Google Drive...');
+    try {
+      const res = await fetch(webhook, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          app: 'ViDoi',
+          date: new Date().toISOString(),
+          familyCode: DB.familyCode,
+          data: DB
+        })
+      });
+      if (res.ok) {
+        localStorage.setItem('vidoi_last_backup_time', String(Date.now()));
+        updateBackupStatusUI();
+        return toast('Đã sao lưu thành công vào Google Drive ☁️✅');
+      }
+    } catch (e) {
+      console.warn('Google Drive webhook error:', e);
+    }
+  }
+
+  confirmDlg(
+    '☁️ Sao lưu vào Google Drive',
+    'Ứng dụng sẽ tải file "ViDoi_BaoOanh_Backup.json". Trên điện thoại hoặc máy tính, bạn lưu file này vào thư mục "App chi tieu gia dinh" trên Google Drive.',
+    'Tải & Lưu Drive',
+    () => {
+      exportJSON();
+    }
+  );
+}
+
+function toggleGDriveWebhookBox() {
+  const box = $('#gdrive-webhook-box');
+  if (box) box.style.display = box.style.display === 'none' ? 'block' : 'none';
+  if ($('#cfg-gdrive-webhook')) {
+    $('#cfg-gdrive-webhook').value = localStorage.getItem('vidoi_gdrive_webhook') || '';
+  }
+}
+
+function saveGDriveWebhook() {
+  const val = ($('#cfg-gdrive-webhook').value || '').trim();
+  localStorage.setItem('vidoi_gdrive_webhook', val);
+  toast('Đã lưu Webhook Google Drive ✅');
+}
+
+function updateBackupStatusUI() {
+  const rawTime = localStorage.getItem('vidoi_last_backup_time');
+  const lastTime = rawTime ? parseInt(rawTime, 10) : 0;
+  const badge = $('#backup-status-badge');
+  const txt = $('#backup-last-time-txt');
+  const now = Date.now();
+  const days = lastTime ? Math.floor((now - lastTime) / (1000 * 60 * 60 * 24)) : -1;
+
+  if (txt) {
+    if (!lastTime) {
+      txt.textContent = 'Lần sao lưu gần nhất: Chưa thực hiện';
+    } else if (days === 0) {
+      txt.textContent = 'Lần sao lưu gần nhất: Hôm nay lúc ' + new Date(lastTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+    } else {
+      txt.textContent = `Lần sao lưu gần nhất: ${days} ngày trước (${new Date(lastTime).toLocaleDateString('vi-VN')})`;
+    }
+  }
+
+  if (badge) {
+    if (!lastTime) {
+      badge.textContent = 'Chưa sao lưu';
+      badge.style.background = 'rgba(255,149,0,0.18)';
+      badge.style.color = '#FF9500';
+      badge.style.borderColor = 'rgba(255,149,0,0.3)';
+    } else if (days >= 7) {
+      badge.textContent = 'Cần sao lưu';
+      badge.style.background = 'rgba(255,59,48,0.18)';
+      badge.style.color = '#FF3B30';
+      badge.style.borderColor = 'rgba(255,59,48,0.3)';
+    } else {
+      badge.textContent = 'Đã an toàn';
+      badge.style.background = 'rgba(52,199,89,0.18)';
+      badge.style.color = '#34C759';
+      badge.style.borderColor = 'rgba(52,199,89,0.3)';
+    }
+  }
+
+  const homeBanner = $('#home-backup-reminder');
+  if (homeBanner) {
+    if (days >= 7 || !lastTime) {
+      homeBanner.style.display = 'block';
+      homeBanner.innerHTML = `
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:rgba(255,149,0,0.12);border:1px solid rgba(255,149,0,0.28);border-radius:14px;margin-bottom:12px;cursor:pointer" onclick="goTab('tab-fam')">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:16px">💾</span>
+            <span style="font-size:12px;color:var(--txt)">${days >= 7 ? `Đã ${days} ngày chưa sao lưu dữ liệu gia đình` : 'Hãy tạo bản sao lưu dữ liệu đầu tiên'}</span>
+          </div>
+          <span style="font-size:11px;font-weight:600;color:var(--tint)">Sao lưu ➔</span>
+        </div>
+      `;
+    } else {
+      homeBanner.style.display = 'none';
+    }
+  }
+}
+
+/* ==========================================================================
+   INDEXEDDB RECEIPT STORAGE & SMART AUTO-COMPRESSION (Ưu tiên 2)
+   ========================================================================== */
+const ReceiptDB = {
+  db: null,
+  async init() {
+    if (!window.indexedDB) return null;
+    return new Promise(resolve => {
+      const req = indexedDB.open('ViDoi_Receipts_Store', 1);
+      req.onupgradeneeded = e => {
+        const db = e.target.result;
+        if (!db.objectStoreNames.contains('receipts')) {
+          db.createObjectStore('receipts', { keyPath: 'id' });
+        }
+      };
+      req.onsuccess = e => {
+        ReceiptDB.db = e.target.result;
+        resolve(ReceiptDB.db);
+      };
+      req.onerror = () => resolve(null);
+    });
+  },
+
+  async saveReceipt(id, dataUrl) {
+    if (!id || !dataUrl) return false;
+    if (!ReceiptDB.db) await ReceiptDB.init();
+    if (!ReceiptDB.db) return false;
+    return new Promise(resolve => {
+      try {
+        const tx = ReceiptDB.db.transaction('receipts', 'readwrite');
+        tx.objectStore('receipts').put({ id, data: dataUrl, updatedAt: Date.now() });
+        tx.oncomplete = () => resolve(true);
+        tx.onerror = () => resolve(false);
+      } catch (e) {
+        resolve(false);
+      }
+    });
+  },
+
+  async getReceipt(id) {
+    if (!id) return null;
+    if (!ReceiptDB.db) await ReceiptDB.init();
+    if (!ReceiptDB.db) return null;
+    return new Promise(resolve => {
+      try {
+        const tx = ReceiptDB.db.transaction('receipts', 'readonly');
+        const req = tx.objectStore('receipts').get(id);
+        req.onsuccess = () => resolve(req.result ? req.result.data : null);
+        req.onerror = () => resolve(null);
+      } catch (e) {
+        resolve(null);
+      }
+    });
+  },
+
+  async deleteReceipt(id) {
+    if (!id) return;
+    if (!ReceiptDB.db) await ReceiptDB.init();
+    if (!ReceiptDB.db) return;
+    try {
+      const tx = ReceiptDB.db.transaction('receipts', 'readwrite');
+      tx.objectStore('receipts').delete(id);
+    } catch (e) {}
+  },
+
+  async migrateFromDB() {
+    if (!DB || !Array.isArray(DB.transactions)) return;
+    let migrated = 0;
+    for (const t of DB.transactions) {
+      if (t.receipt && typeof t.receipt === 'string' && t.receipt.startsWith('data:image')) {
+        const rcptId = 'rcpt_' + t.id;
+        await ReceiptDB.saveReceipt(rcptId, t.receipt);
+        t.receipt = rcptId;
+        migrated++;
+      }
+    }
+    if (migrated > 0) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(DB));
+    }
+  }
+};
+
+/* ==========================================================================
+   E2EE END-TO-END ENCRYPTION (Web Crypto AES-GCM-256 with PBKDF2) (Ưu tiên 1)
+   ========================================================================== */
+const E2EE = {
+  async getKey(pin, saltStr) {
+    if (!window.crypto || !crypto.subtle) return null;
+    try {
+      const enc = new TextEncoder();
+      const pinKey = await crypto.subtle.importKey(
+        'raw',
+        enc.encode(pin || '8686'),
+        { name: 'PBKDF2' },
+        false,
+        ['deriveKey']
+      );
+      return await crypto.subtle.deriveKey(
+        {
+          name: 'PBKDF2',
+          salt: enc.encode(saltStr || 'ViDoi_Salt_Bao_Oanh'),
+          iterations: 100000,
+          hash: 'SHA-256'
+        },
+        pinKey,
+        { name: 'AES-GCM', length: 256 },
+        false,
+        ['encrypt', 'decrypt']
+      );
+    } catch (e) {
+      return null;
+    }
+  },
+
+  async encrypt(dataObj) {
+    if (!window.crypto || !crypto.subtle) return dataObj;
+    try {
+      const pin = getFamilyPin();
+      const code = getCleanFamCode();
+      const key = await this.getKey(pin, 'ViDoi_E2EE_' + code);
+      if (!key) return dataObj;
+      const iv = crypto.getRandomValues(new Uint8Array(12));
+      const enc = new TextEncoder();
+      const plaintext = enc.encode(JSON.stringify(dataObj));
+      const ciphertext = await crypto.subtle.encrypt(
+        { name: 'AES-GCM', iv },
+        key,
+        plaintext
+      );
+      let ivStr = '';
+      for (let i = 0; i < iv.length; i++) ivStr += String.fromCharCode(iv[i]);
+      const cipherArr = new Uint8Array(ciphertext);
+      let cipherStr = '';
+      for (let i = 0; i < cipherArr.length; i++) cipherStr += String.fromCharCode(cipherArr[i]);
+      return {
+        _e2ee: 1,
+        code,
+        iv: btoa(ivStr),
+        cipher: btoa(cipherStr),
+        ts: Date.now()
+      };
+    } catch (e) {
+      console.warn('E2EE encrypt error:', e);
+      return dataObj;
+    }
+  },
+
+  async decrypt(packet) {
+    if (!packet) return null;
+    if (!packet._e2ee || !packet.cipher || !packet.iv) {
+      return packet;
+    }
+    if (!window.crypto || !crypto.subtle) return null;
+    try {
+      const pin = getFamilyPin();
+      const code = getCleanFamCode();
+      const key = await this.getKey(pin, 'ViDoi_E2EE_' + code);
+      if (!key) return null;
+      const ivRaw = atob(packet.iv);
+      const iv = new Uint8Array(ivRaw.length);
+      for (let i = 0; i < ivRaw.length; i++) iv[i] = ivRaw.charCodeAt(i);
+      const cipherRaw = atob(packet.cipher);
+      const ciphertext = new Uint8Array(cipherRaw.length);
+      for (let i = 0; i < cipherRaw.length; i++) ciphertext[i] = cipherRaw.charCodeAt(i);
+
+      const decrypted = await crypto.subtle.decrypt(
+        { name: 'AES-GCM', iv },
+        key,
+        ciphertext
+      );
+      const dec = new TextDecoder();
+      return JSON.parse(dec.decode(decrypted));
+    } catch (e) {
+      console.warn('E2EE decrypt error (Mã PIN hoặc Mã gia đình không khớp):', e);
+      return null;
+    }
+  }
+};
 
 function confirmResetData() {
   confirmDlg(
@@ -4695,8 +5167,9 @@ async function pushCloudSnapshot(manual = false) {
     setCloudStatus('err', 'Đang ngoại tuyến (đã lưu trên máy)');
     return;
   }
-  setCloudStatus('busy', 'Đang đồng bộ...');
-  const payload = buildCompactPayload();
+  setCloudStatus('busy', 'Đang mã hóa E2EE & đồng bộ...');
+  const rawPayload = buildCompactPayload();
+  const payload = await E2EE.encrypt(rawPayload);
   const topic = getCloudTopic();
   const fbProject = (localStorage.getItem('vidoi_fb_project') || '').trim();
   let ok = false;
@@ -4711,14 +5184,14 @@ async function pushCloudSnapshot(manual = false) {
         body: JSON.stringify({
           fields: {
             payload: { stringValue: JSON.stringify(payload) },
-            updatedAt: { integerValue: String(payload.ts) }
+            updatedAt: { integerValue: String(payload.ts || Date.now()) }
           }
         })
       });
       if (fbRes.ok) ok = true;
     }
 
-    // 2. Instant Real-Time Pub/Sub Relay (Secret hashed topic for Bảo & Oanh)
+    // 2. Instant Real-Time Pub/Sub Relay (Secret hashed topic for Bảo & Oanh with E2EE payload)
     const res = await fetch(`https://ntfy.sh/${topic}`, {
       method: 'POST',
       headers: {
@@ -4734,8 +5207,8 @@ async function pushCloudSnapshot(manual = false) {
 
   const timeStr = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
   if (ok) {
-    setCloudStatus('ok', `Đã đồng bộ bảo mật lúc ${timeStr}`);
-    if (manual) toast('Đã đồng bộ dữ liệu lên kênh riêng Bảo & Oanh 🔐✅');
+    setCloudStatus('ok', `Đã mã hóa E2EE & đồng bộ lúc ${timeStr}`);
+    if (manual) toast('Đã đồng bộ bảo mật E2EE kênh riêng Bảo & Oanh 🔐✅');
   } else {
     setCloudStatus('err', 'Lưu trên máy (chờ kết nối mạng)');
   }
@@ -4748,7 +5221,7 @@ async function syncCloudNow(manual = false) {
     if (manual) toast('Bạn đang offline — dữ liệu vẫn an toàn trên máy');
     return;
   }
-  setCloudStatus('busy', 'Đang kiểm tra đám mây...');
+  setCloudStatus('busy', 'Đang giải mã đám mây...');
   const topic = getCloudTopic();
   const fbProject = (localStorage.getItem('vidoi_fb_project') || '').trim();
   let mergedAny = false;
@@ -4762,8 +5235,11 @@ async function syncCloudNow(manual = false) {
         const doc = await fbRes.json();
         const raw = doc && doc.fields && doc.fields.payload && doc.fields.payload.stringValue;
         if (raw) {
-          const remote = JSON.parse(raw);
-          if (mergeCloudPayload(remote, true)) mergedAny = true;
+          try {
+            let remote = JSON.parse(raw);
+            if (remote && remote._e2ee) remote = await E2EE.decrypt(remote);
+            if (remote && mergeCloudPayload(remote, true)) mergedAny = true;
+          } catch (e) {}
         }
       }
     }
@@ -4777,8 +5253,9 @@ async function syncCloudNow(manual = false) {
         try {
           const ev = JSON.parse(line);
           if (ev && ev.event === 'message' && ev.message) {
-            const remote = JSON.parse(ev.message);
-            if (mergeCloudPayload(remote, true)) mergedAny = true;
+            let remote = JSON.parse(ev.message);
+            if (remote && remote._e2ee) remote = await E2EE.decrypt(remote);
+            if (remote && mergeCloudPayload(remote, true)) mergedAny = true;
           }
         } catch (e) {}
       }
@@ -4792,7 +5269,7 @@ async function syncCloudNow(manual = false) {
     // Also push current merged snapshot so both phones converge
     await pushCloudSnapshot(false);
     if (manual) {
-      toast(mergedAny ? 'Đã nhận & gộp dữ liệu mới từ máy kia 💑' : 'Cả 2 điện thoại Bảo & Oanh đã khớp dữ liệu ✅');
+      toast(mergedAny ? 'Đã nhận & giải mã E2EE từ máy kia 💑' : 'Cả 2 điện thoại Bảo & Oanh đã khớp dữ liệu ✅');
     }
   } catch (err) {
     setCloudStatus('err', 'Chưa kết nối được đám mây');
@@ -4929,15 +5406,16 @@ function startCloudListener() {
       const timeStr = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
       setCloudStatus('ok', `Kênh riêng Bảo & Oanh (${getCleanFamCode()}) • ${timeStr}`);
     };
-    sse.onmessage = ev => {
+    sse.onmessage = async ev => {
       try {
         const data = JSON.parse(ev.data);
         if (data && data.message) {
-          const remote = JSON.parse(data.message);
+          let remote = JSON.parse(data.message);
+          if (remote && remote._e2ee) remote = await E2EE.decrypt(remote);
           if (remote && remote.deviceId !== CLOUD.deviceId) {
             mergeCloudPayload(remote, false);
             const timeStr = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-            setCloudStatus('ok', `Vừa nhận từ người thương lúc ${timeStr}`);
+            setCloudStatus('ok', `Vừa nhận mã hóa E2EE từ người thương lúc ${timeStr}`);
           }
         }
       } catch (err) {}
@@ -5223,6 +5701,11 @@ if (params.get('join')) {
 initAuthGate();
 setupSegmentedControls();
 renderApp();
+if (window.indexedDB) {
+  ReceiptDB.init().then(() => {
+    ReceiptDB.migrateFromDB();
+  });
+}
 if (AUTH.unlocked) {
   startCloudListener();
   setTimeout(() => syncCloudNow(false), 600);
