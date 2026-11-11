@@ -609,22 +609,65 @@
     }
     .sheet-body::-webkit-scrollbar { display: none; }
 
-    /* Amount display & Keypad — 6.9" Pro Max Thumb Reach Ergonomics */
+    /* Amount display & On-Demand Keypad Drawer — 6.9" Pro Max Ergonomics */
+    .amt-box {
+      background: var(--card);
+      border: 2px solid var(--card-border);
+      border-radius: 22px;
+      padding: 12px 16px 10px;
+      margin: 6px 0 8px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+      box-shadow: var(--sh);
+      position: relative;
+    }
+    .amt-box.active {
+      border-color: var(--coral);
+      box-shadow: 0 0 0 4px var(--ic), var(--sh);
+    }
+    .amt-hint-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--coral);
+      background: var(--ic);
+      padding: 3px 10px;
+      border-radius: 12px;
+      margin-top: 2px;
+    }
     .amount {
       font-size: 40px;
       font-weight: 800;
       text-align: center;
-      margin: 4px 0;
+      margin: 2px 0;
       letter-spacing: -1.2px;
       font-variant-numeric: tabular-nums;
-      min-height: 50px;
+      min-height: 48px;
       color: var(--txt);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
     }
     .amount small {
       font-size: 20px;
       font-weight: 600;
       color: var(--mut);
     }
+    .amt-caret {
+      display: none;
+      width: 2.5px;
+      height: 34px;
+      background: var(--coral);
+      border-radius: 2px;
+      animation: blinkCaret 1s step-end infinite;
+    }
+    .amt-box.active .amt-caret { display: inline-block; }
+    @keyframes blinkCaret { 50% { opacity: 0; } }
+
     .quick-amounts {
       display: flex;
       gap: 7px;
@@ -643,15 +686,53 @@
     }
     .q-btn:active { background: var(--sep); transform: scale(0.95); }
 
-    /* Calculator Pad (52px tall keys for iPhone 16/18 Pro Max) */
+    /* On-Demand Slide-Up Calculator Pad Drawer (Hidden until needed) */
+    .keypad-drawer {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 95;
+      background: var(--tab-glass);
+      backdrop-filter: blur(30px) saturate(190%);
+      -webkit-backdrop-filter: blur(30px) saturate(190%);
+      border-top: 1px solid var(--card-border);
+      border-radius: 26px 26px 0 0;
+      padding: 10px 14px calc(var(--sab) + 12px);
+      box-shadow: 0 -14px 40px rgba(0, 0, 0, 0.22);
+      transform: translateY(108%);
+      pointer-events: none;
+      transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .keypad-drawer.open {
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+    .keypad-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      padding: 0 4px;
+    }
+    .keypad-done-btn {
+      background: linear-gradient(135deg, var(--coral), var(--coral2));
+      color: #fff;
+      font-weight: 800;
+      font-size: 13px;
+      padding: 6px 16px;
+      border-radius: 14px;
+      cursor: pointer;
+      border: 0;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
     .pad {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
       gap: 8px;
-      margin-top: 8px;
     }
     .pad button {
-      height: 52px;
+      height: 50px;
       font-size: 20px;
       border: 1px solid var(--card-border);
       border-radius: 16px;
@@ -1009,11 +1090,25 @@
       color: #fff;
       box-shadow: 0 0 0 3px rgba(255, 126, 182, 0.22);
     }
+    .auth-pin-trigger {
+      background: rgba(255, 255, 255, 0.07);
+      border: 1.5px solid rgba(255, 255, 255, 0.2);
+      border-radius: 18px;
+      padding: 12px 14px 10px;
+      margin: 10px 0;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .auth-pin-trigger.active {
+      border-color: var(--coral);
+      background: rgba(255, 255, 255, 0.12);
+      box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.12);
+    }
     .auth-pin-dots {
       display: flex;
       justify-content: center;
-      gap: 12px;
-      margin: 14px 0 16px;
+      gap: 14px;
+      margin: 10px 0 6px;
     }
     .auth-pin-dot {
       width: 15px;
@@ -1028,14 +1123,25 @@
       border-color: var(--coral);
       transform: scale(1.12);
     }
+    .auth-pad-drawer {
+      max-height: 0;
+      opacity: 0;
+      overflow: hidden;
+      transition: max-height 0.3s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.22s ease, margin-top 0.22s ease;
+      margin-top: 0;
+    }
+    .auth-pad-drawer.open {
+      max-height: 290px;
+      opacity: 1;
+      margin-top: 8px;
+    }
     .auth-pad {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 10px;
-      margin-top: 6px;
     }
     .auth-key {
-      height: 50px;
+      height: 48px;
       border-radius: 14px;
       background: rgba(255, 255, 255, 0.1);
       border: 1px solid rgba(255, 255, 255, 0.08);
@@ -1050,6 +1156,30 @@
     .auth-key:active {
       background: rgba(255, 107, 107, 0.45);
       transform: scale(0.96);
+    }
+    /* Tap-to-type Pill Trigger (No accidental keyboard popup while scrolling) */
+    .tap-input-pill {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      background: var(--card);
+      border: 1.5px solid var(--card-border);
+      border-radius: 16px;
+      padding: 11px 14px;
+      margin: 8px 0;
+      cursor: pointer;
+      color: var(--mut);
+      font-size: 14px;
+      font-weight: 500;
+      box-shadow: var(--sh);
+      transition: border-color 0.2s;
+    }
+    .tap-input-pill:active { transform: scale(0.99); }
+    .input[readonly] {
+      cursor: pointer;
+      background: var(--fill);
+      border-color: transparent;
     }
   </style>
 </head>
@@ -1066,40 +1196,47 @@
       <div style="font-size:12px;color:rgba(255,255,255,0.72);margin-top:3px">Ứng dụng nội bộ riêng tư. Chỉ vợ chồng Bảo & Oanh mới có quyền truy cập.</div>
 
       <div class="auth-role-pick">
-        <div class="auth-role-btn on him" id="auth-role-him" onclick="selectAuthRole('him')">
+        <div class="auth-role-btn on him" id="auth-role-him" onclick="selectAuthRole('him', true)">
           <div>👨 Tôi là Bảo</div>
           <div style="font-size:10px;opacity:0.8;font-weight:600;margin-top:2px">📱 iPhone 16 Pro Max · Titanium</div>
         </div>
-        <div class="auth-role-btn her" id="auth-role-her" onclick="selectAuthRole('her')">
+        <div class="auth-role-btn her" id="auth-role-her" onclick="selectAuthRole('her', true)">
           <div>👩 Tôi là Oanh</div>
           <div style="font-size:10px;opacity:0.8;font-weight:600;margin-top:2px">✨ iPhone 18 Pro Max · Liquid Glass</div>
         </div>
       </div>
 
-      <div style="font-size:12px;color:rgba(255,255,255,0.8)" id="auth-prompt-lbl">Nhập Mã PIN Gia Đình (4 số)</div>
-      <div class="auth-pin-dots" id="auth-pin-dots">
-        <span class="auth-pin-dot"></span>
-        <span class="auth-pin-dot"></span>
-        <span class="auth-pin-dot"></span>
-        <span class="auth-pin-dot"></span>
+      <!-- Tap-to-open PIN Box (Keypad only appears when tapped) -->
+      <div class="auth-pin-trigger" id="auth-pin-trigger" onclick="openAuthPad()">
+        <div style="font-size:12px;color:rgba(255,255,255,0.88);font-weight:600" id="auth-prompt-lbl">🔐 Chạm vào đây để nhập Mã PIN (4 số)</div>
+        <div class="auth-pin-dots" id="auth-pin-dots">
+          <span class="auth-pin-dot"></span>
+          <span class="auth-pin-dot"></span>
+          <span class="auth-pin-dot"></span>
+          <span class="auth-pin-dot"></span>
+        </div>
+        <div style="font-size:10.5px;color:rgba(255,255,255,0.6)" id="auth-pad-hint">Bàn phím số chỉ hiện khi bạn chạm để nhập</div>
       </div>
 
-      <div class="auth-pad">
-        <div class="auth-key" onclick="pressAuthPin('1')">1</div>
-        <div class="auth-key" onclick="pressAuthPin('2')">2</div>
-        <div class="auth-key" onclick="pressAuthPin('3')">3</div>
-        <div class="auth-key" onclick="pressAuthPin('4')">4</div>
-        <div class="auth-key" onclick="pressAuthPin('5')">5</div>
-        <div class="auth-key" onclick="pressAuthPin('6')">6</div>
-        <div class="auth-key" onclick="pressAuthPin('7')">7</div>
-        <div class="auth-key" onclick="pressAuthPin('8')">8</div>
-        <div class="auth-key" onclick="pressAuthPin('9')">9</div>
-        <div class="auth-key" style="font-size:12px;color:#bbb" onclick="clearAuthPin()">Xóa</div>
-        <div class="auth-key" onclick="pressAuthPin('0')">0</div>
-        <div class="auth-key" style="font-size:16px" onclick="backspaceAuthPin()">⌫</div>
+      <div class="auth-pad-drawer" id="auth-pad-drawer">
+        <div class="auth-pad">
+          <div class="auth-key" onclick="pressAuthPin('1')">1</div>
+          <div class="auth-key" onclick="pressAuthPin('2')">2</div>
+          <div class="auth-key" onclick="pressAuthPin('3')">3</div>
+          <div class="auth-key" onclick="pressAuthPin('4')">4</div>
+          <div class="auth-key" onclick="pressAuthPin('5')">5</div>
+          <div class="auth-key" onclick="pressAuthPin('6')">6</div>
+          <div class="auth-key" onclick="pressAuthPin('7')">7</div>
+          <div class="auth-key" onclick="pressAuthPin('8')">8</div>
+          <div class="auth-key" onclick="pressAuthPin('9')">9</div>
+          <div class="auth-key" style="font-size:12px;color:#bbb" onclick="clearAuthPin()">Xóa</div>
+          <div class="auth-key" onclick="pressAuthPin('0')">0</div>
+          <div class="auth-key" style="font-size:16px" onclick="backspaceAuthPin()">⌫</div>
+        </div>
+        <div style="margin-top:8px;font-size:11.5px;color:rgba(255,255,255,0.65);cursor:pointer;padding:4px" onclick="closeAuthPad()">⌄ Ẩn bàn phím số</div>
       </div>
 
-      <label style="display:flex;align-items:center;justify-content:center;gap:6px;margin-top:14px;font-size:12px;color:rgba(255,255,255,0.78);cursor:pointer">
+      <label style="display:flex;align-items:center;justify-content:center;gap:6px;margin-top:12px;font-size:12px;color:rgba(255,255,255,0.78);cursor:pointer">
         <input type="checkbox" id="auth-remember-chk" checked style="accent-color:var(--coral)">
         Ghi nhớ điện thoại cá nhân này của tôi
       </label>
@@ -1229,8 +1366,14 @@
 
   <!-- ==================== 2. TAB TRANSACTIONS (SỔ GIAO DỊCH) ==================== -->
   <div class="scr" id="tab-tx">
-    <h1>Sổ giao dịch</h1>
-    <input class="input" id="search-input" placeholder="🔍 Tìm kiếm giao dịch, danh mục, ghi chú…" oninput="onSearch(this.value)">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+      <h1 style="margin:0">Sổ giao dịch</h1>
+      <div class="chip" id="search-toggle-btn" onclick="openSearchBar()">🔍 Tìm kiếm</div>
+    </div>
+    <div id="search-bar-wrap" style="display:none;align-items:center;gap:8px;margin-bottom:8px">
+      <input class="input" id="search-input" enterkeyhint="search" placeholder="🔍 Gõ tên giao dịch, danh mục, ghi chú…" style="margin:0;flex:1" oninput="onSearch(this.value)" onkeydown="if(event.key==='Enter')this.blur()">
+      <span class="link" style="white-space:nowrap;padding:6px 4px" onclick="closeSearchBar()">Đóng</span>
+    </div>
     <div class="hs" id="tx-filter-chips"></div>
     <div id="tx-list"></div>
   </div>
@@ -1341,9 +1484,14 @@
         </div>
       </div>
 
-      <div style="display:flex;gap:8px;align-items:center;margin-top:8px">
-        <input class="input" id="join-code-input" placeholder="Nhập mã 6 ký tự của Vợ/Chồng…" maxlength="8" style="margin:0;text-transform:uppercase;font-weight:700;letter-spacing:1px">
+      <div id="join-code-trigger" class="tap-input-pill" onclick="openJoinCodeInput()" style="margin:8px 0 0">
+        <span>🔗 Nhập mã 6 ký tự của Vợ/Chồng để ghép đôi…</span>
+        <b style="color:var(--coral);font-size:12px">Nhập mã ⌨️</b>
+      </div>
+      <div id="join-code-wrap" style="display:none;gap:8px;align-items:center;margin-top:8px">
+        <input class="input" id="join-code-input" enterkeyhint="done" placeholder="Nhập mã 6 ký tự (VD: BO8686)…" maxlength="8" style="margin:0;text-transform:uppercase;font-weight:700;letter-spacing:1px" onkeydown="if(event.key==='Enter'){this.blur();joinFamilyByCode();}">
         <button class="btn sm" style="white-space:nowrap" onclick="joinFamilyByCode()">Liên kết</button>
+        <span class="sub clickable" style="padding:4px" onclick="closeJoinCodeInput()">✕</span>
       </div>
       <div class="sub" style="margin-top:6px" id="fam-sync-sub">Hai máy nhập chung Mã Gia Đình (hoặc quét QR) sẽ tự động đồng bộ chi tiêu tức thì qua Internet.</div>
     </div>
@@ -1424,15 +1572,18 @@
     </div>
 
     <div class="card">
-      <h2>Hồ sơ hai vợ chồng</h2>
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <h2>Hồ sơ hai vợ chồng</h2>
+        <span class="sub">Chạm ô để sửa ⌨️</span>
+      </div>
       <div style="display:flex;gap:10px;margin-top:8px">
         <div style="flex:1">
           <div class="sub">Tên Chồng</div>
-          <input class="input" id="cfg-name-him" value="Bảo" maxlength="12" onchange="saveProfileNames()">
+          <input class="input" id="cfg-name-him" value="Bảo" maxlength="12" readonly onclick="activateTextInput(this)" onblur="this.readOnly=true;saveProfileNames()" onkeydown="if(event.key==='Enter')this.blur()">
         </div>
         <div style="flex:1">
           <div class="sub">Tên Vợ</div>
-          <input class="input" id="cfg-name-her" value="Oanh" maxlength="12" onchange="saveProfileNames()">
+          <input class="input" id="cfg-name-her" value="Oanh" maxlength="12" readonly onclick="activateTextInput(this)" onblur="this.readOnly=true;saveProfileNames()" onkeydown="if(event.key==='Enter')this.blur()">
         </div>
       </div>
     </div>
@@ -1441,7 +1592,7 @@
       <h2>🔐 Bảo mật độc quyền (Chỉ Bảo & Oanh)</h2>
       <div class="sub" style="margin-bottom:8px">Mã PIN Gia Đình (4 chữ số) bảo vệ ứng dụng và tạo kênh đám mây bí mật chỉ 2 máy của Bảo & Oanh mới giải mã được:</div>
       <div style="display:flex;gap:8px;align-items:center">
-        <input class="input" id="cfg-family-pin" type="password" inputmode="numeric" maxlength="4" placeholder="Mã PIN 4 số (mặc định: 2611)" style="margin:0;letter-spacing:4px;font-weight:700;text-align:center">
+        <input class="input" id="cfg-family-pin" type="password" inputmode="numeric" maxlength="4" readonly onclick="activateTextInput(this)" onblur="this.readOnly=true" onkeydown="if(event.key==='Enter'){this.blur();changeFamilyPin();}" placeholder="Chạm nhập PIN 4 số mới" style="margin:0;letter-spacing:3px;font-weight:700;text-align:center">
         <button class="btn sm" style="white-space:nowrap" onclick="changeFamilyPin()">Đổi mã PIN</button>
       </div>
       <div class="tog" style="margin-top:8px">
@@ -1453,16 +1604,16 @@
 
     <div class="card">
       <h2>☁️ Đồng bộ Đám mây & Ngân hàng</h2>
-      <div class="sub" style="margin-bottom:6px">Mặc định ứng dụng đồng bộ tức thì qua kênh SSE theo Mã Gia Đình. Bạn cũng có thể gắn thêm Google Firebase Project ID riêng:</div>
-      <input class="input" id="cfg-fb-project" placeholder="Firebase Project ID (tùy chọn, vd: vidoi-app)" onchange="saveCloudConfig()">
+      <div class="sub" style="margin-bottom:6px">Mặc định ứng dụng đồng bộ tức thì qua kênh SSE theo Mã Gia Đình. Chạm vào ô khi cần sửa thông tin:</div>
+      <input class="input" id="cfg-fb-project" readonly onclick="activateTextInput(this)" onblur="this.readOnly=true;saveCloudConfig()" onkeydown="if(event.key==='Enter')this.blur()" placeholder="Firebase Project ID (tùy chọn, chạm để nhập)">
       <div style="display:flex;gap:8px;margin-top:4px">
         <div style="flex:1">
           <div class="sub">Ngân hàng nhận bù trừ (VietQR)</div>
-          <input class="input" id="cfg-bank-bin" placeholder="Mã NH (VCB, TCB, MB, ACB…)" value="VCB" onchange="saveBankConfig()">
+          <input class="input" id="cfg-bank-bin" readonly onclick="activateTextInput(this)" onblur="this.readOnly=true;saveBankConfig()" onkeydown="if(event.key==='Enter')this.blur()" placeholder="Mã NH (VCB, TCB…)" value="VCB">
         </div>
         <div style="flex:1">
           <div class="sub">Số tài khoản nhận</div>
-          <input class="input" id="cfg-bank-acc" placeholder="Số tài khoản…" onchange="saveBankConfig()">
+          <input class="input" id="cfg-bank-acc" inputmode="numeric" readonly onclick="activateTextInput(this)" onblur="this.readOnly=true;saveBankConfig()" onkeydown="if(event.key==='Enter')this.blur()" placeholder="Chạm nhập số TK…">
         </div>
       </div>
     </div>
@@ -1544,18 +1695,25 @@
       <b style="font-size:16px">Ghi chép giao dịch</b>
       <span style="color:var(--coral);font-weight:700;cursor:pointer" onclick="saveTransaction()">Lưu</span>
     </div>
-    <div class="sheet-body">
+    <div class="sheet-body" id="add-sheet-body">
       <!-- Kind: Chi / Thu -->
       <div class="seg" id="add-kind-seg">
         <div class="on">Chi tiêu</div>
         <div>Thu nhập</div>
       </div>
 
-      <!-- Amount -->
-      <div class="amount" id="add-amt-display">0 <small>₫</small></div>
-      <div class="sub center" id="add-amt-eval" style="min-height:16px;margin-bottom:4px"></div>
+      <!-- Interactive Amount Box: Tapping opens the slide-up numeric keypad -->
+      <div class="amt-box" id="add-amt-box" onclick="toggleNumberPad()">
+        <div class="sub" style="font-size:11.5px">Số tiền giao dịch</div>
+        <div class="amount">
+          <span id="add-amt-display">0 <small>₫</small></span>
+          <span class="amt-caret"></span>
+        </div>
+        <div class="sub center" id="add-amt-eval" style="min-height:14px"></div>
+        <div class="amt-hint-pill" id="add-amt-hint">⌨️ Chạm để mở bàn phím số</div>
+      </div>
 
-      <!-- Quick Amount Suggestions -->
+      <!-- Quick Amount Suggestions (Works immediately without opening keyboard) -->
       <div class="quick-amounts">
         <div class="q-btn" onclick="addAmountFast(50000)">+50k</div>
         <div class="q-btn" onclick="addAmountFast(100000)">+100k</div>
@@ -1567,8 +1725,8 @@
       <!-- Categories Grid -->
       <div class="grid-cats" id="add-cats-grid"></div>
 
-      <!-- Note Input -->
-      <input class="input" id="add-note-input" placeholder="📝 Ghi chú (ví dụ: Cà phê sáng, Đi chợ...)">
+      <!-- Tap-to-Type Note Input (Only opens iOS text keyboard when explicitly tapped) -->
+      <input class="input" id="add-note-input" enterkeyhint="done" readonly placeholder="📝 Chạm để nhập ghi chú (ví dụ: Cà phê sáng, Đi chợ...)" onclick="openNoteKeyboard(this)" onblur="this.readOnly=true" onkeydown="if(event.key==='Enter')this.blur()">
 
       <!-- Attributes Selection (Wallet, Date, Who, Receipt) -->
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin:4px 0 10px" id="add-chips-bar"></div>
@@ -1579,7 +1737,7 @@
       <div id="receipt-remove-btn" class="sub link" style="display:none;margin-bottom:8px" onclick="clearReceipt()">✕ Bỏ ảnh hóa đơn</div>
 
       <!-- Shared & Recurring Toggles -->
-      <div class="card" style="padding:4px 14px">
+      <div class="card" style="padding:4px 14px" onclick="closeNumberPad()">
         <div class="tog">
           <span>👥 Khoản chi chung <span class="sub" id="add-shared-hint">· cả hai cùng thấy</span></span>
           <div class="sw on" id="sw-add-shared" onclick="toggleAddShared()"><i></i></div>
@@ -1590,9 +1748,19 @@
         </div>
       </div>
 
-      <!-- Calculator Keypad -->
+      <button class="btn" style="margin:14px 0 28px" onclick="saveTransaction()">Lưu giao dịch</button>
+    </div>
+
+    <!-- On-Demand Slide-Up Calculator Keypad Drawer (Only appears when entering numbers) -->
+    <div class="keypad-drawer" id="keypad-drawer">
+      <div class="keypad-bar">
+        <span style="font-size:12.5px;font-weight:700;color:var(--mut)">🔢 Bàn phím nhập số & tính toán</span>
+        <div style="display:flex;gap:8px;align-items:center">
+          <span class="chip" style="padding:5px 10px;font-size:12px" onclick="onKeypadPress('C')">Xóa (C)</span>
+          <button class="keypad-done-btn" onclick="closeNumberPad()">Xong ✓</button>
+        </div>
+      </div>
       <div class="pad" id="keypad"></div>
-      <button class="btn" style="margin:14px 0 24px" onclick="saveTransaction()">Lưu giao dịch</button>
     </div>
   </div>
 
@@ -1638,8 +1806,8 @@
       </div>
       <div style="padding:6px 16px 0;text-align:left">
         <div style="display:flex;gap:6px">
-          <input class="input" id="vietqr-bank-input" placeholder="Ngân hàng (VCB, TCB, MB…)" style="margin:4px 0;padding:8px 10px;font-size:13px;width:42%" onchange="updateVietQRModal()">
-          <input class="input" id="vietqr-acc-input" placeholder="Số tài khoản nhận…" style="margin:4px 0;padding:8px 10px;font-size:13px;width:58%" onchange="updateVietQRModal()">
+          <input class="input" id="vietqr-bank-input" readonly onclick="activateTextInput(this)" onblur="this.readOnly=true;updateVietQRModal()" onkeydown="if(event.key==='Enter')this.blur()" placeholder="Ngân hàng (VCB, TCB…)" style="margin:4px 0;padding:8px 10px;font-size:13px;width:42%">
+          <input class="input" id="vietqr-acc-input" inputmode="numeric" readonly onclick="activateTextInput(this)" onblur="this.readOnly=true;updateVietQRModal()" onkeydown="if(event.key==='Enter')this.blur()" placeholder="Chạm nhập số TK…" style="margin:4px 0;padding:8px 10px;font-size:13px;width:58%">
         </div>
       </div>
       <div style="padding:8px 16px 0;display:flex;gap:8px">
@@ -2528,6 +2696,85 @@ function contributeGoal(idx, amount) {
 }
 
 /* ==========================================================================
+   ON-DEMAND KEYBOARD & KEYPAD CONTROLLERS (CHỈ HIỆN KHI CẦN NHẬP SỐ / CHỮ)
+   ========================================================================== */
+function openNumberPad() {
+  if ($('#add-note-input')) {
+    $('#add-note-input').blur();
+    $('#add-note-input').readOnly = true;
+  }
+  if ($('#keypad-drawer')) $('#keypad-drawer').classList.add('open');
+  if ($('#add-amt-box')) $('#add-amt-box').classList.add('active');
+  if ($('#add-amt-hint')) $('#add-amt-hint').textContent = '⌨️ Đang nhập số · Bấm "Xong ✓" để ẩn bàn phím';
+}
+
+function closeNumberPad() {
+  if ($('#keypad-drawer')) $('#keypad-drawer').classList.remove('open');
+  if ($('#add-amt-box')) $('#add-amt-box').classList.remove('active');
+  if ($('#add-amt-hint')) $('#add-amt-hint').textContent = '⌨️ Chạm để mở bàn phím số';
+}
+
+function toggleNumberPad() {
+  const drawer = $('#keypad-drawer');
+  if (drawer && drawer.classList.contains('open')) {
+    closeNumberPad();
+  } else {
+    openNumberPad();
+  }
+}
+
+function openNoteKeyboard(inputEl) {
+  closeNumberPad();
+  if (!inputEl) return;
+  inputEl.readOnly = false;
+  inputEl.focus();
+}
+
+function activateTextInput(inputEl) {
+  if (!inputEl) return;
+  inputEl.readOnly = false;
+  inputEl.focus();
+}
+
+function openSearchBar() {
+  if ($('#search-bar-wrap')) $('#search-bar-wrap').style.display = 'flex';
+  if ($('#search-toggle-btn')) $('#search-toggle-btn').style.display = 'none';
+  const inp = $('#search-input');
+  if (inp) {
+    inp.readOnly = false;
+    inp.focus();
+  }
+}
+
+function closeSearchBar() {
+  const inp = $('#search-input');
+  if (inp) {
+    inp.value = '';
+    inp.blur();
+  }
+  onSearch('');
+  if ($('#search-bar-wrap')) $('#search-bar-wrap').style.display = 'none';
+  if ($('#search-toggle-btn')) $('#search-toggle-btn').style.display = 'inline-flex';
+}
+
+function openJoinCodeInput() {
+  if ($('#join-code-trigger')) $('#join-code-trigger').style.display = 'none';
+  if ($('#join-code-wrap')) $('#join-code-wrap').style.display = 'flex';
+  const inp = $('#join-code-input');
+  if (inp) {
+    inp.readOnly = false;
+    inp.focus();
+  }
+}
+
+function closeJoinCodeInput() {
+  const inp = $('#join-code-input');
+  if (inp) inp.blur();
+  if ($('#join-code-wrap')) $('#join-code-wrap').style.display = 'none';
+  if ($('#join-code-trigger')) $('#join-code-trigger').style.display = 'flex';
+}
+
+/* ==========================================================================
    ADD TRANSACTION SHEET & KEYPAD
    ========================================================================== */
 function openAddSheet(editTx = null) {
@@ -2542,7 +2789,13 @@ function openAddSheet(editTx = null) {
   STATE.addWalletId = editTx ? editTx.wallet : defaultWallet;
   STATE.addDay = editTx ? editTx.day : new Date().getDate();
   STATE.addReceipt = editTx ? editTx.receipt : null;
-  $('#add-note-input').value = editTx ? (editTx.note || '') : '';
+  const noteInp = $('#add-note-input');
+  if (noteInp) {
+    noteInp.value = editTx ? (editTx.note || '') : '';
+    noteInp.readOnly = true;
+    noteInp.blur();
+  }
+  closeNumberPad();
   if (STATE.addReceipt) {
     $('#receipt-preview-img').src = STATE.addReceipt;
     $('#receipt-preview-img').style.display = 'block';
@@ -2565,6 +2818,11 @@ function openAddSheet(editTx = null) {
 }
 
 function closeAddSheet() {
+  closeNumberPad();
+  if ($('#add-note-input')) {
+    $('#add-note-input').blur();
+    $('#add-note-input').readOnly = true;
+  }
   $('#add-sheet').classList.remove('on');
   $('#sheet-scrim').classList.remove('on');
 }
@@ -2579,6 +2837,7 @@ function renderAddCats() {
 }
 
 function selectAddCat(i) {
+  closeNumberPad();
   STATE.addCatIdx = i;
   $$('.cat-item').forEach((elem, idx) => elem.classList.toggle('on', idx === i));
 }
@@ -2587,10 +2846,10 @@ function renderAddChips() {
   const w = DB.wallets.find(x => x.id === STATE.addWalletId) || DB.wallets[0];
   const u = DB.users[STATE.addWho];
   $('#add-chips-bar').innerHTML = `
-    <div class="chip" onclick="cycleAddWallet()">${w.icon} ${w.name}</div>
-    <div class="chip" onclick="cycleAddWho()"><span class="av s" style="background:${u.color}">${u.name[0]}</span> ${u.name} chi</div>
-    <div class="chip" onclick="cycleAddDay()">📅 Ngày ${STATE.addDay}</div>
-    <div class="chip ${STATE.addReceipt ? 'on' : ''}" onclick="$('#receipt-file-input').click()">
+    <div class="chip" onclick="closeNumberPad();cycleAddWallet()">${w.icon} ${w.name}</div>
+    <div class="chip" onclick="closeNumberPad();cycleAddWho()"><span class="av s" style="background:${u.color}">${u.name[0]}</span> ${u.name} chi</div>
+    <div class="chip" onclick="closeNumberPad();cycleAddDay()">📅 Ngày ${STATE.addDay}</div>
+    <div class="chip ${STATE.addReceipt ? 'on' : ''}" onclick="closeNumberPad();$('#receipt-file-input').click()">
       📷 ${STATE.addReceipt ? 'Đã đính kèm ảnh' : 'Chụp / Ảnh hóa đơn'}
     </div>
   `;
@@ -2928,7 +3187,7 @@ function openTxDetail(id) {
         `}).join('') || '<div class="sub">Chưa có bình luận nào. Hỏi han nhẹ nhàng nhé ❤️</div>'}
       </div>
       <div style="display:flex;gap:8px;margin-top:10px">
-        <input class="input" id="comment-input" placeholder="Viết bình luận..." style="margin:0" onkeydown="if(event.key==='Enter')sendComment()">
+        <input class="input" id="comment-input" enterkeyhint="send" readonly onclick="activateTextInput(this)" onblur="this.readOnly=true" placeholder="💬 Chạm để viết bình luận..." style="margin:0" onkeydown="if(event.key==='Enter'){this.blur();sendComment();}">
         <button class="btn sm" style="width:72px" onclick="sendComment()">Gửi</button>
       </div>
     </div>
@@ -3017,11 +3276,24 @@ function hashSecretTopic(code, pin) {
   return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36);
 }
 
-function selectAuthRole(role) {
+function openAuthPad() {
+  if ($('#auth-pad-drawer')) $('#auth-pad-drawer').classList.add('open');
+  if ($('#auth-pin-trigger')) $('#auth-pin-trigger').classList.add('active');
+  if ($('#auth-pad-hint')) $('#auth-pad-hint').textContent = 'Nhập 4 chữ số Mã PIN Gia Đình';
+}
+
+function closeAuthPad() {
+  if ($('#auth-pad-drawer')) $('#auth-pad-drawer').classList.remove('open');
+  if ($('#auth-pin-trigger')) $('#auth-pin-trigger').classList.remove('active');
+  if ($('#auth-pad-hint')) $('#auth-pad-hint').textContent = 'Bàn phím số chỉ hiện khi bạn chạm để nhập';
+}
+
+function selectAuthRole(role, shouldOpenPad = false) {
   AUTH.selectedRole = role === 'her' ? 'her' : 'him';
   $('#auth-role-him').classList.toggle('on', AUTH.selectedRole === 'him');
   $('#auth-role-her').classList.toggle('on', AUTH.selectedRole === 'her');
   applyDeviceTheme(AUTH.selectedRole);
+  if (shouldOpenPad) openAuthPad();
 }
 
 function updateAuthPinDots() {
@@ -3061,6 +3333,7 @@ function verifyAuthPin() {
       localStorage.setItem('vidoi_trusted_couple', targetPin);
     }
     $('#auth-gate').classList.add('hidden');
+    closeAuthPad();
     AUTH.enteredPin = '';
     updateAuthPinDots();
     renderApp();
@@ -3101,9 +3374,10 @@ function lockAppNow() {
   AUTH.unlocked = false;
   AUTH.enteredPin = '';
   updateAuthPinDots();
-  selectAuthRole(getMyRole());
-  $('#auth-prompt-lbl').textContent = 'Nhập Mã PIN Gia Đình (4 số)';
-  $('#auth-prompt-lbl').style.color = 'rgba(255,255,255,0.8)';
+  closeAuthPad();
+  selectAuthRole(getMyRole(), false);
+  $('#auth-prompt-lbl').textContent = '🔐 Chạm vào đây để nhập Mã PIN (4 số)';
+  $('#auth-prompt-lbl').style.color = 'rgba(255,255,255,0.88)';
   $('#auth-gate').classList.remove('hidden');
 }
 
@@ -3636,6 +3910,7 @@ function joinFamilyByCode() {
   }
   DB.familyCode = code;
   $('#join-code-input').value = '';
+  closeJoinCodeInput();
   localStorage.setItem(STORAGE_KEY, JSON.stringify(DB));
   renderApp();
   startCloudListener();

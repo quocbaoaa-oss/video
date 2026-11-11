@@ -1,4 +1,4 @@
-const CACHE_NAME = 'vidoi-pwa-v6-promax';
+const CACHE_NAME = 'vidoi-pwa-v7-smart-keypad';
 const ASSETS = [
   './',
   './index.html',
