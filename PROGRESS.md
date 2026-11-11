@@ -6,7 +6,8 @@
 - **iOS Native:** iOS 17+ (SwiftUI, tiếng Việt, tiền tệ VND, Apple Developer).
 - **Progressive Web App (PWA):** Đa nền tảng (iOS Safari, Android Chrome, macOS, Windows), chạy Offline độc lập, cài trực tiếp lên Màn hình chính không lo hết hạn chứng chỉ 7 ngày!
 **Kho mã nguồn GitHub:** [https://github.com/quocbaoaa-oss/video](https://github.com/quocbaoaa-oss/video)  
-**Trạng thái hiện tại:** **Hoàn thành xuất sắc cả bản iOS Native và bản Progressive Web App (PWA)!**
+**Địa chỉ Web PWA Trực Tuyến:** [https://quocbaoaa-oss.github.io/video/](https://quocbaoaa-oss.github.io/video/)  
+**Trạng thái hiện tại:** **Hoàn thành xuất sắc cả bản iOS Native và bản Progressive Web App (PWA)! Đã chạy trực tiếp trên GitHub Pages!**
 
 ---
 
