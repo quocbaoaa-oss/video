@@ -1,10 +1,10 @@
 # Báo cáo Tiến độ Dự án — Ví Đôi (App Chi Tiêu Gia Đình)
 
-**Cập nhật mới nhất:** 11/11/2026  
-**Mục tiêu cốt lõi:** Ứng dụng quản lý tài chính và chi tiêu thông minh cho hai vợ chồng (mỗi người một tài khoản riêng, liên kết thành bức tranh tài chính chung công bằng, minh bạch).  
+**Cập nhật mới nhất:** 11/11/2026 (Phiên bản PWA v11)  
+**Mục tiêu cốt lõi:** Ứng dụng quản lý tài chính và chi tiêu thông minh cho hai vợ chồng **Bảo & Oanh** (mỗi người một tài khoản riêng, liên kết thành bức tranh tài chính chung công bằng, minh bạch).  
 **Kho mã nguồn GitHub:** [https://github.com/quocbaoaa-oss/video](https://github.com/quocbaoaa-oss/video)  
 **Địa chỉ Web PWA Trực Tuyến:** [https://quocbaoaa-oss.github.io/video/](https://quocbaoaa-oss.github.io/video/)  
-**Trạng thái hiện tại:** **Đã hoàn thành xuất sắc toàn bộ giai đoạn xây dựng cốt lõi và phát hành trực tuyến thành công bản Progressive Web App (PWA)!**
+**Trạng thái hiện tại:** **Đã hoàn thành toàn diện các nâng cấp kiến trúc nghiệp vụ tài chính, thiết kế UI/UX di động on-demand, hệ thống sự kiện gia đình và đồng bộ mã hóa E2EE!**
 
 ---
 
@@ -12,105 +12,108 @@
 
 Dự án hiện được xây dựng song song trên 2 nền tảng mạnh mẽ:
 
-1. **Progressive Web App (PWA) — Nền tảng chính phục vụ sử dụng thực tế:**
+1. **Progressive Web App (PWA) — Nền tảng chính phục vụ sử dụng thực tế hàng ngày:**
    - Hoạt động mượt mà trên mọi thiết bị: iPhone (iOS Safari), Android (Google Chrome), iPad, macOS và Windows.
-   - **Không bị giới hạn chứng chỉ 7 ngày của Apple**: Cả hai vợ chồng đều cài được trực tiếp vào Màn hình chính mà không cần máy Mac, không cần cắm cáp hay tài khoản Apple Developer.
-   - Hỗ trợ **Offline First** với Service Worker: Mở app và ghi chép chi tiêu mọi lúc mọi nơi kể cả khi mất sóng, không có mạng Internet.
-   - Tự động lưu trữ vĩnh viễn trên thiết bị với `localStorage`, hỗ trợ sao lưu toàn diện dạng file JSON và xuất báo cáo bảng tính CSV.
+   - **Không bị giới hạn chứng chỉ 7 ngày của Apple**: Cả hai vợ chồng đều cài được trực tiếp vào Màn hình chính (Add to Home Screen) mà không cần máy Mac, không cần cắm cáp hay tài khoản Apple Developer.
+   - Hỗ trợ **Offline First** với Service Worker (`vidoi-pwa-v11-transfers-haptics-calendar-love`): Mở app và ghi chép chi tiêu mọi lúc mọi nơi kể cả khi mất sóng, không có mạng Internet.
+   - **Bảo mật đa lớp**: Khóa PIN Gia Đình 4 số, mã hóa đầu cuối E2EE cho kênh truyền realtime đám mây, tự động lưu trữ vĩnh viễn trên thiết bị với `localStorage`/IndexedDB.
 
 2. **Bản iOS Native (SwiftUI 5 / iOS 17+):**
    - Mã nguồn Swift thuần túy, thiết kế theo chuẩn Human Interface Guidelines của Apple.
-   - Đã biên dịch thành công, đạt 100% bài kiểm thử đơn vị (`ViDoiTests`), đã đóng gói nạp trực tiếp qua cáp vào **iPhone 16 Pro ("Quốc Bảo")**.
+   - Đạt 100% bài kiểm thử đơn vị (`ViDoiTests`), đã nạp trực tiếp qua cáp vào **iPhone 16 Pro ("Quốc Bảo")**.
    - Tích hợp sẵn kiến trúc đồng bộ đám mây Firebase (`FirebaseSyncService.swift`).
 
 ---
 
 ## 2. Bảng chi tiết các công việc đã hoàn thành
 
-### 2.1. Bản Progressive Web App (PWA) Trực Tuyến
-| # | Hạng mục công việc | File triển khai | Trạng thái |
+### 2.1. Nâng cấp UI/UX & Nghiệp vụ Mới Nhất (Phiên bản v11)
+| # | Hạng mục công việc | Mô tả chi tiết kỹ thuật | Trạng thái |
 |---|---|---|---|
-| 1 | Xây dựng ứng dụng PWA đơn trang (SPA) đầy đủ 5 màn hình: Tổng quan (Home), Sổ giao dịch (Transactions), Thêm nhanh (Add modal), Ngân sách & Báo cáo (Budget & Reports), Cân đối & Gia đình (Balance & Family) | `index.html` | **Hoàn thành** |
-| 2 | Cấu hình Web App Manifest (`standalone`, theme màu `#FF6B6B`, icon, shortcuts ghi nhanh & báo cáo) | `manifest.webmanifest`, `manifest.json` | **Hoàn thành** |
-| 3 | Lập trình Service Worker quản lý bộ nhớ đệm (Caching Stale-While-Revalidate), đảm bảo app chạy mượt 100% ngoại tuyến | `sw.js` | **Hoàn thành** |
-| 4 | Thiết kế và sinh bộ biểu tượng ứng dụng chuẩn đa độ phân giải (192x192, 512x512, apple-touch-icon 180x180, favicon 64x64) từ logo vector | Thư mục `icons/` | **Hoàn thành** |
-| 5 | Tối ưu hóa giao diện di động: Tương thích hoàn hảo Safe Area cho Dynamic Island & Home Bar trên iPhone, hiệu ứng vuốt xóa (Swipe to delete), hoạt họa chuyển tab mượt mà | `index.html` | **Hoàn thành** |
-| 6 | Bàn phím số & máy tính thông minh (`+`, `-`, `×`, `÷`, `=`), gợi ý số tiền nhanh (`50k`, `100k`, `200k`, `500k`, `1tr`) | `index.html` | **Hoàn thành** |
-| 7 | Chụp và đính kèm hóa đơn trực tiếp bằng Camera điện thoại hoặc Thư viện ảnh, hỗ trợ xem phóng to toàn màn hình | `index.html` | **Hoàn thành** |
-| 8 | Bộ lọc đa tháng (`‹` / `›`), xem lại lịch sử chi tiêu theo từng tháng | `index.html` | **Hoàn thành** |
-| 9 | Cơ chế cân đối bù trừ 2 chiều theo tỷ lệ đóng góp (ví dụ 60/40), tự động tính số tiền ai cần chuyển cho ai | `index.html` | **Hoàn thành** |
-| 10 | Tùy chỉnh tên 2 vợ chồng (Bảo & Oanh hoặc tùy biến), quản lý ví tiền, quỹ mục tiêu chung, cài đặt Dark Mode | `index.html` | **Hoàn thành** |
-| 11 | Hệ thống lưu trữ an toàn `localStorage`, tính năng xuất báo cáo CSV và file sao lưu JSON | `index.html` | **Hoàn thành** |
-| 12 | Thiết lập GitHub Pages, file `.nojekyll` và luồng CI/CD GitHub Actions tự động triển khai trang web | `.nojekyll`, `.github/workflows/deploy-pages.yml` | **Hoàn thành & Trực tuyến** |
-| 13 | **Đồng bộ đám mây thời gian thực 2 điện thoại (Real-time Cloud Sync):** Kênh truyền tức thì Zero-config (`EventSource` SSE + JSON Relay) kết hợp tùy chọn Google Cloud Firestore riêng; tự động gộp giao dịch & bình luận không xung đột (`mergeCloudPayload`, `deletedTxIds`) | `index.html`, `sw.js` | **Hoàn thành** |
-| 14 | **Ghép đôi 2 máy qua Mã QR & Magic Link (`?join=CODE&role=her`):** Phân vai thiết bị độc lập (`Tôi là Chồng` / `Tôi là Vợ`), quét QR hoặc mở link Zalo là tự động cấu hình mã gia đình và đồng bộ ngay | `index.html` | **Hoàn thành** |
-| 15 | **Tất toán bằng mã VietQR chuẩn Napas247:** Tự động sinh mã QR chuyển khoản ngân hàng đúng số tiền chênh lệch và nội dung tất toán, kèm sửa giao dịch (`✏️ Sửa`), thêm Ví/Quỹ mục tiêu và khôi phục từ file JSON | `index.html` | **Hoàn thành** |
-| 16 | **Khóa Bảo Mật Nội Bộ (Private Couple Lock Gate) & Reset sạch số liệu 0 ₫:** Chỉ vợ chồng **Bảo & Oanh** mở được bằng Mã PIN Gia Đình 4 số (mặc định `2611`) và kênh đồng bộ đám mây băm mật mã riêng (`vidoi_bo_priv_<hash>`) | `index.html` | **Hoàn thành** |
-| 17 | **Thiết kế UI/UX chuyên biệt cho iPhone 16 Pro Max (Chồng Bảo) & iPhone 18 Pro Max (Vợ Oanh):** Khung nhìn chuẩn 6.9-inch `440×956pt`, Dynamic Island Live Capsule (`.pro-island`), Floating Glass Dock, giao diện **Sapphire Titanium** cho Bảo (`body.role-him`) và **iOS Liquid Glass Rose Titanium** cho Oanh (`body.role-her`) | `index.html`, `sw.js` | **Hoàn thành** |
+| 1 | **Bàn phím On-demand & Tối ưu Form nhập** | Bàn phím số tùy biến chỉ mở lên khi người dùng chạm vào ô số tiền; tự động ẩn khi chạm ngoài; ô nhập ghi chú/tên chỉ kích hoạt bàn phím hệ điều hành khi người dùng chủ động focus, không tự động bung che khuất màn hình. | **Đã hoàn thành** |
+| 2 | **Làm nổi bật trực quan Danh mục** | Hiệu ứng Active nổi bật với viền sáng neon, màu nền nổi và animation mượt mà khi chạm chọn các mục chi tiêu/thu nhập. | **Đã hoàn thành** |
+| 3 | **Trình quản lý Danh mục (Category Manager)** | Cho phép thêm mới, sửa tên và thay đổi biểu tượng Emoji tùy ý cho cả 2 nhóm Chi tiêu và Thu nhập; bổ sung sẵn các danh mục tài chính: *Cho vay, Gửi tiết kiệm, Đầu tư...* | **Đã hoàn thành** |
+| 4 | **Tái thiết kế màn hình Tổng quan (Dashboard)** | Thẻ tài chính tháng hiển thị rõ: Tổng thu nhập (xanh), Tổng chi (đỏ cam), Số dư ròng tích lũy. Thống kê cơ cấu chi tiêu/thu nhập trực quan; bảng theo dõi chi tiết số dư từng Tài khoản / Ví (Tiền mặt, Ngân hàng, Tiết kiệm, Đầu tư, Cho vay...). | **Đã hoàn thành** |
+| 5 | **Theo dõi Sự kiện & Công việc Gia đình** | Module quản lý sự kiện/công việc: sinh nhật, ngày kỷ niệm, hạn đóng tiền, trả nợ/thu nợ... **Tự động quét và hiển thị lên màn hình Tổng quan trước 1 ngày diễn ra** kèm huy hiệu đếm ngược (`Hôm nay`, `Ngày mai`, `Sắp diễn ra`). | **Đã hoàn thành** |
+| 6 | **Nghiệp vụ Chuyển ví (`kind: 't'`)** | Phân loại giao dịch thứ 3: **🔄 Chuyển ví** (luân chuyển giữa Ví nguồn và Ví đích kèm nút đảo chiều `⇄`). **Tự động cân đối số dư các tài khoản mà không làm sai lệch dòng tiền sinh hoạt** (không tính vào Tổng chi hay Tổng thu). | **Đã hoàn thành** |
+| 7 | **Trải nghiệm iOS & Haptic Feedback** | Tích hợp phản hồi rung xúc giác `navigator.vibrate` chân thật khi gõ bàn phím số, chuyển tab, chọn chip tiền, mở khóa PIN; bổ sung CSS `overscroll-behavior-y: contain` chống giật nảy màn hình trên Safari iOS. | **Đã hoàn thành** |
+| 8 | **Xuất lịch Apple / Google Calendar (`.ics`)** | Nút `📲` bên cạnh mỗi sự kiện gia đình tạo và tải file `.ics` tiêu chuẩn iCalendar, tích hợp chuông nhắc nhở trước 1 ngày (`TRIGGER:-P1D`), đồng bộ 1 chạm vào Apple Calendar hoặc Google Calendar. | **Đã hoàn thành** |
+| 9 | **Hộp lời nhắn yêu thương (Love Note)** | Thẻ lời nhắn ngọt ngào của Bảo & Oanh hiển thị trang trọng trên trang Tổng quan; hỗ trợ chạm để gửi lời nhắn mới và **tự động mã hóa E2EE đồng bộ tức thì sang máy đối phương**. | **Đã hoàn thành** |
 
-### 2.2. Bản iOS SwiftUI Native (`ViDoi/`)
+### 2.2. Các tính năng cốt lõi trước đó của bản PWA
 | # | Hạng mục công việc | File triển khai | Trạng thái |
 |---|---|---|---|
-| 13 | Khởi tạo cấu hình XcodeGen và tự động ký số Apple Development | `ViDoi/project.yml`, `ViDoi.xcodeproj` | Hoàn thành |
-| 14 | Định nghĩa Models dữ liệu (`Txn`, `SpendCategory`, `Wallet`, `Budget`, `Goal`, `PendingRatioProposal`) | `ViDoi/ViDoi/Models.swift` | Hoàn thành |
-| 15 | Dịch vụ đồng bộ Firebase Firestore & Fallback Offline | `ViDoi/ViDoi/FirebaseSyncService.swift` | Hoàn thành |
-| 16 | Bộ quản lý trạng thái `AppStore`, thuật toán gộp giao dịch chống xung đột | `ViDoi/ViDoi/AppStore.swift` | Hoàn thành |
-| 17 | Toàn bộ giao diện SwiftUI 5 tab, khóa Face ID, máy tính, hóa đơn ảnh | Các Views trong `ViDoi/ViDoi/` | Hoàn thành |
-| 18 | Bộ Unit Tests kiểm thử tự động thuật toán tài chính | `ViDoi/ViDoiTests/` | **Đạt 100% (5/5 PASS)** |
-| 19 | Ghép đôi, bật Developer Mode và nạp cài đặt vào iPhone 16 Pro | iPhone 16 Pro ("Quốc Bảo") | **Hoàn thành** |
+| 10 | Giao diện SPA 5 màn hình chuẩn di động Safe Area iPhone | `index.html` | Hoàn thành |
+| 11 | Cấu hình PWA Manifest standalone, icon đa phân giải | `manifest.webmanifest`, `icons/` | Hoàn thành |
+| 12 | Service Worker quản lý bộ nhớ đệm Offline First | `sw.js` | Hoàn thành |
+| 13 | Bàn phím số & máy tính thông minh (`+`, `-`, `×`, `÷`, `=`) kèm chip gợi ý | `index.html` | Hoàn thành |
+| 14 | Chụp & đính kèm ảnh hóa đơn trực tiếp, xem phóng to toàn màn hình | `index.html` | Hoàn thành |
+| 15 | Bộ lọc đa tháng (`‹` / `›`), xem lại lịch sử giao dịch từng tháng | `index.html` | Hoàn thành |
+| 16 | Cơ chế cân đối bù trừ 2 chiều theo tỷ lệ đóng góp (ví dụ 60/40 hoặc 50/50) | `index.html` | Hoàn thành |
+| 17 | Tùy chỉnh tên 2 vợ chồng (Bảo & Oanh), quản lý ví tiền, quỹ mục tiêu chung | `index.html` | Hoàn thành |
+| 18 | Đồng bộ đám mây thời gian thực 2 điện thoại (Real-time Cloud Sync + SSE Relay + Firestore) | `index.html` | Hoàn thành |
+| 19 | Ghép đôi 2 máy qua Mã QR & Magic Link (`?join=CODE&role=her`) | `index.html` | Hoàn thành |
+| 20 | Tất toán bằng mã VietQR chuẩn Napas247 tự điền số tiền và nội dung | `index.html` | Hoàn thành |
+| 21 | Khóa Bảo Mật Nội Bộ (Private Couple Lock Gate) bằng Mã PIN Gia Đình | `index.html` | Hoàn thành |
+| 22 | Giao diện Titanium chuyên biệt: **Sapphire Titanium** cho Bảo & **Rose Titanium** cho Oanh | `index.html` | Hoàn thành |
+| 23 | Triển khai tự động CI/CD GitHub Pages trên 2 nhánh `main` và `gh-pages` | GitHub Actions | Hoàn thành |
 
-### 2.3. Thiết kế sản phẩm & Bản mẫu Prototype
+### 2.3. Bản iOS SwiftUI Native (`ViDoi/`)
 | # | Hạng mục công việc | File triển khai | Trạng thái |
 |---|---|---|---|
-| 20 | Tài liệu thiết kế luồng chức năng & nghiệp vụ chi tiêu gia đình | `THIET_KE_APP.md` | Hoàn thành |
-| 21 | Mockup tĩnh 5 & 9 màn hình | `mockup.html`, `mockup_chi_tiet.html` | Hoàn thành |
-| 22 | Bộ bản mẫu tương tác Prototype v1 và v2 | `prototype.html`, `prototype_v2.html` | Hoàn thành |
-| 23 | Bộ Logo nhận diện thương hiệu dạng vector SVG và PNG | Thư mục `Logo/` | Hoàn thành |
+| 24 | Khởi tạo cấu hình XcodeGen và tự động ký số Apple Development | `ViDoi/project.yml`, `ViDoi.xcodeproj` | Hoàn thành |
+| 25 | Định nghĩa Models dữ liệu (`Txn`, `SpendCategory`, `Wallet`, `Budget`, `Goal`) | `ViDoi/ViDoi/Models.swift` | Hoàn thành |
+| 26 | Dịch vụ đồng bộ Firebase Firestore & Fallback Offline | `ViDoi/ViDoi/FirebaseSyncService.swift` | Hoàn thành |
+| 27 | Bộ quản lý trạng thái `AppStore`, thuật toán gộp giao dịch chống xung đột | `ViDoi/ViDoi/AppStore.swift` | Hoàn thành |
+| 28 | Toàn bộ giao diện SwiftUI 5 tab, khóa Face ID, máy tính, hóa đơn ảnh | Các Views trong `ViDoi/ViDoi/` | Hoàn thành |
+| 29 | Bộ Unit Tests kiểm thử tự động thuật toán tài chính (5/5 PASS) | `ViDoi/ViDoiTests/` | **Đạt 100%** |
+| 30 | Ghép đôi, bật Developer Mode và nạp cài đặt vào iPhone 16 Pro | iPhone 16 Pro ("Quốc Bảo") | Hoàn thành |
 
 ---
 
-## 3. Hướng dẫn cài đặt & Trải nghiệm thực tế cho hai vợ chồng
+## 3. Hướng dẫn sử dụng & Trải nghiệm thực tế cho hai vợ chồng
 
-Ứng dụng hiện đã sẵn sàng phục vụ sinh hoạt hàng ngày của hai bạn:
+Ứng dụng trực tuyến tại: **[https://quocbaoaa-oss.github.io/video/](https://quocbaoaa-oss.github.io/video/)**
 
-### Trên iPhone (Của Chồng & Vợ):
-1. Dùng trình duyệt **Safari** mở: **[https://quocbaoaa-oss.github.io/video/](https://quocbaoaa-oss.github.io/video/)**
-2. Bấm vào nút **Chia sẻ (Share)** ở thanh công cụ dưới đáy Safari (biểu tượng ô vuông có mũi tên hướng lên).
-3. Cuộn xuống chọn **Thêm vào MH chính (Add to Home Screen)** ➔ Bấm **Thêm (Add)**.
-4. Mở app **Ví Đôi** từ màn hình chính để tận hưởng trải nghiệm toàn màn hình như app gốc.
-
-### Trên Android (Nếu có):
-1. Dùng **Google Chrome** truy cập: **[https://quocbaoaa-oss.github.io/video/](https://quocbaoaa-oss.github.io/video/)**
-2. Bấm vào banner **"Cài đặt Ví Đôi"** hoặc menu `⋮` chọn **Cài đặt ứng dụng**.
+### Trên iPhone (Của Chồng Bảo & Vợ Oanh):
+1. Mở link trên bằng trình duyệt **Safari**.
+2. Nhấn nút **Chia sẻ (Share)** ở thanh dưới cùng (biểu tượng ô vuông có mũi tên chỉ lên).
+3. Chọn **Thêm vào MH chính (Add to Home Screen)** ➔ Nhấn **Thêm (Add)**.
+4. Mở app **Ví Đôi** từ màn hình chính:
+   - Nhập mã PIN gia đình: `2611` (hoặc mã riêng của hai bạn).
+   - Chọn vai trò: `Tôi là Chồng` (trên máy Bảo) hoặc `Tôi là Vợ` (trên máy Oanh).
+   - App sẽ tự động áp dụng giao diện màu Titanium tương ứng và kết nối kênh đồng bộ riêng tư.
 
 ---
 
-## 4. Các bước tiếp theo (Lộ trình phát triển tiếp theo)
+## 4. Các bước tiếp theo (Lộ trình phát triển đề xuất)
 
-Dưới đây là kế hoạch chi tiết cho các bước tiếp theo:
+Dưới đây là các hạng mục đề xuất để tiếp tục hoàn thiện ứng dụng trong giai đoạn tới:
 
-### Bước 1 — Đưa vào sử dụng thực tế hàng ngày (Thử nghiệm thực địa)
-- [ ] Cài đặt ứng dụng lên màn hình chính điện thoại của cả hai vợ chồng.
-- [ ] Bấm nút **"Xóa dữ liệu mẫu"** trong mục Cài đặt để bắt đầu ghi chép các khoản chi tiêu thực tế từ `0 ₫`.
-- [ ] Trải nghiệm ghi chép chi tiêu ăn uống, mua sắm, xăng xe, hóa đơn sinh hoạt trong 1–2 tuần đầu.
-- [ ] Kiểm tra tính tiện lợi của bàn phím máy tính nhanh và tính năng chụp ảnh đính kèm hóa đơn đi chợ/siêu thị.
+### Bước 1 — Kiểm thử thực địa trong đời sống hàng ngày (Ưu tiên cao)
+- [ ] Hai vợ chồng sử dụng ứng dụng để ghi nhận các khoản chi tiêu thực tế hàng ngày (chợ búa, ăn uống, xăng xe, hóa đơn điện nước).
+- [ ] Thử nghiệm tính năng **Chuyển ví** khi rút tiền từ Ngân hàng vào Tiền mặt, hoặc chuyển tiền vào Sổ tiết kiệm/Đầu tư.
+- [ ] Thử nghiệm tính năng **Sự kiện gia đình**: thêm ngày giỗ, ngày sinh nhật, ngày đóng tiền nhà/học phí và kiểm tra hiển thị nhắc nhở trước 1 ngày trên Tổng quan.
+- [ ] Trải nghiệm tính năng **Hộp lời nhắn yêu thương**: gửi lời nhắn động viên cho nhau mỗi ngày.
 
-### Bước 2 — Tinh chỉnh nghiệp vụ & Giao diện theo phản hồi thực tế
-- [ ] Bổ sung hoặc tùy biến thêm các danh mục chi tiêu đặc thù của gia đình (nếu có).
-- [ ] Điều chỉnh hạn mức ngân sách hàng tháng cho sát với thực tế chi tiêu của hai bạn.
-- [ ] Tinh chỉnh cỡ chữ, khoảng cách hoặc thêm các phím tắt ghi nhanh phổ biến nhất.
+### Bước 2 — Tích hợp Trí tuệ Nhân tạo (AI Vision OCR)
+- [ ] **Quét hóa đơn thông minh bằng AI (Gemini Vision API)**:
+  - Chụp ảnh hóa đơn siêu thị, nhà hàng, cây xăng.
+  - AI tự động trích xuất: Tổng số tiền thanh toán, Tên cửa hàng, Ngày giờ giao dịch.
+  - Tự động gợi ý danh mục chi tiêu chính xác (ví dụ: hóa đơn WinMart ➔ `Ăn uống` / `Nhu yếu phẩm`).
 
-### Bước 3 — Đồng bộ đám mây thời gian thực (Real-time Cloud Sync cho PWA) ✅ ĐÃ HOÀN THÀNH
-- [x] Tích hợp hệ thống **Đồng bộ Đám mây Kép** (Kênh truyền tức thì Zero-config SSE + Tùy chọn Google Cloud Firestore REST API) vào bản PWA [`index.html`](file:///g:/My%20Drive/App%20chi%20tieu%20gia%20dinh/index.html).
-- [x] Thiết lập **Vai trò theo từng điện thoại** (`Tôi là Chồng` / `Tôi là Vợ`) và **Ghép đôi qua Mã QR / Link mời tự động** (`?join=VD8686&role=her`).
-- [x] Khi chồng ghi chép hoặc bình luận ở công ty ➔ Điện thoại của vợ ở nhà tự động nhận và gộp dữ liệu tức thì qua Internet.
-- [x] Duy trì tính năng **Offline First**: Khi mất mạng vẫn ghi chép bình thường, khi có mạng lại tự động đồng bộ hóa (`online` event listener).
+### Bước 3 — Báo cáo phân tích chuyên sâu & Dự báo tài chính
+- [ ] **Biểu đồ xu hướng chi tiêu 6 tháng / 1 năm**:
+  - Trực quan hóa đường cong chi tiêu của gia đình theo thời gian.
+  - Cảnh báo các tuần/tháng có xu hướng chi vượt ngân sách dự kiến.
+- [ ] **Dự báo dòng tiền & Đích đến Tự do Tài chính**:
+  - Tính toán tốc độ tích lũy dựa trên số dư các quỹ tiết kiệm & đầu tư.
+  - Dự báo thời điểm hoàn thành các mục tiêu lớn (mua xe, mua nhà, quỹ học tập cho con).
 
-### Bước 4 — Tính năng thông minh & Nâng cao
-- [x] **Tạo mã VietQR chuyển khoản tự động (Đã hoàn thành):** Nhấn nút `💸 Tạo mã VietQR` trong mục Gia đình tự động sinh mã VietQR chuẩn Napas247 với đúng ngân hàng, số tài khoản, số tiền cần bù trừ và nội dung chuyển khoản.
-- [x] **Chỉnh sửa giao dịch & Khôi phục sao lưu JSON (Đã hoàn thành):** Cho phép sửa mọi thông tin giao dịch đã lưu (`✏️ Sửa`), thêm Ví/Quỹ mục tiêu mới và nạp lại file sao lưu `.json`.
-- [ ] **Quét hóa đơn bằng AI (Gemini Vision API):** Chụp ảnh hóa đơn mua sắm, AI tự động đọc tổng tiền, ngày giờ và tự động chọn danh mục chi tiêu phù hợp.
-- [ ] **Thông báo đẩy (Web Push Notifications):** Nhắc nhở hai vợ chồng ghi chép chi tiêu lúc 21:00 hàng ngày và thông báo khi có khoản chi chung lớn.
+### Bước 4 — Thông báo Đẩy Web (Web Push Notifications)
+- [ ] Cấu hình Web Push thông qua Service Worker:
+  - Nhắc nhở 2 vợ chồng ghi chép vào khung giờ cố định buổi tối (ví dụ 21:00).
+  - Báo chuông khi đối phương vừa ghi một khoản chi chung lớn hoặc gửi lời nhắn yêu thương mới.
 
 ---
 
@@ -123,22 +126,15 @@ App chi tieu gia dinh/
 ├── .nojekyll                        # Tắt Jekyll để GitHub Pages load tài nguyên tĩnh trực tiếp
 ├── THIET_KE_APP.md                  # Tài liệu thiết kế sản phẩm & UI/UX chi tiết
 ├── PROGRESS.md                      # Báo cáo tiến độ tổng thể (File này)
-├── index.html                       # Ứng dụng PWA chính thức (chạy độc lập, offline, mượt mà)
+├── index.html                       # Ứng dụng PWA chính thức (v11: Chuyển ví, Haptic, Lịch, Lời nhắn)
 ├── manifest.webmanifest             # Cấu hình PWA Manifest (stand-alone, màu sắc, shortcut)
 ├── manifest.json                    # Cấu hình PWA Manifest phụ
-├── sw.js                            # Service Worker quản lý bộ nhớ đệm Offline
-├── icons/                           # Bộ icon chuẩn PWA cho iOS & Android
-│   ├── icon-192.png                 # Icon 192x192
-│   ├── icon-512.png                 # Icon 512x512
-│   ├── apple-touch-icon.png         # Icon 180x180 cho màn hình chính iPhone
-│   └── favicon.png                  # Icon 64x64 trình duyệt
+├── sw.js                            # Service Worker quản lý bộ nhớ đệm Offline (v11)
+├── icons/                           # Bộ icon chuẩn PWA cho iOS & Android (192, 512, apple-touch, favicon)
 ├── Logo/                            # Bộ logo thiết kế đồ họa nhận diện thương hiệu
-│   ├── logo_A_vi_tim.svg            # Logo vector ví trái tim
-│   ├── logo_A_vi_tim.png            # Logo phân giải cao
-│   └── ...
 ├── mockup.html, prototype_v2.html   # Các bản prototype tham khảo trước đây
 └── ViDoi/                           # Bản iOS SwiftUI Native (dành cho Xcode)
     ├── project.yml                  # Cấu hình XcodeGen
     ├── ViDoi.xcodeproj              # Dự án Xcode
-    └── ViDoi/                       # Mã nguồn SwiftUI native
+    └── ViDoi/                       # Mã nguồn SwiftUI native (Models, Views, AppStore, Tests)
 ```
