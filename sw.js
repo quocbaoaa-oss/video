@@ -1,4 +1,4 @@
-const CACHE_NAME = 'vidoi-pwa-v10-e2ee-idb-reports-gdrive';
+const CACHE_NAME = 'vidoi-pwa-v11-transfers-haptics-calendar-love';
 const ASSETS = [
   './',
   './index.html',

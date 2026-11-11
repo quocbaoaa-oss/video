@@ -212,6 +212,11 @@
       cursor: pointer;
     }
 
+    html, body {
+      overscroll-behavior-y: none;
+      -webkit-touch-callout: none;
+    }
+
     /* Screen Views optimized for 6.9-inch Pro Max */
     .scr {
       position: absolute;
@@ -222,6 +227,7 @@
       padding-right: calc(var(--sar) + 18px);
       overflow-y: auto;
       overflow-x: hidden;
+      overscroll-behavior-y: contain;
       -webkit-overflow-scrolling: touch;
       display: none;
       background: var(--bg);
@@ -243,6 +249,7 @@
     .amt { font-weight: 700; font-variant-numeric: tabular-nums; }
     .pos { color: var(--inc); }
     .neg { color: var(--exp); }
+    .transfer { color: #818cf8; }
     .center { text-align: center; }
     .clickable { cursor: pointer; }
 
@@ -1478,6 +1485,20 @@
     <div id="home-urgent-events"></div>
     <div id="home-backup-reminder" style="display:none"></div>
 
+    <!-- LOVE NOTE CARD (Khoảnh khắc & Lời nhắn yêu thương của vợ chồng) -->
+    <div class="card" id="home-love-card" style="margin-bottom:10px;padding:11px 14px;border:1px solid rgba(236,72,153,0.3);background:linear-gradient(135deg,rgba(236,72,153,0.12),rgba(30,27,75,0.4))">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">
+        <div style="display:flex;align-items:center;gap:6px">
+          <span style="font-size:15px">💌</span>
+          <b style="font-size:12px;color:var(--her)" id="love-note-sender">Lời nhắn yêu thương</b>
+        </div>
+        <span class="sub link" style="font-size:11px" onclick="promptSendLoveNote()">✏️ Nhắn gửi</span>
+      </div>
+      <div style="font-size:12.5px;font-style:italic;color:var(--txt);line-height:1.4" id="love-note-text">
+        "Cùng nhau quản lý chi tiêu và xây dựng tổ ấm hạnh phúc nhé Bảo & Oanh ❤️"
+      </div>
+    </div>
+
     <!-- 2. EXECUTIVE CASHFLOW OVERVIEW: TỔNG THU NHẬP · TỔNG CHI · CÒN LẠI -->
     <div class="card hero" style="margin-bottom:10px;padding:16px 18px">
       <svg width="92" height="92" viewBox="0 0 100 100" style="flex:none">
@@ -1986,10 +2007,11 @@
       <span style="color:var(--coral);font-weight:700;cursor:pointer" onclick="saveTransaction()">Lưu</span>
     </div>
     <div class="sheet-body" id="add-sheet-body">
-      <!-- Kind: Chi / Thu -->
+      <!-- Kind: Chi / Thu / Chuyển ví -->
       <div class="seg" id="add-kind-seg">
-        <div class="on">Chi tiêu</div>
-        <div>Thu nhập</div>
+        <div class="on">💸 Chi tiêu</div>
+        <div>💰 Thu nhập</div>
+        <div>🔄 Chuyển ví</div>
       </div>
 
       <!-- Interactive Amount Box: Tapping opens the slide-up numeric keypad -->
@@ -2010,6 +2032,25 @@
         <div class="q-btn" onclick="addAmountFast(200000)">+200k</div>
         <div class="q-btn" onclick="addAmountFast(500000)">+500k</div>
         <div class="q-btn" onclick="addAmountFast(1000000)">+1tr</div>
+      </div>
+
+      <!-- Transfer Wallets Box (Only visible when Kind === 't') -->
+      <div id="transfer-wallets-box" style="display:none;background:var(--fill);padding:14px;border-radius:18px;margin-bottom:12px;border:1.5px solid var(--card-border)">
+        <div style="font-weight:700;font-size:13px;margin-bottom:10px;color:var(--tint)">🔄 Chuyển tiền giữa các Ví / Tiết kiệm & Đầu tư</div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="flex:1">
+            <div class="sub" style="font-size:11px;margin-bottom:4px">Từ ví nguồn</div>
+            <select class="input" id="transfer-from-wallet" style="margin:0;font-size:12.5px;padding:8px 8px;font-weight:600" onchange="onTransferFromChange(this.value)"></select>
+          </div>
+          <div style="font-size:18px;color:var(--tint);padding-top:16px;cursor:pointer" onclick="swapTransferWallets()" title="Đảo chiều ví">⇄</div>
+          <div style="flex:1">
+            <div class="sub" style="font-size:11px;margin-bottom:4px">Đến ví đích</div>
+            <select class="input" id="transfer-to-wallet" style="margin:0;font-size:12.5px;padding:8px 8px;font-weight:600" onchange="STATE.addTransferToWalletId=this.value"></select>
+          </div>
+        </div>
+        <div class="sub" style="font-size:11px;margin-top:8px;line-height:1.4">
+          💡 Tiền chuyển giữa các ví hoặc gửi tiết kiệm/đầu tư sẽ <b>không tính vào chi tiêu sinh hoạt</b>, giúp theo dõi dòng tiền chuẩn xác 100%.
+        </div>
       </div>
 
       <!-- Categories Header & Active Selection Indicator -->
@@ -2228,6 +2269,17 @@ const formatShort = n => {
   return String(Math.round(n));
 };
 
+// Haptic Vibration Feedback for iOS / Android
+function haptic(type = 'light') {
+  if (typeof navigator !== 'undefined' && navigator.vibrate) {
+    try {
+      if (type === 'light') navigator.vibrate(10);
+      else if (type === 'medium') navigator.vibrate(22);
+      else if (type === 'heavy') navigator.vibrate([25, 45, 25]);
+    } catch (e) {}
+  }
+}
+
 // Default Expense & Financial Categories (Bao gồm Cho vay, Gửi tiết kiệm, Đầu tư...)
 const DEFAULT_EXP_CATEGORIES = [
   ['🍜', 'Ăn uống'],
@@ -2330,6 +2382,11 @@ function getInitialData() {
     },
     goals: [],
     events: [],
+    loveNote: {
+      from: 'her',
+      text: 'Cùng nhau xây dựng tổ ấm hạnh phúc và tự do tài chính nhé anh Bảo ❤️',
+      ts: Date.now()
+    },
     transactions: [],
     ratio: 60, // 60% Bảo, 40% Oanh
     settled: true,
@@ -2375,6 +2432,7 @@ function ensureDBFields(obj) {
   if (!obj.budgets) obj.budgets = def.budgets;
   if (!obj.privateBudgets) obj.privateBudgets = def.privateBudgets;
   if (!Array.isArray(obj.events)) obj.events = [];
+  if (!obj.loveNote) obj.loveNote = def.loveNote;
   return obj;
 }
 
@@ -2430,6 +2488,7 @@ const STATE = {
    ========================================================================== */
 function goTab(tabId, pushHistory = true) {
   if (tabId === STATE.currentTab) return;
+  haptic('light');
   if (pushHistory && STATE.currentTab) {
     STATE.history.push(STATE.currentTab);
   }
@@ -2851,6 +2910,38 @@ function renderHome() {
   bindSwipeRows($('#home-recent'));
 
   updateBackupStatusUI();
+  renderLoveNote();
+}
+
+function renderLoveNote() {
+  const note = DB.loveNote || { from: 'her', text: 'Cùng nhau xây dựng tổ ấm hạnh phúc và tự do tài chính nhé anh Bảo ❤️' };
+  const senderUser = DB.users[note.from] || DB.users.her;
+  const isFromMe = note.from === getMyRole();
+  if ($('#love-note-sender')) {
+    $('#love-note-sender').textContent = isFromMe ? `Lời nhắn của bạn gửi ${DB.users[getPartnerRole()].name}` : `💌 Lời nhắn từ ${senderUser.name}`;
+    $('#love-note-sender').style.color = senderUser.color;
+  }
+  if ($('#love-note-text')) {
+    $('#love-note-text').textContent = `"${note.text}"`;
+  }
+}
+
+function promptSendLoveNote() {
+  const partner = DB.users[getPartnerRole()].name;
+  const current = DB.loveNote ? DB.loveNote.text : '';
+  const text = prompt(`Gửi lời nhắn yêu thương đến ${partner}:`, current);
+  if (text === null) return;
+  const clean = text.trim();
+  if (!clean) return;
+  DB.loveNote = {
+    from: getMyRole(),
+    text: clean,
+    ts: Date.now()
+  };
+  saveData();
+  renderApp();
+  haptic('medium');
+  toast(`Đã gửi lời nhắn yêu thương đến ${partner} 💌✨`);
 }
 
 /* ==========================================================================
@@ -3101,6 +3192,7 @@ function saveFamilyEvent() {
 }
 
 function toggleEventDone(id) {
+  haptic('medium');
   const ev = (DB.events || []).find(x => x.id === id);
   if (!ev) return;
   if (!ev.done && ev.repeat && ev.repeat !== 'none') {
@@ -3126,7 +3218,46 @@ function deleteFamilyEvent(id) {
   saveData();
   renderEventModalList();
   renderApp();
+  haptic('light');
   toast('Đã xóa sự kiện khỏi lịch');
+}
+
+function exportEventToICS(eventId) {
+  const ev = (DB.events || []).find(x => x.id === eventId);
+  if (!ev || !ev.date) return;
+  const cleanDate = ev.date.replace(/-/g, '');
+  const title = (ev.icon || '📅') + ' ' + (ev.title || 'Sự kiện gia đình');
+  const desc = `Sự kiện gia đình Bảo & Oanh. Chi phí dự kiến: ${formatVND(ev.amount || 0)} ₫`;
+
+  const ics = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//ViDoi//FamilyFinance//VI',
+    'CALSCALE:GREGORIAN',
+    'BEGIN:VEVENT',
+    `UID:vidoi_ev_${ev.id}@quocbaoaa`,
+    `DTSTAMP:${cleanDate}T080000Z`,
+    `DTSTART;VALUE=DATE:${cleanDate}`,
+    `DTEND;VALUE=DATE:${cleanDate}`,
+    `SUMMARY:${title}`,
+    `DESCRIPTION:${desc}`,
+    'BEGIN:VALARM',
+    'TRIGGER:-P1D',
+    'ACTION:DISPLAY',
+    `DESCRIPTION:Nhắc nhở trước 1 ngày: ${title}`,
+    'END:VALARM',
+    'END:VEVENT',
+    'END:VCALENDAR'
+  ].join('\r\n');
+
+  const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `SuKien_${cleanDate}.ics`;
+  a.click();
+  haptic('light');
+  toast('Đã tạo file lịch — chạm để mở Apple Calendar / Google 📲');
 }
 
 function renderEventModalList() {
@@ -3151,9 +3282,10 @@ function renderEventModalList() {
             ${!ev.done ? getEventCountdownBadge(days) : '<span class="sub">✓ Đã xong</span>'}
           </div>
           <div class="sub" style="font-size:11px">
-            📅 ${formatVNDate(ev.date)} ${ev.amount > 0 ? `· 💰 ${formatVND(ev.amount)} ₫` : ''}
+            📅 ${formatVNDate(ev.date)} ${ev.amount > 0 ? `· 💰 ${formatVND(ev.amount)} ₫` : ''} ${ev.repeat && ev.repeat !== 'none' ? '· 🔁 Lặp lại' : ''}
           </div>
         </div>
+        <button class="btn sm alt" style="padding:5px 8px;font-size:11px" onclick="exportEventToICS(${ev.id})" title="Thêm vào Lịch iPhone / Google">📲</button>
         <button class="btn sm alt" style="padding:5px 8px;font-size:11px" onclick="toggleEventDone(${ev.id})">${ev.done ? 'Mở lại' : '✓'}</button>
         <button class="btn sm alt" style="padding:5px 8px;font-size:11px" onclick="editFamilyEvent(${ev.id})">✏️</button>
         <span class="ic clickable" style="width:30px;height:30px;color:var(--exp);background:rgba(239,68,68,0.1)" onclick="deleteFamilyEvent(${ev.id})">🗑</span>
@@ -3172,6 +3304,15 @@ function renderTxRowHTML(t) {
   const isMine = t.who === getMyRole();
   const canDelete = (isMine || t.shared) && !masked;
 
+  let subInfo = `${t.shared ? '👥 Chung' : '🔒 Riêng'} · ${formatDayLabel(t.day)}`;
+  if (t.kind === 't') {
+    const fromW = DB.wallets.find(x => x.id === t.wallet);
+    const toW = DB.wallets.find(x => x.id === t.toWallet);
+    subInfo = `🔄 ${fromW ? fromW.name : 'Ví'} ➔ ${toW ? toW.name : 'Ví'} · ${formatDayLabel(t.day)}`;
+  }
+  const amtClass = t.kind === 'i' ? 'pos' : t.kind === 't' ? 'transfer' : 'neg';
+  const amtPrefix = t.kind === 'i' ? '+' : t.kind === 't' ? '🔄 ' : '-';
+
   return `
     <div class="swr" style="border-bottom:1px solid var(--sep)">
       ${canDelete ? `<div class="swa" onclick="deleteTransaction(${t.id})">Xóa</div>` : ''}
@@ -3181,13 +3322,13 @@ function renderTxRowHTML(t) {
           <div class="tt">${title}</div>
           <div class="sub">
             <span class="av s" style="background:${u.color}">${u.name[0]}</span> ${u.name} · 
-            ${t.shared ? '👥 Chung' : '🔒 Riêng'} · ${formatDayLabel(t.day)}
+            ${subInfo}
             ${t.receipt ? ' · 📎' : ''}
-            ${t.comments.length ? ` · 💬${t.comments.length}` : ''}
+            ${t.comments && t.comments.length ? ` · 💬${t.comments.length}` : ''}
           </div>
         </div>
-        <div class="amt ${t.kind === 'i' ? 'pos' : 'neg'}">
-          ${t.kind === 'i' ? '+' : '-'}${formatVND(t.amount)} ₫
+        <div class="amt ${amtClass}">
+          ${amtPrefix}${formatVND(t.amount)} ₫
         </div>
       </div>
     </div>
@@ -3628,6 +3769,7 @@ function renderFamilyAndBalance() {
   $$('#privacy-seg div').forEach((d, i) => d.classList.toggle('on', i === DB.privacy));
 
   updateBackupStatusUI();
+  renderLoveNote();
 }
 
 function settleBalance() {
@@ -3832,6 +3974,7 @@ function openAddSheet(editTx = null) {
   STATE.addWho = editTx ? editTx.who : getMyRole();
   const defaultWallet = (DB.wallets.find(w => w.owner === STATE.addWho) || DB.wallets[0] || { id: 'cash' }).id;
   STATE.addWalletId = editTx ? editTx.wallet : defaultWallet;
+  STATE.addTransferToWalletId = editTx && editTx.toWallet ? editTx.toWallet : (DB.wallets.find(w => w.id !== STATE.addWalletId) || DB.wallets[0]).id;
   STATE.addDay = editTx ? editTx.day : new Date().getDate();
   STATE.addReceipt = editTx ? editTx.receipt : null;
   const noteInp = $('#add-note-input');
@@ -3863,15 +4006,51 @@ function openAddSheet(editTx = null) {
   $('#sw-add-shared').classList.toggle('on', STATE.addShared);
   $('#add-shared-hint').textContent = STATE.addShared ? '· cả hai cùng thấy' : '· 🔒 chỉ mình tôi thấy';
   $('#sw-add-rec').classList.remove('on');
-  $$('#add-kind-seg div').forEach((d, i) => d.classList.toggle('on', (STATE.addKind === 'e' ? 0 : 1) === i));
-  $('#add-amt-display').style.color = STATE.addKind === 'i' ? 'var(--inc)' : 'var(--txt)';
 
-  renderAddCats();
+  const isTransfer = STATE.addKind === 't';
+  const kindIdx = STATE.addKind === 'e' ? 0 : STATE.addKind === 'i' ? 1 : 2;
+  $$('#add-kind-seg div').forEach((d, i) => d.classList.toggle('on', kindIdx === i));
+  $('#add-amt-display').style.color = STATE.addKind === 'i' ? 'var(--inc)' : STATE.addKind === 't' ? '#818cf8' : 'var(--txt)';
+  if ($('#transfer-wallets-box')) $('#transfer-wallets-box').style.display = isTransfer ? 'block' : 'none';
+  if ($('.cat-header-bar')) $('.cat-header-bar').style.display = isTransfer ? 'none' : 'flex';
+  if ($('#add-cats-grid')) $('#add-cats-grid').style.display = isTransfer ? 'none' : 'grid';
+
+  if (isTransfer) renderTransferWallets();
+  else renderAddCats();
+
   renderAddChips();
   updateAddAmountDisplay();
 
   $('#add-sheet').classList.add('on');
   $('#sheet-scrim').classList.add('on');
+  haptic('light');
+}
+
+function renderTransferWallets() {
+  const fromSel = $('#transfer-from-wallet');
+  const toSel = $('#transfer-to-wallet');
+  if (!fromSel || !toSel) return;
+  fromSel.innerHTML = DB.wallets.map(w => `<option value="${w.id}" ${w.id === STATE.addWalletId ? 'selected' : ''}>${w.icon} ${w.name} (${formatShort(w.balance)})</option>`).join('');
+  toSel.innerHTML = DB.wallets.map(w => `<option value="${w.id}" ${w.id === STATE.addTransferToWalletId ? 'selected' : ''}>${w.icon} ${w.name} (${formatShort(w.balance)})</option>`).join('');
+}
+
+function onTransferFromChange(val) {
+  STATE.addWalletId = val;
+  if (STATE.addTransferToWalletId === val) {
+    const other = DB.wallets.find(w => w.id !== val);
+    if (other) STATE.addTransferToWalletId = other.id;
+  }
+  renderTransferWallets();
+  renderAddChips();
+}
+
+function swapTransferWallets() {
+  const tmp = STATE.addWalletId;
+  STATE.addWalletId = STATE.addTransferToWalletId;
+  STATE.addTransferToWalletId = tmp;
+  renderTransferWallets();
+  renderAddChips();
+  haptic('light');
 }
 
 function closeAddSheet() {
@@ -4099,7 +4278,18 @@ function deleteCatItem(idx) {
 
 function renderAddChips() {
   const w = DB.wallets.find(x => x.id === STATE.addWalletId) || DB.wallets[0];
+  const toW = DB.wallets.find(x => x.id === STATE.addTransferToWalletId) || (DB.wallets.find(x => x.id !== w.id) || DB.wallets[0]);
   const u = DB.users[STATE.addWho];
+  if (STATE.addKind === 't') {
+    $('#add-chips-bar').innerHTML = `
+      <div class="chip on" onclick="swapTransferWallets()">🔄 ${w.name} ➔ ${toW.name} (Chạm đảo chiều)</div>
+      <div class="chip" onclick="closeNumberPad();cycleAddDay()">📅 Ngày ${STATE.addDay}</div>
+      <div class="chip ${STATE.addReceipt ? 'on' : ''}" onclick="closeNumberPad();$('#receipt-file-input').click()">
+        📷 ${STATE.addReceipt ? 'Đã đính kèm ảnh' : 'Chụp / Ảnh bill'}
+      </div>
+    `;
+    return;
+  }
   $('#add-chips-bar').innerHTML = `
     <div class="chip" onclick="closeNumberPad();cycleAddWallet()">${w.icon} ${w.name}</div>
     <div class="chip" onclick="closeNumberPad();cycleAddWho()"><span class="av s" style="background:${u.color}">${u.name[0]}</span> ${u.name} chi</div>
@@ -4134,6 +4324,7 @@ function toggleAddShared() {
 }
 
 function addAmountFast(val) {
+  haptic('light');
   const current = evalAmount(STATE.addExp);
   STATE.addExp = String(current + val);
   updateAddAmountDisplay();
@@ -4177,6 +4368,7 @@ $('#keypad').innerHTML = KEYPAD_KEYS.map(k => {
 }).join('');
 
 function onKeypadPress(k) {
+  haptic('light');
   if (k === '⌫') {
     STATE.addExp = STATE.addExp.slice(0, -1);
   } else if (k === 'C') {
@@ -4245,12 +4437,9 @@ function saveTransaction() {
   if (amount <= 0) {
     $('#add-amt-display').classList.add('shake');
     setTimeout(() => $('#add-amt-display').classList.remove('shake'), 400);
+    haptic('heavy');
     return toast('Vui lòng nhập số tiền hợp lệ');
   }
-
-  const activeCats = getActiveCategories(STATE.addKind);
-  const cat = activeCats[STATE.addCatIdx] || activeCats[0] || ['💼', 'Khác'];
-  const note = $('#add-note-input').value.trim();
 
   const curTxId = STATE.editingTxId || Date.now();
   let receiptRef = STATE.addReceipt;
@@ -4260,12 +4449,102 @@ function saveTransaction() {
     receiptRef = rcptId;
   }
 
+  // Branch: Transfer between wallets (Chuyển ví / Tiết kiệm & Đầu tư)
+  if (STATE.addKind === 't') {
+    const fromW = DB.wallets.find(x => x.id === STATE.addWalletId) || DB.wallets[0];
+    const toWalletId = STATE.addTransferToWalletId || (DB.wallets.find(x => x.id !== fromW.id) || DB.wallets[0]).id;
+    const toW = DB.wallets.find(x => x.id === toWalletId);
+    if (fromW.id === toW.id) {
+      haptic('heavy');
+      return toast('Ví nguồn và ví đích phải khác nhau!');
+    }
+    const note = $('#add-note-input').value.trim();
+    const title = note || `Chuyển ví: ${fromW.name} ➔ ${toW.name}`;
+
+    if (STATE.editingTxId) {
+      const existing = DB.transactions.find(x => x.id === STATE.editingTxId);
+      if (existing) {
+        if (existing.kind === 't') {
+          const prevFrom = DB.wallets.find(x => x.id === existing.wallet);
+          const prevTo = DB.wallets.find(x => x.id === existing.toWallet);
+          if (prevFrom) prevFrom.balance += existing.amount;
+          if (prevTo) prevTo.balance -= existing.amount;
+        } else {
+          const prevW = DB.wallets.find(x => x.id === existing.wallet);
+          if (prevW) prevW.balance += (existing.kind === 'e' ? existing.amount : -existing.amount);
+        }
+
+        existing.day = STATE.addDay;
+        existing.icon = '🔄';
+        existing.title = title;
+        existing.category = 'Chuyển tiền & Tiết kiệm';
+        existing.amount = amount;
+        existing.who = STATE.addWho;
+        existing.shared = STATE.addShared;
+        existing.wallet = fromW.id;
+        existing.toWallet = toW.id;
+        existing.kind = 't';
+        existing.note = note;
+        existing.receipt = receiptRef;
+        existing.updatedAt = Date.now();
+
+        fromW.balance -= amount;
+        toW.balance += amount;
+
+        saveData();
+        closeAddSheet();
+        renderApp();
+        haptic('medium');
+        return toast(`Đã chuyển ${formatShort(amount)} từ ${fromW.name} sang ${toW.name} 🔄✅`);
+      }
+    }
+
+    const newTx = {
+      id: curTxId,
+      day: STATE.addDay,
+      icon: '🔄',
+      title: title,
+      category: 'Chuyển tiền & Tiết kiệm',
+      amount: amount,
+      who: STATE.addWho,
+      shared: STATE.addShared,
+      wallet: fromW.id,
+      toWallet: toW.id,
+      kind: 't',
+      note: note,
+      receipt: receiptRef,
+      comments: [],
+      updatedAt: Date.now()
+    };
+
+    DB.transactions.unshift(newTx);
+    fromW.balance -= amount;
+    toW.balance += amount;
+
+    saveData();
+    closeAddSheet();
+    renderApp();
+    haptic('medium');
+    return toast(`Đã chuyển ${formatShort(amount)} từ ${fromW.name} sang ${toW.name} 🔄✅`);
+  }
+
+  // Branch: Expense & Income
+  const activeCats = getActiveCategories(STATE.addKind);
+  const cat = activeCats[STATE.addCatIdx] || activeCats[0] || ['💼', 'Khác'];
+  const note = $('#add-note-input').value.trim();
+
   if (STATE.editingTxId) {
     const existing = DB.transactions.find(x => x.id === STATE.editingTxId);
     if (existing) {
-      // Revert old wallet impact
-      const oldW = DB.wallets.find(x => x.id === existing.wallet);
-      if (oldW) oldW.balance += (existing.kind === 'e' ? existing.amount : -existing.amount);
+      if (existing.kind === 't') {
+        const prevFrom = DB.wallets.find(x => x.id === existing.wallet);
+        const prevTo = DB.wallets.find(x => x.id === existing.toWallet);
+        if (prevFrom) prevFrom.balance += existing.amount;
+        if (prevTo) prevTo.balance -= existing.amount;
+      } else {
+        const oldW = DB.wallets.find(x => x.id === existing.wallet);
+        if (oldW) oldW.balance += (existing.kind === 'e' ? existing.amount : -existing.amount);
+      }
 
       existing.day = STATE.addDay;
       existing.icon = cat[0];
@@ -4275,6 +4554,7 @@ function saveTransaction() {
       existing.who = STATE.addWho;
       existing.shared = STATE.addShared;
       existing.wallet = STATE.addWalletId;
+      delete existing.toWallet;
       existing.kind = STATE.addKind;
       existing.note = note;
       existing.receipt = receiptRef;
@@ -4287,6 +4567,7 @@ function saveTransaction() {
       saveData();
       closeAddSheet();
       renderApp();
+      haptic('medium');
       if (STATE.selectedTxId === existing.id && $('#tab-detail').classList.contains('active')) {
         openTxDetail(existing.id);
       }
@@ -4323,6 +4604,7 @@ function saveTransaction() {
   saveData();
   closeAddSheet();
   renderApp();
+  haptic('medium');
 
   toast(STATE.addShared ? 'Đã lưu & đồng bộ khoản chung ✅' : 'Đã lưu vào khoản riêng 🔒');
 }
@@ -4377,14 +4659,30 @@ function deleteTransaction(id, promptConfirm = false) {
     if (removed.receipt && typeof removed.receipt === 'string' && removed.receipt.startsWith('rcpt_')) {
       ReceiptDB.deleteReceipt(removed.receipt);
     }
-    const w = DB.wallets.find(x => x.id === removed.wallet);
-    if (w) w.balance += (removed.kind === 'e' ? removed.amount : -removed.amount);
+    if (removed.kind === 't') {
+      const fromW = DB.wallets.find(x => x.id === removed.wallet);
+      const toW = DB.wallets.find(x => x.id === removed.toWallet);
+      if (fromW) fromW.balance += removed.amount;
+      if (toW) toW.balance -= removed.amount;
+    } else {
+      const w = DB.wallets.find(x => x.id === removed.wallet);
+      if (w) w.balance += (removed.kind === 'e' ? removed.amount : -removed.amount);
+    }
     saveData();
     renderApp();
+    haptic('light');
     toast(`Đã xóa "${removed.title}"`, 'Hoàn tác', () => {
       DB.transactions.splice(idx, 0, removed);
       DB.deletedTxIds = (DB.deletedTxIds || []).filter(x => x !== removed.id);
-      if (w) w.balance -= (removed.kind === 'e' ? removed.amount : -removed.amount);
+      if (removed.kind === 't') {
+        const fromW = DB.wallets.find(x => x.id === removed.wallet);
+        const toW = DB.wallets.find(x => x.id === removed.toWallet);
+        if (fromW) fromW.balance -= removed.amount;
+        if (toW) toW.balance += removed.amount;
+      } else {
+        const w = DB.wallets.find(x => x.id === removed.wallet);
+        if (w) w.balance -= (removed.kind === 'e' ? removed.amount : -removed.amount);
+      }
       saveData();
       renderApp();
     });
@@ -4407,6 +4705,10 @@ function openTxDetail(id) {
   const u = DB.users[t.who] || DB.users.him;
   const masked = isTxMasked(t);
   const w = DB.wallets.find(x => x.id === t.wallet) || { icon: '👛', name: 'Ví' };
+  const toW = t.toWallet ? (DB.wallets.find(x => x.id === t.toWallet) || { icon: '👛', name: 'Ví đích' }) : null;
+  const isTransfer = t.kind === 't';
+  const amtClass = t.kind === 'i' ? 'pos' : isTransfer ? 'transfer' : '';
+  const amtPrefix = t.kind === 'i' ? '+' : isTransfer ? '🔄 ' : '-';
 
   $('#detail-head-actions').innerHTML = !masked ? `
     <span class="link" style="margin-right:12px" onclick="editCurrentTx()">✏️ Sửa</span>
@@ -4416,8 +4718,8 @@ function openTxDetail(id) {
   $('#detail-content').innerHTML = `
     <div class="center" style="margin:16px 0 20px">
       <div class="ic" style="width:68px;height:68px;font-size:32px;margin:0 auto 10px;border-radius:20px">${masked ? '🔒' : t.icon}</div>
-      <div style="font-size:34px;font-weight:700;letter-spacing:-1px" class="${t.kind === 'i' ? 'pos' : ''}">
-        ${t.kind === 'i' ? '+' : '-'}${formatVND(t.amount)} ₫
+      <div style="font-size:34px;font-weight:700;letter-spacing:-1px" class="${amtClass}">
+        ${amtPrefix}${formatVND(t.amount)} ₫
       </div>
       <div class="sub" style="font-size:14px;margin-top:2px">${masked ? 'Khoản chi riêng' : t.title}</div>
     </div>
@@ -4426,7 +4728,12 @@ function openTxDetail(id) {
       <div class="row"><span class="sub grow">Danh mục</span><b>${masked ? '🔒 Ẩn' : t.category}</b></div>
       <div class="row"><span class="sub grow">Người thực hiện</span><b><span class="av s" style="background:${u.color}">${u.name[0]}</span> ${u.name}</b></div>
       <div class="row"><span class="sub grow">Ngày giao dịch</span><b>${formatDayLabel(t.day)}</b></div>
-      <div class="row"><span class="sub grow">Ví tài khoản</span><b>${masked ? '🔒 Ẩn' : w.icon + ' ' + w.name}</b></div>
+      ${isTransfer ? `
+        <div class="row"><span class="sub grow">Từ ví nguồn</span><b>${w.icon} ${w.name}</b></div>
+        <div class="row"><span class="sub grow">Đến ví đích</span><b>${toW ? toW.icon + ' ' + toW.name : 'Ví đích'}</b></div>
+      ` : `
+        <div class="row"><span class="sub grow">Ví tài khoản</span><b>${masked ? '🔒 Ẩn' : w.icon + ' ' + w.name}</b></div>
+      `}
       <div class="row"><span class="sub grow">Phân loại</span><b>${t.shared ? '👥 Khoản Chung' : '🔒 Khoản Riêng'}</b></div>
       ${t.note && !masked ? `<div class="row"><span class="sub grow">Ghi chú</span><b>${t.note}</b></div>` : ''}
     </div>
@@ -4580,6 +4887,7 @@ function updateAuthPinDots() {
 }
 
 function pressAuthPin(digit) {
+  haptic('light');
   if (AUTH.enteredPin.length >= 4) return;
   AUTH.enteredPin += String(digit);
   updateAuthPinDots();
@@ -5155,6 +5463,7 @@ function buildCompactPayload() {
     incomeCategories: DB.incomeCategories,
     wallets: DB.wallets,
     goals: DB.goals,
+    loveNote: DB.loveNote,
     events: (DB.events || []).slice(0, 100),
     deletedTxIds: (DB.deletedTxIds || []).slice(-300),
     transactions: (DB.transactions || []).slice(0, 150)
@@ -5355,6 +5664,10 @@ function mergeCloudPayload(remote, silent = false) {
     }
     if (Array.isArray(remote.goals)) DB.goals = remote.goals;
     if (Array.isArray(remote.wallets)) DB.wallets = remote.wallets;
+    if (remote.loveNote && (!DB.loveNote || (remote.loveNote.ts || 0) > (DB.loveNote.ts || 0))) {
+      DB.loveNote = remote.loveNote;
+      changed = true;
+    }
     if (Array.isArray(remote.events)) {
       const localEventsMap = new Map((DB.events || []).map(e => [e.id, e]));
       for (const rEv of remote.events) {
@@ -5659,15 +5972,22 @@ function setupSegmentedControls() {
     };
   });
 
-  // Add sheet Kind (Chi vs Thu)
+  // Add sheet Kind (Chi vs Thu vs Chuyển ví)
   $$('#add-kind-seg div').forEach((d, i) => {
     d.onclick = () => {
+      haptic('light');
       $$('#add-kind-seg div').forEach(x => x.classList.remove('on'));
       d.classList.add('on');
-      STATE.addKind = i === 0 ? 'e' : 'i';
+      STATE.addKind = i === 0 ? 'e' : i === 1 ? 'i' : 't';
       STATE.addCatIdx = 0;
-      $('#add-amt-display').style.color = i === 1 ? 'var(--inc)' : 'var(--txt)';
-      renderAddCats();
+      $('#add-amt-display').style.color = i === 1 ? 'var(--inc)' : i === 2 ? '#818cf8' : 'var(--txt)';
+      const isTransfer = i === 2;
+      if ($('#transfer-wallets-box')) $('#transfer-wallets-box').style.display = isTransfer ? 'block' : 'none';
+      if ($('.cat-header-bar')) $('.cat-header-bar').style.display = isTransfer ? 'none' : 'flex';
+      if ($('#add-cats-grid')) $('#add-cats-grid').style.display = isTransfer ? 'none' : 'grid';
+      if (isTransfer) renderTransferWallets();
+      else renderAddCats();
+      renderAddChips();
     };
   });
 }
