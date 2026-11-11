@@ -20,43 +20,93 @@
 
   <style>
     :root {
-      --coral: #FF6B6B;
-      --coral2: #FF9A8B;
+      --coral: #2563EB;
+      --coral2: #0EA5E9;
+      --hero-grad: linear-gradient(135deg, #1E3A8A 0%, #2563EB 52%, #0EA5E9 100%);
+      --hero-shadow: 0 14px 32px rgba(37, 99, 235, 0.34);
+      --fab-grad: linear-gradient(135deg, #2563EB, #0EA5E9);
+      --fab-shadow: 0 10px 24px rgba(37, 99, 235, 0.45);
+      --card-border: 1px solid rgba(37, 99, 235, 0.10);
+      --card-radius: 22px;
       --teal: #2EC4B6;
-      --him: #4C8DFF;
-      --her: #FF7EB6;
+      --him: #2563EB;
+      --her: #EC4899;
       --shared: #7C5CFF;
-      --inc: #22C55E;
+      --inc: #10B981;
       --exp: #EF4444;
       --warn: #F59E0B;
-      --bg: #F2F2F7;
-      --card: #FFFFFF;
-      --txt: #111111;
-      --mut: #8E8E93;
-      --sep: #E5E5EA;
-      --fill: #E5E5EA;
-      --ic: #F3F3F7;
-      --sh: 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04);
+      --bg: #F3F6FC;
+      --card: rgba(255, 255, 255, 0.92);
+      --txt: #0F172A;
+      --mut: #64748B;
+      --sep: rgba(148, 163, 184, 0.22);
+      --fill: rgba(226, 232, 240, 0.85);
+      --ic: #EFF4FF;
+      --sh: 0 4px 20px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(15, 23, 42, 0.04);
       --sat: env(safe-area-inset-top, 0px);
       --sab: env(safe-area-inset-bottom, 0px);
       --sal: env(safe-area-inset-left, 0px);
       --sar: env(safe-area-inset-right, 0px);
     }
-    body.dark {
-      --bg: #000000;
-      --card: #1C1C1E;
-      --txt: #F5F5F7;
-      --mut: #98989F;
-      --sep: #2C2C2E;
-      --fill: #2C2C2E;
-      --ic: #2C2C2E;
-      --sh: none;
+
+    /* ==========================================================================
+       1. CHỒNG BẢO — iPHONE 16 PRO MAX (6.9" Super Retina XDR · Titanium Blue)
+       ========================================================================== */
+    body.role-him {
+      --coral: #2563EB;
+      --coral2: #0EA5E9;
+      --hero-grad: linear-gradient(135deg, #0F172A 0%, #1D4ED8 52%, #0284C7 100%);
+      --hero-shadow: 0 16px 34px rgba(29, 78, 216, 0.36);
+      --fab-grad: linear-gradient(135deg, #1D4ED8, #0EA5E9);
+      --fab-shadow: 0 10px 24px rgba(29, 78, 216, 0.48);
+      --card-border: 1px solid rgba(59, 130, 246, 0.14);
+      --card-radius: 22px;
+      --bg: #F1F5FB;
+      --ic: #EBF2FF;
     }
+
+    /* ==========================================================================
+       2. VỢ OANH — iPHONE 18 PRO MAX (6.9"+ Ultra Retina · Liquid Glass Rose)
+       ========================================================================== */
+    body.role-her {
+      --coral: #EC4899;
+      --coral2: #A855F7;
+      --hero-grad: linear-gradient(135deg, #9D174D 0%, #EC4899 50%, #8B5CF6 100%);
+      --hero-shadow: 0 16px 36px rgba(236, 72, 153, 0.36);
+      --fab-grad: linear-gradient(135deg, #EC4899, #8B5CF6);
+      --fab-shadow: 0 10px 26px rgba(236, 72, 153, 0.48);
+      --card-border: 1px solid rgba(236, 72, 153, 0.18);
+      --card-radius: 26px;
+      --bg: #FFF6FA;
+      --card: rgba(255, 255, 255, 0.86);
+      --ic: #FDF2F8;
+      --fill: rgba(252, 231, 243, 0.78);
+      --sh: 0 8px 26px rgba(190, 24, 93, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    }
+
+    body.dark {
+      --bg: #070B14;
+      --card: rgba(22, 30, 46, 0.88);
+      --txt: #F8FAFC;
+      --mut: #94A3B8;
+      --sep: rgba(148, 163, 184, 0.16);
+      --fill: rgba(30, 41, 59, 0.9);
+      --ic: #1E293B;
+      --sh: 0 8px 28px rgba(0, 0, 0, 0.4);
+    }
+    body.dark.role-her {
+      --bg: #120812;
+      --card: rgba(36, 18, 38, 0.84);
+      --fill: rgba(56, 26, 58, 0.85);
+      --ic: #2D1630;
+      --card-border: 1px solid rgba(244, 114, 182, 0.22);
+    }
+
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       -webkit-tap-highlight-color: transparent;
       user-select: none;
     }
@@ -69,28 +119,30 @@
       overflow: hidden;
       background: var(--bg);
       color: var(--txt);
-      font-size: 14px;
+      font-size: 14.5px;
+      -webkit-font-smoothing: antialiased;
     }
-    /* PWA responsive shell: Fullscreen on mobile, centered device mockup on large desktop */
+    /* Pro Max 6.9-inch viewport (440x956pt) on desktop preview, full screen on iPhone */
     @media (min-width: 640px) {
       body {
-        background: #E2E8F0;
+        background: radial-gradient(circle at top, #1E293B, #0F172A);
         display: flex;
         align-items: center;
         justify-content: center;
       }
-      body.dark {
-        background: #111827;
-      }
       #app-shell {
-        width: 420px;
-        height: 890px;
+        width: 440px;
+        height: 956px;
         max-height: 96vh;
-        border-radius: 46px;
-        border: 12px solid #1E293B;
-        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
+        border-radius: 56px;
+        border: 11px solid #334155;
+        box-shadow: 0 30px 70px -12px rgba(0, 0, 0, 0.65), 0 0 0 2px rgba(255,255,255,0.12);
         position: relative;
         overflow: hidden;
+      }
+      body.role-her #app-shell {
+        border-color: #703B5E;
+        box-shadow: 0 30px 70px -12px rgba(131, 24, 67, 0.55), 0 0 0 2px rgba(244, 114, 182, 0.28);
       }
       #desktop-bar {
         display: flex !important;
@@ -102,11 +154,18 @@
       top: 10px;
       left: 50%;
       transform: translateX(-50%);
-      width: 120px;
-      height: 28px;
-      background: #1E293B;
-      border-radius: 14px;
+      width: 122px;
+      height: 30px;
+      background: #000;
+      border-radius: 18px;
       z-index: 100;
+      transition: all 0.35s ease;
+    }
+    body.role-her #desktop-bar {
+      width: 92px;
+      height: 22px;
+      border-radius: 14px;
+      box-shadow: 0 0 12px rgba(236, 72, 153, 0.4);
     }
     #app-shell {
       width: 100%;
@@ -119,14 +178,48 @@
       flex-direction: column;
     }
 
-    /* Screen Views */
+    /* Dynamic Island Live Device Capsule (iPhone 16 Pro Max & iPhone 18 Pro Max) */
+    .pro-island {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 7px 12px;
+      margin-bottom: 10px;
+      border-radius: 22px;
+      background: rgba(15, 23, 42, 0.90);
+      color: #fff;
+      font-size: 11.5px;
+      font-weight: 600;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.14);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+    body.role-her .pro-island {
+      background: linear-gradient(90deg, rgba(80, 18, 58, 0.92), rgba(59, 20, 74, 0.92));
+      border: 1px solid rgba(244, 114, 182, 0.35);
+      box-shadow: 0 6px 20px rgba(236, 72, 153, 0.20);
+    }
+    .pro-island-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 9px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.14);
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    /* Screen Views optimized for 6.9-inch Pro Max */
     .scr {
       position: absolute;
       inset: 0;
       padding-top: calc(var(--sat) + 12px);
-      padding-bottom: calc(var(--sab) + 88px);
-      padding-left: calc(var(--sal) + 16px);
-      padding-right: calc(var(--sar) + 16px);
+      padding-bottom: calc(var(--sab) + 104px);
+      padding-left: calc(var(--sal) + 18px);
+      padding-right: calc(var(--sar) + 18px);
       overflow-y: auto;
       overflow-x: hidden;
       -webkit-overflow-scrolling: touch;
@@ -134,73 +227,95 @@
       background: var(--bg);
     }
     .scr::-webkit-scrollbar { display: none; }
-    .scr.on { display: block; }
+    .scr.on { display: block; animation: fadeInScr 0.22s ease-out; }
+    @keyframes fadeInScr {
+      from { opacity: 0.7; transform: translateY(4px); }
+      to { opacity: 1; transform: none; }
+    }
     .scr.no-tab {
-      padding-bottom: calc(var(--sab) + 24px);
+      padding-bottom: calc(var(--sab) + 28px);
     }
 
     /* Typography & Core Elements */
-    h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.5px; margin: 4px 0 12px; }
-    h2 { font-size: 18px; font-weight: 600; margin-bottom: 6px; }
-    .sub { font-size: 12px; color: var(--mut); line-height: 1.4; }
+    h1 { font-size: 28px; font-weight: 800; letter-spacing: -0.6px; margin: 4px 0 12px; }
+    h2 { font-size: 18px; font-weight: 700; margin-bottom: 6px; letter-spacing: -0.2px; }
+    .sub { font-size: 12.5px; color: var(--mut); line-height: 1.4; }
     .amt { font-weight: 700; font-variant-numeric: tabular-nums; }
     .pos { color: var(--inc); }
     .neg { color: var(--exp); }
     .center { text-align: center; }
     .clickable { cursor: pointer; }
 
-    /* Cards & Components */
+    /* Cards & Components (Titanium vs Liquid Glass) */
     .card {
       background: var(--card);
-      border-radius: 20px;
-      padding: 14px;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: var(--card-border);
+      border-radius: var(--card-radius);
+      padding: 16px;
       margin-bottom: 12px;
       box-shadow: var(--sh);
       position: relative;
     }
     .hero {
-      background: linear-gradient(135deg, var(--coral), var(--coral2));
+      background: var(--hero-grad);
       color: #FFF;
-      box-shadow: 0 10px 24px rgba(255, 107, 107, 0.35);
+      box-shadow: var(--hero-shadow);
+      border: 1px solid rgba(255, 255, 255, 0.22);
       display: flex;
-      gap: 14px;
+      gap: 16px;
       align-items: center;
-      padding: 16px;
+      padding: 20px 18px;
+      border-radius: 26px;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::after {
+      content: "";
+      position: absolute;
+      top: -40%;
+      right: -20%;
+      width: 180px;
+      height: 180px;
+      background: radial-gradient(circle, rgba(255,255,255,0.22) 0%, transparent 70%);
+      pointer-events: none;
     }
     .nav {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      min-height: 36px;
-      margin-bottom: 8px;
+      min-height: 40px;
+      margin-bottom: 10px;
     }
     .back {
       color: var(--coral);
-      font-weight: 600;
-      font-size: 15px;
+      font-weight: 700;
+      font-size: 15.5px;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
       gap: 2px;
     }
     .link {
-      color: var(--shared);
-      font-weight: 600;
-      font-size: 13px;
+      color: var(--coral);
+      font-weight: 700;
+      font-size: 13.5px;
       cursor: pointer;
     }
     .btn {
       display: block;
       width: 100%;
-      padding: 14px;
+      padding: 15px;
       border: 0;
-      border-radius: 16px;
-      background: var(--coral);
+      border-radius: 18px;
+      background: var(--fab-grad);
       color: #FFF;
-      font-size: 15px;
-      font-weight: 600;
+      font-size: 15.5px;
+      font-weight: 700;
       text-align: center;
       cursor: pointer;
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
       transition: transform 0.12s, opacity 0.2s;
     }
     .btn:active { transform: scale(0.97); }
@@ -208,11 +323,12 @@
       background: var(--card);
       color: var(--coral);
       border: 1.5px solid var(--coral);
+      box-shadow: none;
     }
     .btn.sm {
-      padding: 8px 12px;
+      padding: 9px 14px;
       font-size: 13px;
-      border-radius: 12px;
+      border-radius: 14px;
       width: auto;
     }
     .btn.red { background: var(--exp); color: #fff; }
@@ -222,24 +338,25 @@
     .seg {
       display: flex;
       background: var(--fill);
-      border-radius: 11px;
-      padding: 2px;
-      margin: 8px 0;
+      border-radius: 14px;
+      padding: 3px;
+      margin: 8px 0 12px;
     }
     .seg div {
       flex: 1;
       text-align: center;
-      padding: 7px 4px;
-      border-radius: 9px;
-      font-size: 13px;
+      padding: 8px 6px;
+      border-radius: 11px;
+      font-size: 13.5px;
       font-weight: 600;
       cursor: pointer;
       transition: 0.2s;
     }
     .seg .on {
       background: var(--card);
-      color: var(--txt);
-      box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+      color: var(--coral);
+      font-weight: 700;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
     }
 
     /* Toggle Switch */
@@ -247,16 +364,16 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 10px 0;
+      padding: 11px 0;
       border-bottom: 1px solid var(--sep);
-      font-size: 14px;
+      font-size: 14.5px;
     }
     .tog:last-child { border-bottom: 0; }
     .sw {
-      width: 48px;
-      height: 28px;
-      border-radius: 14px;
-      background: #C7C7CC;
+      width: 50px;
+      height: 30px;
+      border-radius: 15px;
+      background: #CBD5E1;
       position: relative;
       cursor: pointer;
       transition: 0.25s;
@@ -264,8 +381,8 @@
     }
     .sw i {
       position: absolute;
-      top: 2px;
-      left: 2px;
+      top: 3px;
+      left: 3px;
       width: 24px;
       height: 24px;
       border-radius: 50%;
@@ -273,13 +390,13 @@
       transition: 0.25s;
       box-shadow: 0 2px 4px rgba(0,0,0,0.2);
     }
-    .sw.on { background: var(--inc); }
-    .sw.on i { left: 22px; }
+    .sw.on { background: var(--coral); }
+    .sw.on i { left: 23px; }
 
     /* Avatars */
     .av {
-      width: 36px;
-      height: 36px;
+      width: 38px;
+      height: 38px;
       border-radius: 50%;
       display: inline-grid;
       place-items: center;
@@ -293,33 +410,36 @@
     .av.l { width: 68px; height: 68px; font-size: 28px; }
     .av.ring { box-shadow: 0 0 0 3px var(--bg); }
 
-    /* Chips & Horizontal Scroll */
+    /* Chips & Horizontal Scroll (Thumb-friendly height for 6.9" Pro Max) */
     .hs {
       display: flex;
       gap: 8px;
       overflow-x: auto;
-      margin: 0 -16px 12px;
-      padding: 2px 16px 6px;
+      margin: 0 -18px 12px;
+      padding: 2px 18px 8px;
       scrollbar-width: none;
     }
     .hs::-webkit-scrollbar { display: none; }
     .chip {
       display: inline-flex;
       align-items: center;
-      gap: 5px;
-      padding: 7px 12px;
-      border-radius: 20px;
-      background: var(--fill);
-      font-size: 13px;
-      font-weight: 500;
+      gap: 6px;
+      padding: 9px 14px;
+      border-radius: 22px;
+      background: var(--card);
+      border: var(--card-border);
+      box-shadow: var(--sh);
+      font-size: 13.5px;
+      font-weight: 600;
       cursor: pointer;
       white-space: nowrap;
       transition: 0.15s;
     }
-    .chip:active { transform: scale(0.96); }
+    .chip:active { transform: scale(0.95); }
     .chip.on {
-      background: var(--coral);
+      background: var(--fab-grad);
       color: #FFF;
+      border-color: transparent;
     }
 
     /* Rows */
@@ -327,25 +447,25 @@
       display: flex;
       align-items: center;
       gap: 12px;
-      padding: 10px 0;
+      padding: 12px 0;
       border-bottom: 1px solid var(--sep);
     }
     .row:last-child { border-bottom: 0; }
     .ic {
-      width: 42px;
-      height: 42px;
-      border-radius: 13px;
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
       display: grid;
       place-items: center;
       background: var(--ic);
-      font-size: 20px;
+      font-size: 21px;
       flex: none;
     }
     .grow { flex: 1; min-width: 0; }
-    .tt { font-weight: 600; font-size: 14px; }
+    .tt { font-weight: 600; font-size: 15px; }
     .bar {
-      height: 8px;
-      border-radius: 4px;
+      height: 9px;
+      border-radius: 5px;
       background: var(--fill);
       overflow: hidden;
       margin-top: 6px;
@@ -353,35 +473,48 @@
     .bar i {
       display: block;
       height: 100%;
-      border-radius: 4px;
+      border-radius: 5px;
       transition: width 0.4s ease;
     }
 
-    /* Bottom TabBar */
+    /* Floating Glass Bottom Dock (iPhone 16 Pro Max Titanium / iPhone 18 Pro Max Liquid Glass) */
     .tabs {
       position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      height: calc(var(--sab) + 64px);
-      padding-bottom: var(--sab);
-      background: rgba(255, 255, 255, 0.88);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border-top: 1px solid var(--sep);
+      bottom: calc(var(--sab) + 10px);
+      left: 14px;
+      right: 14px;
+      height: 68px;
+      border-radius: 28px;
+      background: rgba(255, 255, 255, 0.86);
+      backdrop-filter: blur(28px) saturate(180%);
+      -webkit-backdrop-filter: blur(28px) saturate(180%);
+      border: 1px solid rgba(255, 255, 255, 0.65);
+      box-shadow: 0 12px 34px rgba(15, 23, 42, 0.14);
       display: flex;
       justify-content: space-around;
       align-items: center;
       z-index: 50;
+      padding: 0 6px;
+    }
+    body.role-her .tabs {
+      background: rgba(255, 245, 250, 0.84);
+      border: 1px solid rgba(244, 114, 182, 0.35);
+      box-shadow: 0 14px 36px rgba(190, 24, 93, 0.16);
     }
     body.dark .tabs {
-      background: rgba(28, 28, 30, 0.88);
+      background: rgba(22, 30, 46, 0.86);
+      border: 1px solid rgba(255, 255, 255, 0.10);
+      box-shadow: 0 14px 36px rgba(0, 0, 0, 0.55);
+    }
+    body.dark.role-her .tabs {
+      background: rgba(42, 19, 44, 0.86);
+      border: 1px solid rgba(244, 114, 182, 0.26);
     }
     .tab {
       flex: 1;
       text-align: center;
-      font-size: 10px;
-      font-weight: 500;
+      font-size: 10.5px;
+      font-weight: 600;
       color: var(--mut);
       cursor: pointer;
       display: flex;
@@ -389,20 +522,20 @@
       align-items: center;
       justify-content: center;
       gap: 3px;
-      transition: color 0.15s;
+      transition: all 0.2s ease;
     }
     .tab b {
-      font-size: 20px;
+      font-size: 21px;
       font-weight: 400;
       display: block;
-      transition: transform 0.15s;
+      transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
     }
     .tab.on {
       color: var(--coral);
-      font-weight: 600;
+      font-weight: 700;
     }
     .tab.on b {
-      transform: translateY(-2px) scale(1.1);
+      transform: translateY(-2px) scale(1.14);
     }
     .fab-wrap {
       flex: 1;
@@ -411,20 +544,22 @@
       align-items: center;
     }
     .fab {
-      width: 52px;
-      height: 52px;
+      width: 56px;
+      height: 56px;
       border-radius: 50%;
-      background: linear-gradient(135deg, var(--coral), #FF8A6B);
+      background: var(--fab-grad);
       color: #FFF;
-      font-size: 28px;
+      font-size: 30px;
+      font-weight: 700;
       display: grid;
       place-items: center;
-      margin-top: -24px;
-      box-shadow: 0 8px 18px rgba(255, 107, 107, 0.45);
+      margin-top: -22px;
+      box-shadow: var(--fab-shadow);
+      border: 3px solid var(--bg);
       cursor: pointer;
-      transition: transform 0.15s;
+      transition: transform 0.15s cubic-bezier(0.22, 1, 0.36, 1);
     }
-    .fab:active { transform: scale(0.92); }
+    .fab:active { transform: scale(0.91); }
 
     /* Add Transaction Sheet */
     .scrim {
@@ -474,15 +609,15 @@
     }
     .sheet-body::-webkit-scrollbar { display: none; }
 
-    /* Amount display & Keypad */
+    /* Amount display & Keypad — 6.9" Pro Max Thumb Reach Ergonomics */
     .amount {
-      font-size: 38px;
-      font-weight: 700;
+      font-size: 40px;
+      font-weight: 800;
       text-align: center;
       margin: 4px 0;
-      letter-spacing: -1px;
+      letter-spacing: -1.2px;
       font-variant-numeric: tabular-nums;
-      min-height: 48px;
+      min-height: 50px;
       color: var(--txt);
     }
     .amount small {
@@ -492,67 +627,69 @@
     }
     .quick-amounts {
       display: flex;
-      gap: 6px;
+      gap: 7px;
       justify-content: center;
       flex-wrap: wrap;
       margin: 6px 0 12px;
     }
     .q-btn {
-      padding: 6px 12px;
+      padding: 8px 14px;
       background: var(--fill);
-      border-radius: 12px;
+      border-radius: 14px;
       font-size: 13px;
-      font-weight: 600;
+      font-weight: 700;
       cursor: pointer;
+      transition: transform 0.12s;
     }
     .q-btn:active { background: var(--sep); transform: scale(0.95); }
 
-    /* Calculator Pad */
+    /* Calculator Pad (52px tall keys for iPhone 16/18 Pro Max) */
     .pad {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      gap: 6px;
+      gap: 8px;
       margin-top: 8px;
     }
     .pad button {
-      height: 44px;
-      font-size: 18px;
-      border: 0;
-      border-radius: 12px;
+      height: 52px;
+      font-size: 20px;
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
       background: var(--card);
       color: var(--txt);
       cursor: pointer;
-      font-weight: 600;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+      font-weight: 700;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
       transition: transform 0.08s, background 0.1s;
     }
     .pad button:active { background: var(--fill); transform: scale(0.95); }
-    .pad button.op { color: var(--coral); font-weight: 700; }
-    .pad button.equal { background: var(--coral); color: #fff; font-weight: 700; }
+    .pad button.op { color: var(--coral); font-weight: 800; }
+    .pad button.equal { background: linear-gradient(135deg, var(--coral), var(--coral2)); color: #fff; font-weight: 800; border: 0; }
 
     /* Categories Grid */
     .grid-cats {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      gap: 8px;
+      gap: 9px;
       margin: 10px 0;
     }
     .cat-item {
       background: var(--card);
-      border-radius: 14px;
-      padding: 10px 4px;
+      border-radius: 16px;
+      padding: 12px 6px;
       text-align: center;
-      font-size: 11px;
-      font-weight: 500;
+      font-size: 11.5px;
+      font-weight: 600;
       cursor: pointer;
-      border: 2px solid transparent;
+      border: 2px solid var(--card-border);
       transition: 0.15s;
     }
-    .cat-item span { font-size: 22px; display: block; margin-bottom: 3px; }
+    .cat-item span { font-size: 24px; display: block; margin-bottom: 4px; }
     .cat-item.on {
       border-color: var(--coral);
-      background: rgba(255, 107, 107, 0.08);
-      font-weight: 600;
+      background: var(--ic);
+      font-weight: 700;
+      transform: translateY(-1px);
     }
 
     /* PWA Install Banner */
@@ -929,8 +1066,14 @@
       <div style="font-size:12px;color:rgba(255,255,255,0.72);margin-top:3px">Ứng dụng nội bộ riêng tư. Chỉ vợ chồng Bảo & Oanh mới có quyền truy cập.</div>
 
       <div class="auth-role-pick">
-        <div class="auth-role-btn on him" id="auth-role-him" onclick="selectAuthRole('him')">👨 Tôi là Bảo</div>
-        <div class="auth-role-btn her" id="auth-role-her" onclick="selectAuthRole('her')">👩 Tôi là Oanh</div>
+        <div class="auth-role-btn on him" id="auth-role-him" onclick="selectAuthRole('him')">
+          <div>👨 Tôi là Bảo</div>
+          <div style="font-size:10px;opacity:0.8;font-weight:600;margin-top:2px">📱 iPhone 16 Pro Max · Titanium</div>
+        </div>
+        <div class="auth-role-btn her" id="auth-role-her" onclick="selectAuthRole('her')">
+          <div>👩 Tôi là Oanh</div>
+          <div style="font-size:10px;opacity:0.8;font-weight:600;margin-top:2px">✨ iPhone 18 Pro Max · Liquid Glass</div>
+        </div>
       </div>
 
       <div style="font-size:12px;color:rgba(255,255,255,0.8)" id="auth-prompt-lbl">Nhập Mã PIN Gia Đình (4 số)</div>
@@ -982,31 +1125,32 @@
 
   <!-- ==================== 1. TAB HOME (TỔNG QUAN) ==================== -->
   <div class="scr on" id="tab-home">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-      <div style="display:flex;align-items:center;gap:10px">
-        <div style="display:flex;align-items:center" id="home-avatars"></div>
-        <div>
-          <div class="sub" id="home-greeting">Chào gia đình,</div>
-          <b style="font-size:16px" id="home-names">Bảo & Oanh</b>
-        </div>
-      </div>
-      <div style="display:flex;gap:8px">
-        <span class="ic clickable" style="width:36px;height:36px" title="Khóa ứng dụng ngay" onclick="lockAppNow()">🔒</span>
-        <span class="ic clickable" style="width:36px;height:36px;position:relative" onclick="openNotif()">
-          🔔<span id="notif-badge" style="position:absolute;top:-2px;right:-2px;background:var(--exp);color:#fff;border-radius:10px;font-size:10px;min-width:16px;height:16px;display:none;place-items:center;font-weight:700">0</span>
-        </span>
-        <span class="ic clickable" style="width:36px;height:36px" onclick="goTab('tab-set')">⚙️</span>
+    <!-- Dynamic Island Pro Max Live Capsule (iPhone 16 Pro Max Bảo / iPhone 18 Pro Max Oanh) -->
+    <div class="pro-island">
+      <div class="island-pill" onclick="toggleMyRole()" id="home-role-pill" title="Chạm để chuyển chế độ iPhone 16 Pro Max (Bảo) ⇄ iPhone 18 Pro Max (Oanh)">
+        <span class="island-cam"></span>
+        <span id="home-role-txt">📱 iPhone 16 Pro Max · Bảo</span>
+        <span style="opacity:0.65;font-size:11px">⇄</span>
+        <span style="width:1px;height:12px;background:rgba(255,255,255,0.22);margin:0 2px"></span>
+        <span class="sync-dot ok" id="home-sync-dot"></span>
+        <span id="home-sync-txt" style="font-size:11px;opacity:0.9" onclick="event.stopPropagation();goTab('tab-fam')">BO8686</span>
       </div>
     </div>
 
-    <!-- Role Switcher & Live Cloud Sync Status Bar -->
-    <div class="sync-bar">
-      <div class="sync-pill" onclick="toggleMyRole()" id="home-role-pill" title="Chạm để đổi góc nhìn Chồng / Vợ">
-        <span id="home-role-txt">👨 Máy của: Bảo ⇄</span>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="display:flex;align-items:center" id="home-avatars"></div>
+        <div>
+          <div class="sub" id="home-greeting">Không gian tài chính riêng</div>
+          <b style="font-size:17px;letter-spacing:-0.3px" id="home-names">Bảo & Oanh</b>
+        </div>
       </div>
-      <div class="sync-pill" onclick="goTab('tab-fam')" id="home-sync-pill">
-        <span class="sync-dot ok" id="home-sync-dot"></span>
-        <span id="home-sync-txt">☁️ Đám mây: Đang kết nối…</span>
+      <div style="display:flex;gap:8px">
+        <span class="ic clickable" style="width:38px;height:38px" title="Khóa ứng dụng ngay" onclick="lockAppNow()">🔒</span>
+        <span class="ic clickable" style="width:38px;height:38px;position:relative" onclick="openNotif()">
+          🔔<span id="notif-badge" style="position:absolute;top:-2px;right:-2px;background:var(--exp);color:#fff;border-radius:10px;font-size:10px;min-width:16px;height:16px;display:none;place-items:center;font-weight:700">0</span>
+        </span>
+        <span class="ic clickable" style="width:38px;height:38px" onclick="goTab('tab-set')">⚙️</span>
       </div>
     </div>
 
@@ -1180,10 +1324,10 @@
         <b>☁️ Đồng bộ đám mây 2 điện thoại</b>
         <span class="sub" id="fam-sync-status"><span class="sync-dot ok" id="fam-sync-dot"></span> Đang trực tuyến</span>
       </div>
-      <div class="sub" style="margin-bottom:6px">Chọn người đang dùng chiếc điện thoại này:</div>
+      <div class="sub" style="margin-bottom:6px">Chọn thiết bị & người đang dùng chiếc điện thoại này:</div>
       <div class="seg" id="my-role-seg">
-        <div class="on" onclick="setMyRole('him')" id="role-btn-him">👨 Chồng (Bảo)</div>
-        <div onclick="setMyRole('her')" id="role-btn-her">👩 Vợ (Oanh)</div>
+        <div class="on" onclick="setMyRole('him')" id="role-btn-him">👨 Bảo · iPhone 16 Pro Max</div>
+        <div onclick="setMyRole('her')" id="role-btn-her">👩 Oanh · iPhone 18 Pro Max</div>
       </div>
 
       <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin:10px 0 6px;padding:10px 12px;background:var(--ic);border-radius:14px">
@@ -1762,10 +1906,23 @@ function renderApp() {
   if (typeof renderCloudStatusUI === 'function') renderCloudStatusUI();
 }
 
+function applyDeviceTheme(role) {
+  const r = role || getMyRole();
+  document.body.classList.toggle('role-him', r === 'him');
+  document.body.classList.toggle('role-her', r === 'her');
+  const metaTheme = document.querySelector('meta[name="theme-color"]');
+  if (metaTheme) {
+    metaTheme.setAttribute('content', r === 'her' ? '#EC4899' : '#1D4ED8');
+  }
+}
+
 function renderHome() {
   const u = DB.users;
   const me = getMyRole();
-  $('#home-greeting').textContent = 'Chào gia đình,';
+  applyDeviceTheme(me);
+  $('#home-greeting').textContent = me === 'her'
+    ? '✨ iPhone 18 Pro Max · Liquid Glass Rose'
+    : '📱 iPhone 16 Pro Max · Sapphire Titanium';
   $('#home-names').textContent = `${u.him.name} & ${u.her.name}`;
   $('#home-avatars').innerHTML = `
     <span class="av ring" style="background:${u.him.color}">${u.him.name[0]}</span>
@@ -1773,7 +1930,9 @@ function renderHome() {
   `;
   const roleTxt = $('#home-role-txt');
   if (roleTxt) {
-    roleTxt.textContent = `${me === 'him' ? '👨' : '👩'} Máy của: ${u[me].name} ⇄`;
+    roleTxt.textContent = me === 'her'
+      ? `✨ iPhone 18 Pro Max · ${u.her.name}`
+      : `📱 iPhone 16 Pro Max · ${u.him.name}`;
   }
   $('#scope-him').textContent = u.him.name;
   $('#scope-her').textContent = u.her.name;
@@ -2178,8 +2337,8 @@ function renderFamilyAndBalance() {
   const me = getMyRole();
 
   if ($('#role-btn-him')) {
-    $('#role-btn-him').textContent = `👨 Chồng (${u.him.name})`;
-    $('#role-btn-her').textContent = `👩 Vợ (${u.her.name})`;
+    $('#role-btn-him').textContent = `👨 ${u.him.name} · 16 Pro Max`;
+    $('#role-btn-her').textContent = `👩 ${u.her.name} · 18 Pro Max`;
     $('#role-btn-him').classList.toggle('on', me === 'him');
     $('#role-btn-her').classList.toggle('on', me === 'her');
   }
@@ -2862,6 +3021,7 @@ function selectAuthRole(role) {
   AUTH.selectedRole = role === 'her' ? 'her' : 'him';
   $('#auth-role-him').classList.toggle('on', AUTH.selectedRole === 'him');
   $('#auth-role-her').classList.toggle('on', AUTH.selectedRole === 'her');
+  applyDeviceTheme(AUTH.selectedRole);
 }
 
 function updateAuthPinDots() {
@@ -3093,10 +3253,14 @@ const CLOUD = {
 localStorage.setItem('vidoi_device_id', CLOUD.deviceId);
 
 function setMyRole(role) {
-  localStorage.setItem('vidoi_my_role', role === 'her' ? 'her' : 'him');
+  const r = role === 'her' ? 'her' : 'him';
+  localStorage.setItem('vidoi_my_role', r);
   STATE.addWho = getMyRole();
+  applyDeviceTheme(r);
   renderApp();
-  toast(`Đã chuyển sang góc nhìn: ${role === 'her' ? 'Vợ (' + DB.users.her.name + ')' : 'Chồng (' + DB.users.him.name + ')'} 💑`);
+  toast(r === 'her'
+    ? `✨ Giao diện iPhone 18 Pro Max Liquid Glass — Vợ (${DB.users.her.name})`
+    : `📱 Giao diện iPhone 16 Pro Max Sapphire Titanium — Chồng (${DB.users.him.name})`);
 }
 
 function toggleMyRole() {

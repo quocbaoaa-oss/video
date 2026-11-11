@@ -1,4 +1,4 @@
-const CACHE_NAME = 'vidoi-pwa-v5-bao-oanh';
+const CACHE_NAME = 'vidoi-pwa-v6-promax';
 const ASSETS = [
   './',
   './index.html',
