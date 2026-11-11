@@ -45,6 +45,8 @@ Dự án hiện được xây dựng song song trên 2 nền tảng mạnh mẽ:
 | 13 | **Đồng bộ đám mây thời gian thực 2 điện thoại (Real-time Cloud Sync):** Kênh truyền tức thì Zero-config (`EventSource` SSE + JSON Relay) kết hợp tùy chọn Google Cloud Firestore riêng; tự động gộp giao dịch & bình luận không xung đột (`mergeCloudPayload`, `deletedTxIds`) | `index.html`, `sw.js` | **Hoàn thành** |
 | 14 | **Ghép đôi 2 máy qua Mã QR & Magic Link (`?join=CODE&role=her`):** Phân vai thiết bị độc lập (`Tôi là Chồng` / `Tôi là Vợ`), quét QR hoặc mở link Zalo là tự động cấu hình mã gia đình và đồng bộ ngay | `index.html` | **Hoàn thành** |
 | 15 | **Tất toán bằng mã VietQR chuẩn Napas247:** Tự động sinh mã QR chuyển khoản ngân hàng đúng số tiền chênh lệch và nội dung tất toán, kèm sửa giao dịch (`✏️ Sửa`), thêm Ví/Quỹ mục tiêu và khôi phục từ file JSON | `index.html` | **Hoàn thành** |
+| 16 | **Khóa Bảo Mật Nội Bộ (Private Couple Lock Gate) & Reset sạch số liệu 0 ₫:** Chỉ vợ chồng **Bảo & Oanh** mở được bằng Mã PIN Gia Đình 4 số (mặc định `2611`) và kênh đồng bộ đám mây băm mật mã riêng (`vidoi_bo_priv_<hash>`) | `index.html` | **Hoàn thành** |
+| 17 | **Thiết kế UI/UX chuyên biệt cho iPhone 16 Pro Max (Chồng Bảo) & iPhone 18 Pro Max (Vợ Oanh):** Khung nhìn chuẩn 6.9-inch `440×956pt`, Dynamic Island Live Capsule (`.pro-island`), Floating Glass Dock, giao diện **Sapphire Titanium** cho Bảo (`body.role-him`) và **iOS Liquid Glass Rose Titanium** cho Oanh (`body.role-her`) | `index.html`, `sw.js` | **Hoàn thành** |
 
 ### 2.2. Bản iOS SwiftUI Native (`ViDoi/`)
 | # | Hạng mục công việc | File triển khai | Trạng thái |
