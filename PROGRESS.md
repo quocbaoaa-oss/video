@@ -39,9 +39,12 @@ Dự án hiện được xây dựng song song trên 2 nền tảng mạnh mẽ:
 | 7 | Chụp và đính kèm hóa đơn trực tiếp bằng Camera điện thoại hoặc Thư viện ảnh, hỗ trợ xem phóng to toàn màn hình | `index.html` | **Hoàn thành** |
 | 8 | Bộ lọc đa tháng (`‹` / `›`), xem lại lịch sử chi tiêu theo từng tháng | `index.html` | **Hoàn thành** |
 | 9 | Cơ chế cân đối bù trừ 2 chiều theo tỷ lệ đóng góp (ví dụ 60/40), tự động tính số tiền ai cần chuyển cho ai | `index.html` | **Hoàn thành** |
-| 10 | Tùy chỉnh tên 2 vợ chồng (Bảo & Loan hoặc tùy biến), quản lý ví tiền, quỹ mục tiêu chung, cài đặt Dark Mode | `index.html` | **Hoàn thành** |
+| 10 | Tùy chỉnh tên 2 vợ chồng (Bảo & Oanh hoặc tùy biến), quản lý ví tiền, quỹ mục tiêu chung, cài đặt Dark Mode | `index.html` | **Hoàn thành** |
 | 11 | Hệ thống lưu trữ an toàn `localStorage`, tính năng xuất báo cáo CSV và file sao lưu JSON | `index.html` | **Hoàn thành** |
 | 12 | Thiết lập GitHub Pages, file `.nojekyll` và luồng CI/CD GitHub Actions tự động triển khai trang web | `.nojekyll`, `.github/workflows/deploy-pages.yml` | **Hoàn thành & Trực tuyến** |
+| 13 | **Đồng bộ đám mây thời gian thực 2 điện thoại (Real-time Cloud Sync):** Kênh truyền tức thì Zero-config (`EventSource` SSE + JSON Relay) kết hợp tùy chọn Google Cloud Firestore riêng; tự động gộp giao dịch & bình luận không xung đột (`mergeCloudPayload`, `deletedTxIds`) | `index.html`, `sw.js` | **Hoàn thành** |
+| 14 | **Ghép đôi 2 máy qua Mã QR & Magic Link (`?join=CODE&role=her`):** Phân vai thiết bị độc lập (`Tôi là Chồng` / `Tôi là Vợ`), quét QR hoặc mở link Zalo là tự động cấu hình mã gia đình và đồng bộ ngay | `index.html` | **Hoàn thành** |
+| 15 | **Tất toán bằng mã VietQR chuẩn Napas247:** Tự động sinh mã QR chuyển khoản ngân hàng đúng số tiền chênh lệch và nội dung tất toán, kèm sửa giao dịch (`✏️ Sửa`), thêm Ví/Quỹ mục tiêu và khôi phục từ file JSON | `index.html` | **Hoàn thành** |
 
 ### 2.2. Bản iOS SwiftUI Native (`ViDoi/`)
 | # | Hạng mục công việc | File triển khai | Trạng thái |
@@ -95,13 +98,15 @@ Dưới đây là kế hoạch chi tiết cho các bước tiếp theo:
 - [ ] Điều chỉnh hạn mức ngân sách hàng tháng cho sát với thực tế chi tiêu của hai bạn.
 - [ ] Tinh chỉnh cỡ chữ, khoảng cách hoặc thêm các phím tắt ghi nhanh phổ biến nhất.
 
-### Bước 3 — Đồng bộ đám mây thời gian thực (Real-time Cloud Sync cho PWA)
-- [ ] Tích hợp Firebase Firestore Web SDK hoặc Supabase vào bản PWA.
-- [ ] Khi chồng ghi chép một khoản chi tiêu ở công ty ➔ Điện thoại của vợ ở nhà tự động cập nhật số dư tức thì qua mạng Internet.
-- [ ] Duy trì tính năng Offline First: Khi mất mạng vẫn ghi chép bình thường, khi có mạng lại tự động đồng bộ hóa lên đám mây.
+### Bước 3 — Đồng bộ đám mây thời gian thực (Real-time Cloud Sync cho PWA) ✅ ĐÃ HOÀN THÀNH
+- [x] Tích hợp hệ thống **Đồng bộ Đám mây Kép** (Kênh truyền tức thì Zero-config SSE + Tùy chọn Google Cloud Firestore REST API) vào bản PWA [`index.html`](file:///g:/My%20Drive/App%20chi%20tieu%20gia%20dinh/index.html).
+- [x] Thiết lập **Vai trò theo từng điện thoại** (`Tôi là Chồng` / `Tôi là Vợ`) và **Ghép đôi qua Mã QR / Link mời tự động** (`?join=VD8686&role=her`).
+- [x] Khi chồng ghi chép hoặc bình luận ở công ty ➔ Điện thoại của vợ ở nhà tự động nhận và gộp dữ liệu tức thì qua Internet.
+- [x] Duy trì tính năng **Offline First**: Khi mất mạng vẫn ghi chép bình thường, khi có mạng lại tự động đồng bộ hóa (`online` event listener).
 
-### Bước 4 — Tính năng thông minh & Nâng cao (Giai đoạn tương lai)
-- [ ] **Tạo mã VietQR chuyển khoản tự động:** Nhấn nút tất toán sẽ tự động sinh mã VietQR với đúng số tài khoản ngân hàng và số tiền cần chuyển bù, chỉ cần mở app ngân hàng quét là xong.
+### Bước 4 — Tính năng thông minh & Nâng cao
+- [x] **Tạo mã VietQR chuyển khoản tự động (Đã hoàn thành):** Nhấn nút `💸 Tạo mã VietQR` trong mục Gia đình tự động sinh mã VietQR chuẩn Napas247 với đúng ngân hàng, số tài khoản, số tiền cần bù trừ và nội dung chuyển khoản.
+- [x] **Chỉnh sửa giao dịch & Khôi phục sao lưu JSON (Đã hoàn thành):** Cho phép sửa mọi thông tin giao dịch đã lưu (`✏️ Sửa`), thêm Ví/Quỹ mục tiêu mới và nạp lại file sao lưu `.json`.
 - [ ] **Quét hóa đơn bằng AI (Gemini Vision API):** Chụp ảnh hóa đơn mua sắm, AI tự động đọc tổng tiền, ngày giờ và tự động chọn danh mục chi tiêu phù hợp.
 - [ ] **Thông báo đẩy (Web Push Notifications):** Nhắc nhở hai vợ chồng ghi chép chi tiêu lúc 21:00 hàng ngày và thông báo khi có khoản chi chung lớn.
 

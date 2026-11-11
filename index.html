@@ -764,12 +764,204 @@
     body.dark .tip.g { background: #12301F; color: #7EE0A7; }
     .shake { animation: shake 0.35s; }
     @keyframes shake { 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
+
+    /* Cloud Sync Pills & Modals */
+    .sync-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .sync-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 10px;
+      border-radius: 16px;
+      background: var(--card);
+      box-shadow: var(--sh);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .sync-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--mut);
+      display: inline-block;
+    }
+    .sync-dot.ok {
+      background: var(--inc);
+      box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.2);
+    }
+    .sync-dot.busy {
+      background: var(--warn);
+      animation: pulseDot 1s infinite;
+    }
+    .sync-dot.err { background: var(--exp); }
+    @keyframes pulseDot { 50% { opacity: 0.35; transform: scale(0.85); } }
+    .code-box {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: 3px;
+      color: var(--shared);
+      background: var(--ic);
+      padding: 8px 14px;
+      border-radius: 12px;
+      display: inline-block;
+    }
+
+    /* Private Couple Lock Screen (Bảo & Oanh Only) */
+    #auth-gate {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      background: linear-gradient(160deg, #161622 0%, #231934 55%, #2D1B2E 100%);
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 20px;
+      text-align: center;
+      transition: opacity 0.28s ease;
+    }
+    #auth-gate.hidden {
+      display: none !important;
+    }
+    .auth-card {
+      width: 100%;
+      max-width: 350px;
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 26px;
+      padding: 24px 20px 20px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
+    }
+    .auth-role-pick {
+      display: flex;
+      gap: 8px;
+      margin: 14px 0;
+    }
+    .auth-role-btn {
+      flex: 1;
+      padding: 11px 8px;
+      border-radius: 14px;
+      border: 1.5px solid rgba(255, 255, 255, 0.18);
+      background: rgba(255, 255, 255, 0.05);
+      color: #ddd;
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .auth-role-btn.on.him {
+      background: rgba(76, 141, 255, 0.28);
+      border-color: #4C8DFF;
+      color: #fff;
+      box-shadow: 0 0 0 3px rgba(76, 141, 255, 0.22);
+    }
+    .auth-role-btn.on.her {
+      background: rgba(255, 126, 182, 0.28);
+      border-color: #FF7EB6;
+      color: #fff;
+      box-shadow: 0 0 0 3px rgba(255, 126, 182, 0.22);
+    }
+    .auth-pin-dots {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin: 14px 0 16px;
+    }
+    .auth-pin-dot {
+      width: 15px;
+      height: 15px;
+      border-radius: 50%;
+      border: 2px solid rgba(255, 255, 255, 0.45);
+      background: transparent;
+      transition: all 0.15s;
+    }
+    .auth-pin-dot.filled {
+      background: var(--coral);
+      border-color: var(--coral);
+      transform: scale(1.12);
+    }
+    .auth-pad {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 6px;
+    }
+    .auth-key {
+      height: 50px;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: #fff;
+      font-size: 20px;
+      font-weight: 700;
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      user-select: none;
+    }
+    .auth-key:active {
+      background: rgba(255, 107, 107, 0.45);
+      transform: scale(0.96);
+    }
   </style>
 </head>
 <body>
 
 <div id="app-shell">
   <div id="desktop-bar"></div>
+
+  <!-- ==================== PRIVATE COUPLE LOCK GATE (CHỈ BẢO & OANH) ==================== -->
+  <div id="auth-gate">
+    <div class="auth-card" id="auth-card-box">
+      <div style="font-size:36px;margin-bottom:4px">💑🔐</div>
+      <div style="font-size:19px;font-weight:800;letter-spacing:-0.3px">Ví Đôi — Bảo & Oanh</div>
+      <div style="font-size:12px;color:rgba(255,255,255,0.72);margin-top:3px">Ứng dụng nội bộ riêng tư. Chỉ vợ chồng Bảo & Oanh mới có quyền truy cập.</div>
+
+      <div class="auth-role-pick">
+        <div class="auth-role-btn on him" id="auth-role-him" onclick="selectAuthRole('him')">👨 Tôi là Bảo</div>
+        <div class="auth-role-btn her" id="auth-role-her" onclick="selectAuthRole('her')">👩 Tôi là Oanh</div>
+      </div>
+
+      <div style="font-size:12px;color:rgba(255,255,255,0.8)" id="auth-prompt-lbl">Nhập Mã PIN Gia Đình (4 số)</div>
+      <div class="auth-pin-dots" id="auth-pin-dots">
+        <span class="auth-pin-dot"></span>
+        <span class="auth-pin-dot"></span>
+        <span class="auth-pin-dot"></span>
+        <span class="auth-pin-dot"></span>
+      </div>
+
+      <div class="auth-pad">
+        <div class="auth-key" onclick="pressAuthPin('1')">1</div>
+        <div class="auth-key" onclick="pressAuthPin('2')">2</div>
+        <div class="auth-key" onclick="pressAuthPin('3')">3</div>
+        <div class="auth-key" onclick="pressAuthPin('4')">4</div>
+        <div class="auth-key" onclick="pressAuthPin('5')">5</div>
+        <div class="auth-key" onclick="pressAuthPin('6')">6</div>
+        <div class="auth-key" onclick="pressAuthPin('7')">7</div>
+        <div class="auth-key" onclick="pressAuthPin('8')">8</div>
+        <div class="auth-key" onclick="pressAuthPin('9')">9</div>
+        <div class="auth-key" style="font-size:12px;color:#bbb" onclick="clearAuthPin()">Xóa</div>
+        <div class="auth-key" onclick="pressAuthPin('0')">0</div>
+        <div class="auth-key" style="font-size:16px" onclick="backspaceAuthPin()">⌫</div>
+      </div>
+
+      <label style="display:flex;align-items:center;justify-content:center;gap:6px;margin-top:14px;font-size:12px;color:rgba(255,255,255,0.78);cursor:pointer">
+        <input type="checkbox" id="auth-remember-chk" checked style="accent-color:var(--coral)">
+        Ghi nhớ điện thoại cá nhân này của tôi
+      </label>
+    </div>
+  </div>
 
   <!-- PWA Install Banner -->
   <div id="pwa-banner">
@@ -795,14 +987,26 @@
         <div style="display:flex;align-items:center" id="home-avatars"></div>
         <div>
           <div class="sub" id="home-greeting">Chào gia đình,</div>
-          <b style="font-size:16px" id="home-names">Minh & Lan</b>
+          <b style="font-size:16px" id="home-names">Bảo & Oanh</b>
         </div>
       </div>
       <div style="display:flex;gap:8px">
+        <span class="ic clickable" style="width:36px;height:36px" title="Khóa ứng dụng ngay" onclick="lockAppNow()">🔒</span>
         <span class="ic clickable" style="width:36px;height:36px;position:relative" onclick="openNotif()">
-          🔔<span id="notif-badge" style="position:absolute;top:-2px;right:-2px;background:var(--exp);color:#fff;border-radius:10px;font-size:10px;min-width:16px;height:16px;display:grid;place-items:center;font-weight:700">2</span>
+          🔔<span id="notif-badge" style="position:absolute;top:-2px;right:-2px;background:var(--exp);color:#fff;border-radius:10px;font-size:10px;min-width:16px;height:16px;display:none;place-items:center;font-weight:700">0</span>
         </span>
         <span class="ic clickable" style="width:36px;height:36px" onclick="goTab('tab-set')">⚙️</span>
+      </div>
+    </div>
+
+    <!-- Role Switcher & Live Cloud Sync Status Bar -->
+    <div class="sync-bar">
+      <div class="sync-pill" onclick="toggleMyRole()" id="home-role-pill" title="Chạm để đổi góc nhìn Chồng / Vợ">
+        <span id="home-role-txt">👨 Máy của: Bảo ⇄</span>
+      </div>
+      <div class="sync-pill" onclick="goTab('tab-fam')" id="home-sync-pill">
+        <span class="sync-dot ok" id="home-sync-dot"></span>
+        <span id="home-sync-txt">☁️ Đám mây: Đang kết nối…</span>
       </div>
     </div>
 
@@ -969,15 +1173,45 @@
   <!-- ==================== 4. TAB BALANCE & FAMILY (CÂN ĐỐI & GIA ĐÌNH) ==================== -->
   <div class="scr" id="tab-fam">
     <h1>Cân đối & Gia đình</h1>
+
+    <!-- Real-time Cloud Sync between 2 Phones Card -->
+    <div class="card" style="border:1.5px solid rgba(124,92,255,0.28)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <b>☁️ Đồng bộ đám mây 2 điện thoại</b>
+        <span class="sub" id="fam-sync-status"><span class="sync-dot ok" id="fam-sync-dot"></span> Đang trực tuyến</span>
+      </div>
+      <div class="sub" style="margin-bottom:6px">Chọn người đang dùng chiếc điện thoại này:</div>
+      <div class="seg" id="my-role-seg">
+        <div class="on" onclick="setMyRole('him')" id="role-btn-him">👨 Chồng (Bảo)</div>
+        <div onclick="setMyRole('her')" id="role-btn-her">👩 Vợ (Oanh)</div>
+      </div>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin:10px 0 6px;padding:10px 12px;background:var(--ic);border-radius:14px">
+        <div>
+          <div class="sub">Mã Gia Đình chung (6 ký tự)</div>
+          <div style="font-family:monospace;font-size:21px;font-weight:800;letter-spacing:2px;color:var(--shared)" id="fam-code-display">VD8686</div>
+        </div>
+        <div style="display:flex;gap:6px">
+          <button class="btn sm" style="background:var(--shared)" onclick="openInviteModal()">📲 Mời Vợ/Chồng</button>
+          <button class="btn sm alt" onclick="syncCloudNow(true)" title="Đồng bộ ngay">🔄</button>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:8px;align-items:center;margin-top:8px">
+        <input class="input" id="join-code-input" placeholder="Nhập mã 6 ký tự của Vợ/Chồng…" maxlength="8" style="margin:0;text-transform:uppercase;font-weight:700;letter-spacing:1px">
+        <button class="btn sm" style="white-space:nowrap" onclick="joinFamilyByCode()">Liên kết</button>
+      </div>
+      <div class="sub" style="margin-top:6px" id="fam-sync-sub">Hai máy nhập chung Mã Gia Đình (hoặc quét QR) sẽ tự động đồng bộ chi tiêu tức thì qua Internet.</div>
+    </div>
     
     <!-- Balance Card -->
     <div class="card center" style="padding:18px 14px">
       <div style="display:flex;align-items:center;justify-content:center;gap:12px">
         <span class="av l" id="bal-av-him" style="background:var(--him)">B</span>
         <span style="font-size:22px" id="bal-arrow">⇄</span>
-        <span class="av l" id="bal-av-her" style="background:var(--her)">L</span>
+        <span class="av l" id="bal-av-her" style="background:var(--her)">O</span>
       </div>
-      <div style="font-size:15px;margin:10px 0 4px" id="bal-who">Lan nên chuyển cho Bảo</div>
+      <div style="font-size:15px;margin:10px 0 4px" id="bal-who">Oanh nên chuyển cho Bảo</div>
       <div style="font-size:32px;font-weight:700;color:var(--shared)" id="bal-amt">0 ₫</div>
       <div class="sub" id="bal-sub">để cân bằng theo tỷ lệ 60/40</div>
       <div style="display:flex;gap:8px;margin-top:14px" id="bal-action-btns">
@@ -994,7 +1228,7 @@
       </div>
       <div style="display:flex;justify-content:space-between;font-weight:600;margin:6px 0">
         <span style="color:var(--him)" id="ratio-lbl-him">Bảo 60%</span>
-        <span style="color:var(--her)" id="ratio-lbl-her">Lan 40%</span>
+        <span style="color:var(--her)" id="ratio-lbl-her">Oanh 40%</span>
       </div>
       <div id="ratio-slider-wrap" style="display:none;margin-top:8px">
         <input type="range" min="10" max="90" value="60" id="ratio-slider" style="width:100%" oninput="onRatioSlide(this.value)">
@@ -1011,7 +1245,7 @@
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
         <b>Ví & Tài khoản</b>
-        <span class="link" onclick="toast('Tính năng thêm ví tùy chỉnh')">＋ Thêm</span>
+        <span class="link" onclick="promptAddWallet()">＋ Thêm</span>
       </div>
       <div id="family-wallets-list"></div>
     </div>
@@ -1020,7 +1254,7 @@
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
         <b>Mục tiêu chung</b>
-        <span class="link" onclick="toast('Thêm mục tiêu tiết kiệm mới')">＋ Mới</span>
+        <span class="link" onclick="promptAddGoal()">＋ Mới</span>
       </div>
       <div id="family-goals-list"></div>
     </div>
@@ -1054,7 +1288,37 @@
         </div>
         <div style="flex:1">
           <div class="sub">Tên Vợ</div>
-          <input class="input" id="cfg-name-her" value="Loan" maxlength="12" onchange="saveProfileNames()">
+          <input class="input" id="cfg-name-her" value="Oanh" maxlength="12" onchange="saveProfileNames()">
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="border:1.5px solid rgba(255,107,107,0.35)">
+      <h2>🔐 Bảo mật độc quyền (Chỉ Bảo & Oanh)</h2>
+      <div class="sub" style="margin-bottom:8px">Mã PIN Gia Đình (4 chữ số) bảo vệ ứng dụng và tạo kênh đám mây bí mật chỉ 2 máy của Bảo & Oanh mới giải mã được:</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input class="input" id="cfg-family-pin" type="password" inputmode="numeric" maxlength="4" placeholder="Mã PIN 4 số (mặc định: 2611)" style="margin:0;letter-spacing:4px;font-weight:700;text-align:center">
+        <button class="btn sm" style="white-space:nowrap" onclick="changeFamilyPin()">Đổi mã PIN</button>
+      </div>
+      <div class="tog" style="margin-top:8px">
+        <span>🔒 Hỏi mã PIN mỗi lần mở app</span>
+        <div class="sw" id="sw-always-lock" onclick="toggleAlwaysLock()"><i></i></div>
+      </div>
+      <div class="btn alt sm" style="margin-top:8px;width:100%" onclick="lockAppNow()">🔒 Khóa màn hình ứng dụng ngay</div>
+    </div>
+
+    <div class="card">
+      <h2>☁️ Đồng bộ Đám mây & Ngân hàng</h2>
+      <div class="sub" style="margin-bottom:6px">Mặc định ứng dụng đồng bộ tức thì qua kênh SSE theo Mã Gia Đình. Bạn cũng có thể gắn thêm Google Firebase Project ID riêng:</div>
+      <input class="input" id="cfg-fb-project" placeholder="Firebase Project ID (tùy chọn, vd: vidoi-app)" onchange="saveCloudConfig()">
+      <div style="display:flex;gap:8px;margin-top:4px">
+        <div style="flex:1">
+          <div class="sub">Ngân hàng nhận bù trừ (VietQR)</div>
+          <input class="input" id="cfg-bank-bin" placeholder="Mã NH (VCB, TCB, MB, ACB…)" value="VCB" onchange="saveBankConfig()">
+        </div>
+        <div style="flex:1">
+          <div class="sub">Số tài khoản nhận</div>
+          <input class="input" id="cfg-bank-acc" placeholder="Số tài khoản…" onchange="saveBankConfig()">
         </div>
       </div>
     </div>
@@ -1078,6 +1342,8 @@
       <h2>Dữ liệu & Sao lưu</h2>
       <div class="btn alt sm" style="margin:8px 0;width:100%" onclick="exportCSV()">⬇ Xuất file báo cáo CSV</div>
       <div class="btn alt sm" style="margin:8px 0;width:100%" onclick="exportJSON()">💾 Sao lưu toàn bộ dữ liệu (JSON)</div>
+      <input type="file" id="import-json-input" accept=".json,application/json" style="display:none" onchange="importJSONFile(event)">
+      <div class="btn alt sm" style="margin:8px 0;width:100%" onclick="$('#import-json-input').click()">📥 Khôi phục dữ liệu từ file JSON</div>
       <div class="btn alt sm red" style="margin:8px 0;width:100%;color:#fff" onclick="confirmResetData()">🗑 Xóa dữ liệu mẫu (Ghi chép thật từ 0 ₫)</div>
       <div class="btn alt sm" style="margin:8px 0;width:100%" onclick="restoreSampleData()">↺ Nạp lại dữ liệu mẫu (Demo)</div>
     </div>
@@ -1201,6 +1467,44 @@
     </div>
   </div>
 
+  <!-- Family Invite QR & Magic Link Modal -->
+  <div class="dlg" id="invite-modal">
+    <div style="width:320px;padding-bottom:14px">
+      <h2>📲 Liên kết điện thoại Vợ/Chồng</h2>
+      <p style="padding-bottom:8px">Quét mã QR bằng Camera điện thoại của người kia hoặc gửi Link mời để tự động đồng bộ gia đình:</p>
+      <div class="code-box" id="invite-modal-code">VD8686</div>
+      <div style="margin:10px auto;width:180px;height:180px;background:#fff;padding:8px;border-radius:16px;box-shadow:0 4px 12px rgba(0,0,0,0.08)">
+        <img id="invite-qr-img" style="width:100%;height:100%;object-fit:contain" alt="QR Mời Gia Đình">
+      </div>
+      <div style="padding:0 16px;display:flex;flex-direction:column;gap:8px">
+        <button class="btn sm" style="width:100%;background:var(--shared)" onclick="shareFamilyInviteLink()">📤 Chia sẻ Link tự động kết nối</button>
+        <button class="btn sm alt" style="width:100%" onclick="generateNewFamilyCode()">🎲 Tạo Mã Gia Đình mới</button>
+        <button class="btn sm alt" style="width:100%;border-color:var(--sep);color:var(--mut)" onclick="$('#invite-modal').classList.remove('on')">Đóng</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- VietQR Settlement Modal -->
+  <div class="dlg" id="vietqr-modal">
+    <div style="width:325px;padding-bottom:14px">
+      <h2 id="vietqr-title">🏦 Chuyển khoản tất toán</h2>
+      <p id="vietqr-sub" style="padding-bottom:6px">Quét bằng bất kỳ ứng dụng Ngân hàng nào để chuyển đúng số tiền bù trừ:</p>
+      <div style="margin:6px auto;width:210px;min-height:210px;background:#fff;padding:8px;border-radius:16px;box-shadow:0 4px 12px rgba(0,0,0,0.08);display:grid;place-items:center">
+        <img id="vietqr-img" style="width:100%;border-radius:10px" alt="VietQR">
+      </div>
+      <div style="padding:6px 16px 0;text-align:left">
+        <div style="display:flex;gap:6px">
+          <input class="input" id="vietqr-bank-input" placeholder="Ngân hàng (VCB, TCB, MB…)" style="margin:4px 0;padding:8px 10px;font-size:13px;width:42%" onchange="updateVietQRModal()">
+          <input class="input" id="vietqr-acc-input" placeholder="Số tài khoản nhận…" style="margin:4px 0;padding:8px 10px;font-size:13px;width:58%" onchange="updateVietQRModal()">
+        </div>
+      </div>
+      <div style="padding:8px 16px 0;display:flex;gap:8px">
+        <button class="btn sm alt" style="flex:1" onclick="$('#vietqr-modal').classList.remove('on')">Đóng</button>
+        <button class="btn sm ok" style="flex:1" onclick="$('#vietqr-modal').classList.remove('on');settleBalance()">✔ Đã chuyển xong</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Photo Fullscreen Zoom Modal -->
   <div class="scrim" id="photo-zoom-modal" style="display:grid;place-items:center;z-index:120" onclick="this.classList.remove('on')">
     <img id="photo-zoom-img" style="max-width:92%;max-height:85%;border-radius:14px;box-shadow:0 15px 40px rgba(0,0,0,0.6)">
@@ -1236,18 +1540,31 @@ const getCatIcon = name => (CATEGORIES.find(c => c[1] === name) || ['💼'])[0];
 // Color palette
 const COLORS = ['#FF6B6B', '#2EC4B6', '#7C5CFF', '#F59E0B', '#EF4444', '#10B981'];
 
-// Initial Sample Data Generator
+// Role Manager: 'him' (Chồng) or 'her' (Vợ) per device
+const ROLE_KEY = 'vidoi_my_role';
+function getMyRole() {
+  return localStorage.getItem(ROLE_KEY) === 'her' ? 'her' : 'him';
+}
+function getPartnerRole() {
+  return getMyRole() === 'him' ? 'her' : 'him';
+}
+
+// Initial Clean Data Generator (0 ₫ — Dành riêng cho Bảo & Oanh)
 function getInitialData() {
   return {
+    familyCode: 'BO8686',
+    updatedAt: Date.now(),
+    deletedTxIds: [],
+    bank: { bin: 'VCB', acc: '' },
     users: {
       him: { name: 'Bảo', color: '#4C8DFF', role: 'Chồng' },
-      her: { name: 'Loan', color: '#FF7EB6', role: 'Vợ' }
+      her: { name: 'Oanh', color: '#FF7EB6', role: 'Vợ' }
     },
     wallets: [
-      { id: 'vcb', name: 'Ví chung VCB', icon: '🏦', balance: 18500000, owner: 'S', color: '#7C5CFF,#a78bfa' },
-      { id: 'cash', name: 'Tiền mặt', icon: '💵', balance: 2450000, owner: 'him', color: '#22C55E,#4ade80' },
-      { id: 'momo', name: 'Momo', icon: '📱', balance: 1350000, owner: 'her', color: '#EC4899,#f9a8d4' },
-      { id: 'tcb', name: 'Thẻ tín dụng', icon: '💳', balance: -2800000, owner: 'him', color: '#EF4444,#fb7185' }
+      { id: 'vcb', name: 'Ví chung VCB', icon: '🏦', balance: 0, owner: 'S', color: '#7C5CFF,#a78bfa' },
+      { id: 'cash', name: 'Tiền mặt (Bảo)', icon: '💵', balance: 0, owner: 'him', color: '#22C55E,#4ade80' },
+      { id: 'momo', name: 'Ví riêng (Oanh)', icon: '📱', balance: 0, owner: 'her', color: '#EC4899,#f9a8d4' },
+      { id: 'tcb', name: 'Thẻ tín dụng', icon: '💳', balance: 0, owner: 'him', color: '#EF4444,#fb7185' }
     ],
     budgets: {
       'Ăn uống': 6000000,
@@ -1264,51 +1581,54 @@ function getInitialData() {
       'Ăn uống': 1200000,
       'Giải trí': 800000
     },
-    goals: [
-      { id: 1, icon: '✈️', name: 'Du lịch Đà Nẵng', current: 8000000, target: 15000000, deadline: 'T1/2027' },
-      { id: 2, icon: '🏠', name: 'Quỹ mua nhà', current: 120000000, target: 800000000, deadline: '2029' },
-      { id: 3, icon: '👶', name: 'Học vấn cho con', current: 25000000, target: 100000000, deadline: '2035' }
-    ],
-    transactions: [
-      { id: 1, day: 1, icon: '🏠', title: 'Tiền nhà', category: 'Nhà cửa', amount: 2100000, who: 'him', shared: true, wallet: 'vcb', kind: 'e', note: 'Chuyển khoản chủ nhà', receipt: null, comments: [] },
-      { id: 2, day: 2, icon: '🛒', title: 'Co.opmart', category: 'Chợ & Siêu thị', amount: 1150000, who: 'her', shared: true, wallet: 'vcb', kind: 'e', note: 'Thực phẩm tuần', receipt: null, comments: [] },
-      { id: 3, day: 3, icon: '🍜', title: 'Ăn trưa', category: 'Ăn uống', amount: 85000, who: 'him', shared: true, wallet: 'cash', kind: 'e', note: '', receipt: null, comments: [] },
-      { id: 4, day: 4, icon: '💡', title: 'Tiền điện', category: 'Hóa đơn', amount: 1250000, who: 'him', shared: true, wallet: 'vcb', kind: 'e', note: 'Tháng trước', receipt: null, comments: [] },
-      { id: 5, day: 5, icon: '🛍️', title: 'Quần áo mới', category: 'Mua sắm', amount: 650000, who: 'her', shared: false, wallet: 'momo', kind: 'e', note: 'Đồ đi tiệc', receipt: null, comments: [] },
-      { id: 6, day: 5, icon: '💼', title: 'Lương tháng', category: 'Thu', amount: 22000000, who: 'him', shared: true, wallet: 'vcb', kind: 'i', note: 'Công ty chuyển khoản', receipt: null, comments: [] },
-      { id: 7, day: 5, icon: '💼', title: 'Lương tháng', category: 'Thu', amount: 14000000, who: 'her', shared: true, wallet: 'vcb', kind: 'i', note: 'Lương vợ', receipt: null, comments: [] },
-      { id: 8, day: 7, icon: '🍜', title: 'Ăn tối sinh nhật', category: 'Ăn uống', amount: 1800000, who: 'her', shared: true, wallet: 'vcb', kind: 'e', note: 'Nhà hàng sinh nhật', receipt: null, comments: [{ who: 'him', text: 'Món ngon quá em ơi!' }, { who: 'her', text: 'Dạ anh ❤️' }] },
-      { id: 9, day: 8, icon: '🚗', title: 'Xăng xe', category: 'Đi lại', amount: 120000, who: 'him', shared: true, wallet: 'cash', kind: 'e', note: '', receipt: null, comments: [] },
-      { id: 10, day: 9, icon: '☕', title: 'Cà phê sáng', category: 'Ăn uống', amount: 45000, who: 'her', shared: false, wallet: 'momo', kind: 'e', note: '', receipt: null, comments: [] },
-      { id: 11, day: 9, icon: '👶', title: 'Sữa cho bé', category: 'Con cái', amount: 560000, who: 'him', shared: true, wallet: 'cash', kind: 'e', note: '2 hộp sữa bột', receipt: null, comments: [] }
-    ],
-    ratio: 60, // 60% him, 40% her
-    settled: false,
+    goals: [],
+    transactions: [],
+    ratio: 60, // 60% Bảo, 40% Oanh
+    settled: true,
     privacy: 1 // 0: Ẩn hẳn, 1: Chỉ tổng, 2: Chi tiết
   };
 }
 
-// Storage Manager with automatic localStorage sync
-const STORAGE_KEY = 'vidoi_pwa_data_v1';
+// Storage Manager with automatic localStorage + Real-Time Cloud Sync
+// Clean storage key so all old demo numbers are wiped to 0 ₫
+localStorage.removeItem('vidoi_pwa_data_v1');
+const STORAGE_KEY = 'vidoi_bao_oanh_clean_v2';
 let DB = loadData();
+
+function ensureDBFields(obj) {
+  const def = getInitialData();
+  if (!obj.familyCode) obj.familyCode = def.familyCode;
+  if (!Array.isArray(obj.deletedTxIds)) obj.deletedTxIds = [];
+  if (!obj.bank) obj.bank = { bin: 'VCB', acc: '' };
+  if (!obj.updatedAt) obj.updatedAt = Date.now();
+  if (!obj.users) obj.users = def.users;
+  obj.users.him.name = 'Bảo';
+  obj.users.her.name = 'Oanh';
+  return obj;
+}
 
 function loadData() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
+    if (raw) return ensureDBFields(JSON.parse(raw));
   } catch (e) {
     console.error('Lỗi đọc localStorage:', e);
   }
-  const init = getInitialData();
-  saveData(init);
+  const init = ensureDBFields(getInitialData());
+  saveData(init, false);
   return init;
 }
 
-function saveData(data) {
+function saveData(data, pushCloud = true) {
+  const target = ensureDBFields(data || DB);
+  if (pushCloud) target.updatedAt = Date.now();
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data || DB));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(target));
   } catch (e) {
     console.error('Lỗi lưu localStorage:', e);
+  }
+  if (pushCloud && typeof scheduleCloudPush === 'function') {
+    scheduleCloudPush();
   }
 }
 
@@ -1318,6 +1638,7 @@ const STATE = {
   history: [],
   homeScope: 0, // 0: Chúng ta, 1: Chồng, 2: Vợ
   selectedTxId: null,
+  editingTxId: null,
   monthOffset: 0, // 0: Hiện tại
   txFilter: 0, // 0: Tất cả, 1: Chung, 2: Riêng, 3: Chồng, 4: Vợ
   txCatFilter: null,
@@ -1326,7 +1647,7 @@ const STATE = {
   addKind: 'e', // 'e' (chi) or 'i' (thu)
   addCatIdx: 0,
   addWalletId: 'cash',
-  addWho: 'him',
+  addWho: getMyRole(),
   addDay: new Date().getDate(),
   addShared: true,
   addReceipt: null,
@@ -1389,17 +1710,18 @@ function formatDayLabel(day) {
 }
 
 /* ==========================================================================
-   CORE BUSINESS CALCULATIONS
+   CORE BUSINESS CALCULATIONS (ROLE-AWARE FOR 2 PHONES)
    ========================================================================== */
 function isTxVisible(tx) {
   if (tx.shared) return true;
-  if (tx.who === 'him') return true; // viewing as husband
-  // viewing wife's private transactions:
-  return DB.privacy !== 0; // 0: hidden completely
+  const me = getMyRole();
+  if (tx.who === me) return true; // Khoản riêng của chính tôi luôn hiển thị trên máy tôi
+  return DB.privacy !== 0; // Khoản riêng của vợ/chồng: 0 = Ẩn hẳn
 }
 
 function isTxMasked(tx) {
-  return !tx.shared && tx.who === 'her' && DB.privacy === 1;
+  const me = getMyRole();
+  return !tx.shared && tx.who !== me && DB.privacy === 1;
 }
 
 function getFilteredTransactions() {
@@ -1437,16 +1759,22 @@ function renderApp() {
   renderTransactions();
   renderBudgetAndReports();
   renderFamilyAndBalance();
+  if (typeof renderCloudStatusUI === 'function') renderCloudStatusUI();
 }
 
 function renderHome() {
   const u = DB.users;
+  const me = getMyRole();
   $('#home-greeting').textContent = 'Chào gia đình,';
   $('#home-names').textContent = `${u.him.name} & ${u.her.name}`;
   $('#home-avatars').innerHTML = `
     <span class="av ring" style="background:${u.him.color}">${u.him.name[0]}</span>
     <span class="av ring" style="background:${u.her.color};margin-left:-8px">${u.her.name[0]}</span>
   `;
+  const roleTxt = $('#home-role-txt');
+  if (roleTxt) {
+    roleTxt.textContent = `${me === 'him' ? '👨' : '👩'} Máy của: ${u[me].name} ⇄`;
+  }
   $('#scope-him').textContent = u.him.name;
   $('#scope-her').textContent = u.her.name;
   $('#cur-month-text').textContent = getCurrentMonthInfo().label;
@@ -1519,7 +1847,7 @@ function renderHome() {
   `).join('');
 
   // Goals Preview
-  $('#home-goals').innerHTML = DB.goals.slice(0, 2).map(g => {
+  $('#home-goals').innerHTML = DB.goals.length ? DB.goals.slice(0, 2).map(g => {
     const p = Math.min(100, Math.round((g.current / g.target) * 100));
     return `
       <div style="margin-bottom:8px">
@@ -1530,7 +1858,7 @@ function renderHome() {
         <div class="bar"><i style="width:${p}%;background:var(--shared)"></i></div>
       </div>
     `;
-  }).join('');
+  }).join('') : '<div class="sub center" style="padding:8px 0">Chưa có mục tiêu chung nào · Chạm để tạo mục tiêu mới ✨</div>';
 
   // Recent 5 transactions
   const rec = getFilteredTransactions().slice().sort((a, b) => b.day - a.day || b.id - a.id).slice(0, 5);
@@ -1543,10 +1871,10 @@ function renderHome() {
    ========================================================================== */
 function renderTxRowHTML(t) {
   const masked = isTxMasked(t);
-  const u = DB.users[t.who];
+  const u = DB.users[t.who] || DB.users.him;
   const title = masked ? 'Chi riêng' : t.title;
-  const isHim = t.who === 'him';
-  const canDelete = isHim && !masked;
+  const isMine = t.who === getMyRole();
+  const canDelete = (isMine || t.shared) && !masked;
 
   return `
     <div class="swr" style="border-bottom:1px solid var(--sep)">
@@ -1702,7 +2030,8 @@ function renderBudgetAndReports() {
   if (isBudget) {
     const limits = budScope === 0 ? DB.budgets : DB.privateBudgets;
     const catSpends = {};
-    getFilteredTransactions().filter(t => t.kind === 'e' && (budScope === 0 ? t.shared : (!t.shared && t.who === 'him'))).forEach(t => {
+    const me = getMyRole();
+    getFilteredTransactions().filter(t => t.kind === 'e' && (budScope === 0 ? t.shared : (!t.shared && t.who === me))).forEach(t => {
       catSpends[t.category] = (catSpends[t.category] || 0) + t.amount;
     });
 
@@ -1789,16 +2118,17 @@ function renderReportPanes() {
     </div>
   `).join('');
 
-  // 6 months trend
+  // 6 months trend (actual current month spend, 0 for prior empty months)
+  const bTrend = calculateBalance();
   const mockTrend = [
-    [12.5, 9.2], [14.0, 10.5], [11.8, 8.9], [13.2, 11.0], [15.5, 9.8], [total / 1e6 * 0.6, total / 1e6 * 0.4]
+    [0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [bTrend.paidHim / 1e6, bTrend.paidHer / 1e6]
   ];
-  const maxBar = Math.max(...mockTrend.flat());
+  const maxBar = Math.max(1, ...mockTrend.flat());
   $('#rep-cols').innerHTML = mockTrend.map((m, i) => `
-    <div onclick="toast('Tháng ${i + 6}: Chồng ${(m[0]).toFixed(1)}tr · Vợ ${(m[1]).toFixed(1)}tr')">
+    <div onclick="toast('Tháng ${i + 6}: ${DB.users.him.name} ${(m[0]).toFixed(1)}tr · ${DB.users.her.name} ${(m[1]).toFixed(1)}tr')">
       <span>
-        <i style="height:${(m[0] / maxBar) * 80}px;background:var(--him)"></i>
-        <i style="height:${(m[1] / maxBar) * 80}px;background:var(--her)"></i>
+        <i style="height:${Math.max(2, (m[0] / maxBar) * 80)}px;background:var(--him)"></i>
+        <i style="height:${Math.max(2, (m[1] / maxBar) * 80)}px;background:var(--her)"></i>
       </span>
       T${i + 6}
     </div>
@@ -1845,6 +2175,21 @@ function filterByCat(cat) {
 function renderFamilyAndBalance() {
   const u = DB.users;
   const b = calculateBalance();
+  const me = getMyRole();
+
+  if ($('#role-btn-him')) {
+    $('#role-btn-him').textContent = `👨 Chồng (${u.him.name})`;
+    $('#role-btn-her').textContent = `👩 Vợ (${u.her.name})`;
+    $('#role-btn-him').classList.toggle('on', me === 'him');
+    $('#role-btn-her').classList.toggle('on', me === 'her');
+  }
+  if ($('#fam-code-display')) {
+    $('#fam-code-display').textContent = DB.familyCode || 'VD8686';
+  }
+  if ($('#cfg-name-him')) $('#cfg-name-him').value = u.him.name;
+  if ($('#cfg-name-her')) $('#cfg-name-her').value = u.her.name;
+  if ($('#cfg-bank-bin') && DB.bank) $('#cfg-bank-bin').value = DB.bank.bin || 'VCB';
+  if ($('#cfg-bank-acc') && DB.bank) $('#cfg-bank-acc').value = DB.bank.acc || '';
 
   $('#bal-av-him').textContent = u.him.name[0];
   $('#bal-av-her').textContent = u.her.name[0];
@@ -1886,7 +2231,7 @@ function renderFamilyAndBalance() {
   `).join('');
 
   // Goals List
-  $('#family-goals-list').innerHTML = DB.goals.map((g, i) => {
+  $('#family-goals-list').innerHTML = DB.goals.length ? DB.goals.map((g, i) => {
     const p = Math.min(100, Math.round((g.current / g.target) * 100));
     return `
       <div style="padding:10px 0;border-bottom:1px solid var(--sep)">
@@ -1902,7 +2247,7 @@ function renderFamilyAndBalance() {
         <button class="btn sm alt" style="margin-top:4px" onclick="contributeGoal(${i}, 500000)">＋ Góp 500.000 ₫</button>
       </div>
     `;
-  }).join('');
+  }).join('') : '<div class="sub center" style="padding:14px 0">Chưa có mục tiêu nào. Bấm "＋ Mới" để thêm mục tiêu tích lũy của Bảo & Oanh.</div>';
 
   // Privacy Hint
   const hints = [
@@ -1931,8 +2276,68 @@ function settleBalance() {
 
 function openVietQR() {
   const b = calculateBalance();
-  const amt = Math.abs(b.owe);
-  toast(`Đã tạo liên kết VietQR chuyển ${formatShort(amt)} 🏦`);
+  const amt = Math.round(Math.abs(b.owe));
+  const u = DB.users;
+  const receiver = b.owe >= 0 ? u.him.name : u.her.name;
+  const sender = b.owe >= 0 ? u.her.name : u.him.name;
+  if (!DB.bank) DB.bank = { bin: 'VCB', acc: '' };
+  $('#vietqr-bank-input').value = DB.bank.bin || 'VCB';
+  $('#vietqr-acc-input').value = DB.bank.acc || '0123456789';
+  $('#vietqr-title').textContent = `🏦 ${sender} chuyển cho ${receiver}`;
+  $('#vietqr-sub').textContent = `Số tiền tất toán: ${formatVND(amt)} ₫ (${getCurrentMonthInfo().label})`;
+  updateVietQRModal();
+  $('#vietqr-modal').classList.add('on');
+}
+
+function updateVietQRModal() {
+  const b = calculateBalance();
+  const amt = Math.round(Math.abs(b.owe));
+  const u = DB.users;
+  const receiver = b.owe >= 0 ? u.him.name : u.her.name;
+  const bin = ($('#vietqr-bank-input').value.trim() || 'VCB').toUpperCase();
+  const acc = ($('#vietqr-acc-input').value.trim() || '0123456789').replace(/\s+/g, '');
+  DB.bank = { bin, acc };
+  saveData(DB, false);
+  const info = encodeURIComponent(`Tat toan Vi Doi ${getCurrentMonthInfo().label}`);
+  const accName = encodeURIComponent(receiver);
+  $('#vietqr-img').src = `https://img.vietqr.io/image/${bin}-${acc}-compact2.png?amount=${amt}&addInfo=${info}&accountName=${accName}`;
+}
+
+function promptAddWallet() {
+  const name = prompt('Nhập tên ví mới (ví dụ: Techcombank, Ví tiết kiệm):');
+  if (!name || !name.trim()) return;
+  const balStr = prompt('Nhập số dư hiện tại (VND):', '0') || '0';
+  const bal = parseInt(balStr.replace(/[^0-9-]/g, ''), 10) || 0;
+  const isShared = confirm('Đây là Ví Chung của cả hai vợ chồng? (Bấm Hủy nếu là Ví Riêng của bạn)');
+  DB.wallets.push({
+    id: 'w_' + Date.now(),
+    name: name.trim(),
+    icon: isShared ? '🏦' : '👛',
+    balance: bal,
+    owner: isShared ? 'S' : getMyRole(),
+    color: isShared ? '#7C5CFF,#a78bfa' : '#2EC4B6,#5eead4'
+  });
+  saveData();
+  renderApp();
+  toast('Đã thêm ví mới & đồng bộ đám mây ✅');
+}
+
+function promptAddGoal() {
+  const name = prompt('Nhập tên mục tiêu chung (ví dụ: Mua xe, Du lịch Phú Quốc):');
+  if (!name || !name.trim()) return;
+  const targetStr = prompt('Nhập số tiền mục tiêu (VND):', '20000000') || '20000000';
+  const target = parseInt(targetStr.replace(/[^0-9]/g, ''), 10) || 20000000;
+  DB.goals.push({
+    id: Date.now(),
+    icon: '🎯',
+    name: name.trim(),
+    current: 0,
+    target: target,
+    deadline: '2027'
+  });
+  saveData();
+  renderApp();
+  toast('Đã tạo mục tiêu chung mới 🎯');
 }
 
 function toggleRatioEdit() {
@@ -1966,18 +2371,31 @@ function contributeGoal(idx, amount) {
 /* ==========================================================================
    ADD TRANSACTION SHEET & KEYPAD
    ========================================================================== */
-function openAddSheet() {
-  STATE.addExp = '';
-  STATE.addKind = 'e';
-  STATE.addCatIdx = 0;
-  STATE.addShared = true;
-  STATE.addReceipt = null;
-  $('#add-note-input').value = '';
-  $('#receipt-preview-img').style.display = 'none';
-  $('#receipt-remove-btn').style.display = 'none';
-  $('#sw-add-shared').classList.add('on');
+function openAddSheet(editTx = null) {
+  STATE.editingTxId = editTx ? editTx.id : null;
+  STATE.addExp = editTx ? String(editTx.amount) : '';
+  STATE.addKind = editTx ? editTx.kind : 'e';
+  const catIdx = editTx ? CATEGORIES.findIndex(c => c[1] === editTx.category) : 0;
+  STATE.addCatIdx = catIdx >= 0 ? catIdx : 0;
+  STATE.addShared = editTx ? editTx.shared : true;
+  STATE.addWho = editTx ? editTx.who : getMyRole();
+  const defaultWallet = (DB.wallets.find(w => w.owner === STATE.addWho) || DB.wallets[0] || { id: 'cash' }).id;
+  STATE.addWalletId = editTx ? editTx.wallet : defaultWallet;
+  STATE.addDay = editTx ? editTx.day : new Date().getDate();
+  STATE.addReceipt = editTx ? editTx.receipt : null;
+  $('#add-note-input').value = editTx ? (editTx.note || '') : '';
+  if (STATE.addReceipt) {
+    $('#receipt-preview-img').src = STATE.addReceipt;
+    $('#receipt-preview-img').style.display = 'block';
+    $('#receipt-remove-btn').style.display = 'block';
+  } else {
+    $('#receipt-preview-img').style.display = 'none';
+    $('#receipt-remove-btn').style.display = 'none';
+  }
+  $('#sw-add-shared').classList.toggle('on', STATE.addShared);
+  $('#add-shared-hint').textContent = STATE.addShared ? '· cả hai cùng thấy' : '· 🔒 chỉ mình tôi thấy';
   $('#sw-add-rec').classList.remove('on');
-  $$('#add-kind-seg div').forEach((d, i) => d.classList.toggle('on', i === 0));
+  $$('#add-kind-seg div').forEach((d, i) => d.classList.toggle('on', (STATE.addKind === 'e' ? 0 : 1) === i));
 
   renderAddCats();
   renderAddChips();
@@ -2105,18 +2523,32 @@ function onKeypadPress(k) {
   updateAddAmountDisplay();
 }
 
-// Photo attachment with camera or library
+// Photo attachment with camera or library (auto-compressed for fast cloud sync)
 function onReceiptFileSelected(e) {
   const file = e.target.files[0];
   if (!file) return;
   const reader = new FileReader();
   reader.onload = ev => {
-    STATE.addReceipt = ev.target.result;
-    const img = $('#receipt-preview-img');
-    img.src = STATE.addReceipt;
-    img.style.display = 'block';
-    $('#receipt-remove-btn').style.display = 'block';
-    renderAddChips();
+    const rawImg = new Image();
+    rawImg.onload = () => {
+      const canvas = document.createElement('canvas');
+      const maxDim = 640;
+      let w = rawImg.width, h = rawImg.height;
+      if (w > maxDim || h > maxDim) {
+        if (w > h) { h = Math.round(h * maxDim / w); w = maxDim; }
+        else { w = Math.round(w * maxDim / h); h = maxDim; }
+      }
+      canvas.width = w;
+      canvas.height = h;
+      canvas.getContext('2d').drawImage(rawImg, 0, 0, w, h);
+      STATE.addReceipt = canvas.toDataURL('image/jpeg', 0.65);
+      const img = $('#receipt-preview-img');
+      img.src = STATE.addReceipt;
+      img.style.display = 'block';
+      $('#receipt-remove-btn').style.display = 'block';
+      renderAddChips();
+    };
+    rawImg.src = ev.target.result;
   };
   reader.readAsDataURL(file);
 }
@@ -2143,9 +2575,43 @@ function saveTransaction() {
     return toast('Vui lòng nhập số tiền hợp lệ');
   }
 
-  const cat = CATEGORIES[STATE.addCatIdx];
+  const cat = CATEGORIES[STATE.addCatIdx] || CATEGORIES[0];
   const isInc = STATE.addKind === 'i';
   const note = $('#add-note-input').value.trim();
+
+  if (STATE.editingTxId) {
+    const existing = DB.transactions.find(x => x.id === STATE.editingTxId);
+    if (existing) {
+      // Revert old wallet impact
+      const oldW = DB.wallets.find(x => x.id === existing.wallet);
+      if (oldW) oldW.balance += (existing.kind === 'e' ? existing.amount : -existing.amount);
+
+      existing.day = STATE.addDay;
+      existing.icon = isInc ? '💼' : cat[0];
+      existing.title = note || (isInc ? 'Thu nhập' : cat[1]);
+      existing.category = isInc ? 'Thu' : cat[1];
+      existing.amount = amount;
+      existing.who = STATE.addWho;
+      existing.shared = STATE.addShared;
+      existing.wallet = STATE.addWalletId;
+      existing.kind = STATE.addKind;
+      existing.note = note;
+      existing.receipt = STATE.addReceipt;
+      existing.updatedAt = Date.now();
+
+      const newW = DB.wallets.find(x => x.id === STATE.addWalletId);
+      if (newW) newW.balance += (STATE.addKind === 'i' ? amount : -amount);
+
+      DB.settled = false;
+      saveData();
+      closeAddSheet();
+      renderApp();
+      if (STATE.selectedTxId === existing.id && $('#tab-detail').classList.contains('active')) {
+        openTxDetail(existing.id);
+      }
+      return toast('Đã cập nhật & đồng bộ giao dịch ✏️');
+    }
+  }
 
   const newTx = {
     id: Date.now(),
@@ -2160,7 +2626,8 @@ function saveTransaction() {
     kind: STATE.addKind,
     note: note,
     receipt: STATE.addReceipt,
-    comments: []
+    comments: [],
+    updatedAt: Date.now()
   };
 
   DB.transactions.unshift(newTx);
@@ -2195,13 +2662,14 @@ function quickAddTransaction(idx) {
     title: q[1],
     category: q[3],
     amount: q[2],
-    who: 'him',
+    who: getMyRole(),
     shared: true,
     wallet: 'cash',
     kind: 'e',
     note: 'Ghi nhanh',
     receipt: null,
-    comments: []
+    comments: [],
+    updatedAt: Date.now()
   };
 
   DB.transactions.unshift(newTx);
@@ -2223,12 +2691,15 @@ function deleteTransaction(id, promptConfirm = false) {
 
   const doDelete = () => {
     DB.transactions.splice(idx, 1);
+    if (!Array.isArray(DB.deletedTxIds)) DB.deletedTxIds = [];
+    if (!DB.deletedTxIds.includes(removed.id)) DB.deletedTxIds.push(removed.id);
     const w = DB.wallets.find(x => x.id === removed.wallet);
     if (w) w.balance += (removed.kind === 'e' ? removed.amount : -removed.amount);
     saveData();
     renderApp();
     toast(`Đã xóa "${removed.title}"`, 'Hoàn tác', () => {
       DB.transactions.splice(idx, 0, removed);
+      DB.deletedTxIds = (DB.deletedTxIds || []).filter(x => x !== removed.id);
       if (w) w.balance -= (removed.kind === 'e' ? removed.amount : -removed.amount);
       saveData();
       renderApp();
@@ -2249,11 +2720,12 @@ function openTxDetail(id) {
   STATE.selectedTxId = id;
   const t = DB.transactions.find(x => x.id === id);
   if (!t) return;
-  const u = DB.users[t.who];
+  const u = DB.users[t.who] || DB.users.him;
   const masked = isTxMasked(t);
   const w = DB.wallets.find(x => x.id === t.wallet) || { icon: '👛', name: 'Ví' };
 
-  $('#detail-head-actions').innerHTML = t.who === 'him' ? `
+  $('#detail-head-actions').innerHTML = !masked ? `
+    <span class="link" style="margin-right:12px" onclick="editCurrentTx()">✏️ Sửa</span>
     <span class="link" style="color:var(--exp)" onclick="deleteTransaction(${t.id}, true);goBack()">Xóa</span>
   ` : '';
 
@@ -2285,17 +2757,19 @@ function openTxDetail(id) {
     <div class="card">
       <b>💬 Bình luận vợ chồng</b>
       <div id="comments-box" style="margin-top:8px">
-        ${t.comments.map(c => `
-          <div style="display:flex;gap:8px;margin:8px 0;flex-direction:${c.who === 'him' ? 'row-reverse' : 'row'}">
-            <span class="av s" style="background:${DB.users[c.who].color}">${DB.users[c.who].name[0]}</span>
+        ${(t.comments || []).map(c => {
+          const cu = DB.users[c.who] || DB.users.him;
+          return `
+          <div style="display:flex;gap:8px;margin:8px 0;flex-direction:${c.who === getMyRole() ? 'row-reverse' : 'row'}">
+            <span class="av s" style="background:${cu.color}">${cu.name[0]}</span>
             <div style="padding:8px 12px;border-radius:14px;background:var(--fill);font-size:13px;max-width:75%">
               ${c.text}
             </div>
           </div>
-        `).join('') || '<div class="sub">Chưa có bình luận nào. Hỏi han nhẹ nhàng nhé ❤️</div>'}
+        `}).join('') || '<div class="sub">Chưa có bình luận nào. Hỏi han nhẹ nhàng nhé ❤️</div>'}
       </div>
       <div style="display:flex;gap:8px;margin-top:10px">
-        <input class="input" id="comment-input" placeholder="Viết bình luận..." style="margin:0">
+        <input class="input" id="comment-input" placeholder="Viết bình luận..." style="margin:0" onkeydown="if(event.key==='Enter')sendComment()">
         <button class="btn sm" style="width:72px" onclick="sendComment()">Gửi</button>
       </div>
     </div>
@@ -2304,27 +2778,32 @@ function openTxDetail(id) {
   goTab('tab-detail');
 }
 
+function editCurrentTx() {
+  const t = DB.transactions.find(x => x.id === STATE.selectedTxId);
+  if (t) openAddSheet(t);
+}
+
 function sendComment() {
   const input = $('#comment-input');
   const text = input.value.trim();
   if (!text) return;
   const t = DB.transactions.find(x => x.id === STATE.selectedTxId);
   if (!t) return;
-  t.comments.push({ who: 'him', text: text });
+  const myRole = getMyRole();
+  const partnerRole = getPartnerRole();
+  if (!Array.isArray(t.comments)) t.comments = [];
+  t.comments.push({ who: myRole, text: text, ts: Date.now() });
+  t.updatedAt = Date.now();
   input.value = '';
   saveData();
   openTxDetail(t.id);
-  toast(`Đã gửi bình luận đến ${DB.users.her.name} 💬`);
+  toast(`Đã gửi bình luận đến ${DB.users[partnerRole].name} 💬`);
 }
 
 /* ==========================================================================
-   NOTIFICATIONS
+   NOTIFICATIONS (CLEAN 0 STATE)
    ========================================================================== */
-const NOTIFICATIONS = [
-  { id: 1, icon: '⚠️', title: 'Danh mục Mua sắm đã vượt hạn mức 15%', sub: 'Hôm nay', read: false },
-  { id: 2, icon: '💬', title: 'Lan đã bình luận vào khoản Ăn tối', sub: 'Hôm qua', read: false },
-  { id: 3, icon: '⏰', title: 'Nhắc nhở ghi chép chi tiêu lúc 21:00', sub: 'Định kỳ', read: true }
-];
+const NOTIFICATIONS = [];
 
 function openNotif() {
   renderNotifs();
@@ -2332,7 +2811,7 @@ function openNotif() {
 }
 
 function renderNotifs() {
-  $('#notif-list').innerHTML = NOTIFICATIONS.map(n => `
+  $('#notif-list').innerHTML = NOTIFICATIONS.length ? NOTIFICATIONS.map(n => `
     <div class="row" style="${n.read ? 'opacity:0.6' : ''}">
       <div class="ic">${n.icon}</div>
       <div class="grow">
@@ -2341,7 +2820,7 @@ function renderNotifs() {
       </div>
       ${!n.read ? '<span class="dot" style="background:var(--coral);margin:0"></span>' : ''}
     </div>
-  `).join('');
+  `).join('') : '<div class="sub center" style="padding:24px 0">Chưa có thông báo mới ✨</div>';
   const unread = NOTIFICATIONS.filter(n => !n.read).length;
   $('#notif-badge').style.display = unread ? 'grid' : 'none';
   $('#notif-badge').textContent = unread;
@@ -2354,14 +2833,193 @@ function markAllNotifRead() {
 }
 
 /* ==========================================================================
+   PRIVATE COUPLE ACCESS CONTROL (CHỈ BẢO & OANH SỬ DỤNG ĐƯỢC)
+   ========================================================================== */
+const AUTH = {
+  enteredPin: '',
+  selectedRole: getMyRole(),
+  unlocked: false
+};
+
+function getFamilyPin() {
+  return localStorage.getItem('vidoi_family_pin') || (DB && DB.familyPin) || '2611';
+}
+
+function hashSecretTopic(code, pin) {
+  const str = `BAO_OANH_SECRET_${code}_${pin}_v2`;
+  let h1 = 0xdeadbeef ^ str.length, h2 = 0x41c6ce57 ^ str.length;
+  for (let i = 0, ch; i < str.length; i++) {
+    ch = str.charCodeAt(i);
+    h1 = Math.imul(h1 ^ ch, 2654435761);
+    h2 = Math.imul(h2 ^ ch, 1597334677);
+  }
+  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+  return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36);
+}
+
+function selectAuthRole(role) {
+  AUTH.selectedRole = role === 'her' ? 'her' : 'him';
+  $('#auth-role-him').classList.toggle('on', AUTH.selectedRole === 'him');
+  $('#auth-role-her').classList.toggle('on', AUTH.selectedRole === 'her');
+}
+
+function updateAuthPinDots() {
+  const dots = $$('#auth-pin-dots .auth-pin-dot');
+  dots.forEach((d, idx) => {
+    d.classList.toggle('filled', idx < AUTH.enteredPin.length);
+  });
+}
+
+function pressAuthPin(digit) {
+  if (AUTH.enteredPin.length >= 4) return;
+  AUTH.enteredPin += String(digit);
+  updateAuthPinDots();
+  if (AUTH.enteredPin.length === 4) {
+    setTimeout(verifyAuthPin, 120);
+  }
+}
+
+function backspaceAuthPin() {
+  AUTH.enteredPin = AUTH.enteredPin.slice(0, -1);
+  updateAuthPinDots();
+}
+
+function clearAuthPin() {
+  AUTH.enteredPin = '';
+  updateAuthPinDots();
+}
+
+function verifyAuthPin() {
+  const targetPin = getFamilyPin();
+  if (AUTH.enteredPin === targetPin) {
+    AUTH.unlocked = true;
+    localStorage.setItem('vidoi_my_role', AUTH.selectedRole);
+    STATE.addWho = AUTH.selectedRole;
+    const remember = $('#auth-remember-chk') && $('#auth-remember-chk').checked;
+    if (remember && localStorage.getItem('vidoi_always_lock') !== '1') {
+      localStorage.setItem('vidoi_trusted_couple', targetPin);
+    }
+    $('#auth-gate').classList.add('hidden');
+    AUTH.enteredPin = '';
+    updateAuthPinDots();
+    renderApp();
+    startCloudListener();
+    syncCloudNow(false);
+    const myName = DB.users[AUTH.selectedRole].name;
+    toast(`Chào mừng ${myName} trở lại Ví Đôi ❤️`);
+  } else {
+    $('#auth-card-box').classList.add('shake');
+    $('#auth-prompt-lbl').textContent = '⚠️ Sai mã PIN! Chỉ Bảo & Oanh mới mở được';
+    $('#auth-prompt-lbl').style.color = '#FF8A8A';
+    setTimeout(() => {
+      $('#auth-card-box').classList.remove('shake');
+      AUTH.enteredPin = '';
+      updateAuthPinDots();
+    }, 380);
+  }
+}
+
+function initAuthGate() {
+  AUTH.selectedRole = getMyRole();
+  selectAuthRole(AUTH.selectedRole);
+  const alwaysLock = localStorage.getItem('vidoi_always_lock') === '1';
+  if ($('#sw-always-lock')) {
+    $('#sw-always-lock').classList.toggle('on', alwaysLock);
+  }
+  const trustedPin = localStorage.getItem('vidoi_trusted_couple');
+  if (!alwaysLock && trustedPin && trustedPin === getFamilyPin()) {
+    AUTH.unlocked = true;
+    $('#auth-gate').classList.add('hidden');
+  } else {
+    AUTH.unlocked = false;
+    $('#auth-gate').classList.remove('hidden');
+  }
+}
+
+function lockAppNow() {
+  AUTH.unlocked = false;
+  AUTH.enteredPin = '';
+  updateAuthPinDots();
+  selectAuthRole(getMyRole());
+  $('#auth-prompt-lbl').textContent = 'Nhập Mã PIN Gia Đình (4 số)';
+  $('#auth-prompt-lbl').style.color = 'rgba(255,255,255,0.8)';
+  $('#auth-gate').classList.remove('hidden');
+}
+
+function changeFamilyPin() {
+  const raw = ($('#cfg-family-pin').value || '').trim();
+  if (!/^\d{4}$/.test(raw)) {
+    return toast('Vui lòng nhập đúng 4 chữ số làm Mã PIN (VD: 2611)');
+  }
+  localStorage.setItem('vidoi_family_pin', raw);
+  localStorage.setItem('vidoi_trusted_couple', raw);
+  DB.familyPin = raw;
+  $('#cfg-family-pin').value = '';
+  saveData();
+  startCloudListener();
+  toast(`Đã đổi Mã PIN Gia Đình thành công 🔐`);
+}
+
+function toggleAlwaysLock() {
+  const sw = $('#sw-always-lock');
+  sw.classList.toggle('on');
+  const on = sw.classList.contains('on');
+  localStorage.setItem('vidoi_always_lock', on ? '1' : '0');
+  if (on) localStorage.removeItem('vidoi_trusted_couple');
+  else localStorage.setItem('vidoi_trusted_couple', getFamilyPin());
+  toast(on ? 'Đã bật hỏi Mã PIN mỗi lần mở app 🔒' : 'Đã ghi nhớ thiết bị tin cậy của bạn ✅');
+}
+
+/* ==========================================================================
    SETTINGS & DATA BACKUP / RESTORE
    ========================================================================== */
 function saveProfileNames() {
   DB.users.him.name = $('#cfg-name-him').value.trim() || 'Bảo';
-  DB.users.her.name = $('#cfg-name-her').value.trim() || 'Loan';
+  DB.users.her.name = $('#cfg-name-her').value.trim() || 'Oanh';
   saveData();
   renderApp();
-  toast('Đã cập nhật tên hai vợ chồng ✅');
+  toast('Đã cập nhật & đồng bộ tên hai vợ chồng ✅');
+}
+
+function saveCloudConfig() {
+  const fbProj = ($('#cfg-fb-project').value || '').trim();
+  localStorage.setItem('vidoi_fb_project', fbProj);
+  toast(fbProj ? `Đã kết nối Firestore Project: ${fbProj} ☁️` : 'Đang dùng kênh Cloud Bí mật mặc định ⚡');
+  startCloudListener();
+  syncCloudNow(true);
+}
+
+function saveBankConfig() {
+  DB.bank = {
+    bin: $('#cfg-bank-bin').value || 'VCB',
+    acc: ($('#cfg-bank-acc').value || '').trim()
+  };
+  saveData();
+  toast('Đã lưu thông tin tài khoản VietQR 🏦');
+}
+
+function importJSONFile(event) {
+  const file = event.target.files && event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const parsed = JSON.parse(e.target.result);
+      if (!parsed || !Array.isArray(parsed.transactions)) {
+        return toast('File JSON không hợp lệ ⚠️');
+      }
+      DB = ensureDBFields(parsed);
+      saveData();
+      renderApp();
+      startCloudListener();
+      toast('Đã khôi phục dữ liệu từ file JSON thành công 🎉');
+    } catch (err) {
+      toast('Không đọc được file JSON ⚠️');
+    }
+    event.target.value = '';
+  };
+  reader.readAsText(file);
 }
 
 function toggleDark() {
@@ -2373,7 +3031,8 @@ function toggleDark() {
 function exportCSV() {
   let csv = 'ID,Ngay,Loai,Danh muc,Tieu de,So tien,Nguoi chi,Chung/Rieng,Vi,Ghi chu\n';
   DB.transactions.forEach(t => {
-    csv += `"${t.id}","${t.day}","${t.kind === 'i' ? 'Thu' : 'Chi'}","${t.category}","${t.title}","${t.amount}","${DB.users[t.who].name}","${t.shared ? 'Chung' : 'Rieng'}","${t.wallet}","${t.note}"\n`;
+    const u = DB.users[t.who] || DB.users.him;
+    csv += `"${t.id}","${t.day}","${t.kind === 'i' ? 'Thu' : 'Chi'}","${t.category}","${t.title}","${t.amount}","${u.name}","${t.shared ? 'Chung' : 'Rieng'}","${t.wallet}","${t.note}"\n`;
   });
   const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csv], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
@@ -2397,24 +3056,427 @@ function exportJSON() {
 
 function confirmResetData() {
   confirmDlg(
-    'Xóa dữ liệu mẫu?',
-    'Toàn bộ giao dịch mẫu sẽ được xóa sạch. Bạn sẽ bắt đầu ghi chép thực tế từ 0 ₫.',
-    'Xóa sạch',
+    'Reset toàn bộ số liệu về 0 ₫?',
+    'Toàn bộ giao dịch, số dư ví và mục tiêu sẽ được đặt lại về 0 ₫ trên cả 2 máy của Bảo & Oanh.',
+    'Reset về 0 ₫',
     () => {
+      if (!Array.isArray(DB.deletedTxIds)) DB.deletedTxIds = [];
+      DB.transactions.forEach(t => {
+        if (!DB.deletedTxIds.includes(t.id)) DB.deletedTxIds.push(t.id);
+      });
       DB.transactions = [];
+      DB.goals = [];
+      DB.wallets.forEach(w => w.balance = 0);
       DB.settled = true;
       saveData();
       renderApp();
-      toast('Đã xóa dữ liệu mẫu. Bắt đầu ghi chép từ 0 ₫ ✨');
+      toast('Đã reset toàn bộ số liệu về 0 ₫ ✨');
     }
   );
 }
 
 function restoreSampleData() {
-  DB = getInitialData();
-  saveData();
+  confirmResetData();
+}
+
+/* ==========================================================================
+   REAL-TIME CLOUD SYNC ENGINE (SECRET CHANNEL FOR BẢO & OANH ONLY)
+   ========================================================================== */
+const CLOUD = {
+  deviceId: localStorage.getItem('vidoi_device_id') || ('dev_' + Math.random().toString(36).slice(2, 10)),
+  sse: null,
+  activeTopic: null,
+  pushTimer: null,
+  status: 'idle', // 'ok' | 'busy' | 'err'
+  lastMsg: 'Chưa đồng bộ'
+};
+localStorage.setItem('vidoi_device_id', CLOUD.deviceId);
+
+function setMyRole(role) {
+  localStorage.setItem('vidoi_my_role', role === 'her' ? 'her' : 'him');
+  STATE.addWho = getMyRole();
   renderApp();
-  toast('Đã nạp lại dữ liệu mẫu ↺');
+  toast(`Đã chuyển sang góc nhìn: ${role === 'her' ? 'Vợ (' + DB.users.her.name + ')' : 'Chồng (' + DB.users.him.name + ')'} 💑`);
+}
+
+function toggleMyRole() {
+  setMyRole(getMyRole() === 'him' ? 'her' : 'him');
+}
+
+function getCleanFamCode(code) {
+  return String(code || DB.familyCode || 'BO8686').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10) || 'BO8686';
+}
+
+function getCloudTopic() {
+  const code = getCleanFamCode(DB.familyCode);
+  const pin = getFamilyPin();
+  return 'vidoi_bo_priv_' + hashSecretTopic(code, pin);
+}
+
+function setCloudStatus(state, text) {
+  CLOUD.status = state;
+  CLOUD.lastMsg = text;
+  const dots = [$('#fam-sync-dot'), $('#home-sync-dot')];
+  dots.forEach(d => {
+    if (!d) return;
+    d.className = 'sync-dot ' + (state === 'ok' ? 'ok' : state === 'busy' ? 'busy' : 'err');
+  });
+  if ($('#fam-sync-status-txt')) $('#fam-sync-status-txt').textContent = text;
+  if ($('#home-sync-txt')) {
+    $('#home-sync-txt').textContent = state === 'ok' ? ('🔐 ' + getCleanFamCode()) : state === 'busy' ? 'Đang đồng bộ...' : 'Offline';
+  }
+}
+
+function scheduleCloudPush() {
+  if (!AUTH.unlocked) return;
+  clearTimeout(CLOUD.pushTimer);
+  setCloudStatus('busy', 'Đang đồng bộ lên mây...');
+  CLOUD.pushTimer = setTimeout(() => {
+    pushCloudSnapshot(false);
+  }, 550);
+}
+
+function buildCompactPayload() {
+  return {
+    _v: 2,
+    deviceId: CLOUD.deviceId,
+    ts: Date.now(),
+    familyCode: getCleanFamCode(DB.familyCode),
+    familyPin: getFamilyPin(),
+    users: DB.users,
+    privacy: DB.privacy,
+    settled: DB.settled,
+    splitRatio: DB.splitRatio,
+    bank: DB.bank,
+    budgets: DB.budgets,
+    wallets: DB.wallets,
+    goals: DB.goals,
+    deletedTxIds: (DB.deletedTxIds || []).slice(-300),
+    transactions: (DB.transactions || []).slice(0, 150)
+  };
+}
+
+async function pushCloudSnapshot(manual = false) {
+  if (!AUTH.unlocked) return;
+  if (!navigator.onLine) {
+    setCloudStatus('err', 'Đang ngoại tuyến (đã lưu trên máy)');
+    return;
+  }
+  setCloudStatus('busy', 'Đang đồng bộ...');
+  const payload = buildCompactPayload();
+  const topic = getCloudTopic();
+  const fbProject = (localStorage.getItem('vidoi_fb_project') || '').trim();
+  let ok = false;
+
+  try {
+    // 1. Optional Google Cloud Firestore REST API
+    if (fbProject) {
+      const fbUrl = `https://firestore.googleapis.com/v1/projects/${encodeURIComponent(fbProject)}/databases/(default)/documents/families/${encodeURIComponent(topic)}`;
+      const fbRes = await fetch(fbUrl, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fields: {
+            payload: { stringValue: JSON.stringify(payload) },
+            updatedAt: { integerValue: String(payload.ts) }
+          }
+        })
+      });
+      if (fbRes.ok) ok = true;
+    }
+
+    // 2. Instant Real-Time Pub/Sub Relay (Secret hashed topic for Bảo & Oanh)
+    const res = await fetch(`https://ntfy.sh/${topic}`, {
+      method: 'POST',
+      headers: {
+        'Title': 'ViDoiSync',
+        'Priority': 'default'
+      },
+      body: JSON.stringify(payload)
+    });
+    if (res.ok) ok = true;
+  } catch (err) {
+    console.warn('Cloud push error:', err);
+  }
+
+  const timeStr = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  if (ok) {
+    setCloudStatus('ok', `Đã đồng bộ bảo mật lúc ${timeStr}`);
+    if (manual) toast('Đã đồng bộ dữ liệu lên kênh riêng Bảo & Oanh 🔐✅');
+  } else {
+    setCloudStatus('err', 'Lưu trên máy (chờ kết nối mạng)');
+  }
+}
+
+async function syncCloudNow(manual = false) {
+  if (!AUTH.unlocked) return;
+  if (!navigator.onLine) {
+    setCloudStatus('err', 'Không có mạng Internet');
+    if (manual) toast('Bạn đang offline — dữ liệu vẫn an toàn trên máy');
+    return;
+  }
+  setCloudStatus('busy', 'Đang kiểm tra đám mây...');
+  const topic = getCloudTopic();
+  const fbProject = (localStorage.getItem('vidoi_fb_project') || '').trim();
+  let mergedAny = false;
+
+  try {
+    // 1. Pull from Firestore if configured
+    if (fbProject) {
+      const fbUrl = `https://firestore.googleapis.com/v1/projects/${encodeURIComponent(fbProject)}/databases/(default)/documents/families/${encodeURIComponent(topic)}`;
+      const fbRes = await fetch(fbUrl);
+      if (fbRes.ok) {
+        const doc = await fbRes.json();
+        const raw = doc && doc.fields && doc.fields.payload && doc.fields.payload.stringValue;
+        if (raw) {
+          const remote = JSON.parse(raw);
+          if (mergeCloudPayload(remote, true)) mergedAny = true;
+        }
+      }
+    }
+
+    // 2. Pull cached messages from instant cloud relay
+    const res = await fetch(`https://ntfy.sh/${topic}/json?poll=1&since=48h`);
+    if (res.ok) {
+      const text = await res.text();
+      const lines = text.trim().split('\n').filter(Boolean);
+      for (const line of lines) {
+        try {
+          const ev = JSON.parse(line);
+          if (ev && ev.event === 'message' && ev.message) {
+            const remote = JSON.parse(ev.message);
+            if (mergeCloudPayload(remote, true)) mergedAny = true;
+          }
+        } catch (e) {}
+      }
+    }
+
+    if (mergedAny) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(DB));
+      renderApp();
+    }
+
+    // Also push current merged snapshot so both phones converge
+    await pushCloudSnapshot(false);
+    if (manual) {
+      toast(mergedAny ? 'Đã nhận & gộp dữ liệu mới từ máy kia 💑' : 'Cả 2 điện thoại Bảo & Oanh đã khớp dữ liệu ✅');
+    }
+  } catch (err) {
+    setCloudStatus('err', 'Chưa kết nối được đám mây');
+  }
+}
+
+function mergeCloudPayload(remote, silent = false) {
+  if (!remote || remote._v !== 2 || !Array.isArray(remote.transactions)) return false;
+  let changed = false;
+
+  // Merge deleted IDs
+  const delSet = new Set([...(DB.deletedTxIds || []), ...(remote.deletedTxIds || [])]);
+  if (delSet.size !== (DB.deletedTxIds || []).length) {
+    DB.deletedTxIds = Array.from(delSet);
+    changed = true;
+  }
+
+  // Remove any locally present tx that was deleted on the other phone
+  const beforeLen = DB.transactions.length;
+  DB.transactions = DB.transactions.filter(t => !delSet.has(t.id));
+  if (DB.transactions.length !== beforeLen) changed = true;
+
+  // Merge transactions by ID (newest updatedAt wins, comments merged)
+  const localMap = new Map(DB.transactions.map(t => [t.id, t]));
+  for (const rTx of remote.transactions) {
+    if (!rTx || delSet.has(rTx.id)) continue;
+    const lTx = localMap.get(rTx.id);
+    if (!lTx) {
+      DB.transactions.push(rTx);
+      localMap.set(rTx.id, rTx);
+      changed = true;
+    } else {
+      const rUpd = rTx.updatedAt || rTx.id || 0;
+      const lUpd = lTx.updatedAt || lTx.id || 0;
+      const rComments = Array.isArray(rTx.comments) ? rTx.comments : [];
+      const lComments = Array.isArray(lTx.comments) ? lTx.comments : [];
+      if (rComments.length > lComments.length) {
+        lTx.comments = rComments;
+        changed = true;
+      }
+      if (rUpd > lUpd) {
+        Object.assign(lTx, rTx);
+        if (lComments.length > rComments.length) lTx.comments = lComments;
+        changed = true;
+      }
+    }
+  }
+
+  // Sort transactions newest first (by day desc, then id desc)
+  DB.transactions.sort((a, b) => (b.day - a.day) || (b.id - a.id));
+
+  // If remote snapshot is newer, sync shared metadata
+  const localTs = DB.updatedAt || 0;
+  if ((remote.ts || 0) >= localTs) {
+    if (remote.users) {
+      if (remote.users.her && (remote.users.her.name === 'Loan' || remote.users.her.name === 'Lan')) {
+        remote.users.her.name = 'Oanh';
+      }
+      if (remote.users.him && remote.users.him.name === 'Minh') {
+        remote.users.him.name = 'Bảo';
+      }
+      DB.users = remote.users;
+    }
+    if (typeof remote.privacy === 'number' && remote.privacy !== DB.privacy) {
+      DB.privacy = remote.privacy;
+      changed = true;
+    }
+    if (typeof remote.settled === 'boolean' && remote.settled !== DB.settled) {
+      DB.settled = remote.settled;
+      changed = true;
+    }
+    if (remote.bank && (remote.bank.acc !== (DB.bank && DB.bank.acc) || remote.bank.bin !== (DB.bank && DB.bank.bin))) {
+      DB.bank = remote.bank;
+      changed = true;
+    }
+    if (remote.budgets) DB.budgets = remote.budgets;
+    if (Array.isArray(remote.goals)) DB.goals = remote.goals;
+    if (Array.isArray(remote.wallets)) DB.wallets = remote.wallets;
+    DB.updatedAt = remote.ts;
+  }
+
+  if (changed && !silent) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(DB));
+    renderApp();
+    if (STATE.selectedTxId && $('#tab-detail').classList.contains('active')) {
+      openTxDetail(STATE.selectedTxId);
+    }
+    const partnerName = DB.users[getPartnerRole()].name;
+    toast(`☁️ Đồng bộ mới từ ${partnerName}!`);
+  }
+  return changed;
+}
+
+function startCloudListener() {
+  if (!AUTH.unlocked) return;
+  const topic = getCloudTopic();
+  if (CLOUD.sse) {
+    try { CLOUD.sse.close(); } catch (e) {}
+    CLOUD.sse = null;
+  }
+  CLOUD.activeTopic = topic;
+
+  if (!navigator.onLine) {
+    setCloudStatus('err', 'Đang ngoại tuyến');
+    return;
+  }
+
+  try {
+    const sse = new EventSource(`https://ntfy.sh/${topic}/sse`);
+    CLOUD.sse = sse;
+    sse.onopen = () => {
+      const timeStr = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+      setCloudStatus('ok', `Kênh riêng Bảo & Oanh (${getCleanFamCode()}) • ${timeStr}`);
+    };
+    sse.onmessage = ev => {
+      try {
+        const data = JSON.parse(ev.data);
+        if (data && data.message) {
+          const remote = JSON.parse(data.message);
+          if (remote && remote.deviceId !== CLOUD.deviceId) {
+            mergeCloudPayload(remote, false);
+            const timeStr = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            setCloudStatus('ok', `Vừa nhận từ người thương lúc ${timeStr}`);
+          }
+        }
+      } catch (err) {}
+    };
+    sse.onerror = () => {
+      setCloudStatus('busy', 'Đang tự động kết nối lại...');
+    };
+  } catch (e) {
+    setCloudStatus('err', 'Trình duyệt chặn kết nối SSE');
+  }
+}
+
+window.addEventListener('online', () => {
+  if (!AUTH.unlocked) return;
+  toast('Đã có mạng trở lại — đang đồng bộ đám mây ☁️');
+  startCloudListener();
+  syncCloudNow(false);
+});
+window.addEventListener('offline', () => {
+  setCloudStatus('err', 'Đang ngoại tuyến (lưu trên máy)');
+});
+
+/* ==========================================================================
+   FAMILY INVITE QR MODAL & MAGIC LINK PAIRING
+   ========================================================================== */
+function getInviteLink() {
+  const code = getCleanFamCode(DB.familyCode);
+  const pin = getFamilyPin();
+  const partnerRole = getPartnerRole();
+  const baseUrl = window.location.origin + window.location.pathname;
+  const fb = (localStorage.getItem('vidoi_fb_project') || '').trim();
+  return `${baseUrl}?join=${encodeURIComponent(code)}&pin=${encodeURIComponent(pin)}&role=${partnerRole}${fb ? '&fb=' + encodeURIComponent(fb) : ''}`;
+}
+
+function openInviteModal() {
+  const code = getCleanFamCode(DB.familyCode);
+  const link = getInviteLink();
+  if ($('#invite-modal-code')) $('#invite-modal-code').textContent = `${code} • PIN: ${getFamilyPin()}`;
+  $('#invite-qr-img').src = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&margin=8&data=${encodeURIComponent(link)}`;
+  $('#invite-modal').classList.add('on');
+  pushCloudSnapshot(false);
+}
+
+function shareFamilyInviteLink() {
+  const link = getInviteLink();
+  const partnerName = DB.users[getPartnerRole()].name;
+  const shareData = {
+    title: 'Ví Đôi — Không gian riêng của Bảo & Oanh',
+    text: `${partnerName} ơi, bấm vào link bảo mật này để mở Ví Đôi của vợ chồng mình nhé (Mã PIN: ${getFamilyPin()}):`,
+    url: link
+  };
+  if (navigator.share) {
+    navigator.share(shareData).catch(() => {});
+  } else if (navigator.clipboard) {
+    navigator.clipboard.writeText(link).then(() => {
+      toast('Đã sao chép Link mời bảo mật! Hãy dán gửi cho người thương 💌');
+    });
+  } else {
+    prompt('Sao chép đường link này gửi cho người thương:', link);
+  }
+}
+
+function generateNewFamilyCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code = 'BO';
+  for (let i = 0; i < 4; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  confirmDlg(
+    'Tạo mã gia đình mới?',
+    `Đổi sang mã phòng bí mật mới "${code}"? Bạn sẽ cần gửi mã QR mới này cho người thương để 2 máy khớp nhau.`,
+    'Đổi mã mới',
+    () => {
+      DB.familyCode = code;
+      saveData();
+      renderApp();
+      startCloudListener();
+      openInviteModal();
+      toast(`Đã tạo mã gia đình mới: ${code} 🎉`);
+    }
+  );
+}
+
+function joinFamilyByCode() {
+  const raw = ($('#join-code-input').value || '').trim();
+  const code = getCleanFamCode(raw);
+  if (!raw || code.length < 4) {
+    return toast('Vui lòng nhập mã gia đình hợp lệ (VD: BO8686)');
+  }
+  DB.familyCode = code;
+  $('#join-code-input').value = '';
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(DB));
+  renderApp();
+  startCloudListener();
+  syncCloudNow(true);
+  toast(`Đã ghép đôi vào mã gia đình ${code}! 💑`);
 }
 
 /* ==========================================================================
@@ -2575,14 +3637,43 @@ function setupSegmentedControls() {
   });
 }
 
+// Handle URL query parameters (e.g. ?join=BO8686&pin=2611&role=her, ?action=add, ?tab=fam)
+const params = new URLSearchParams(window.location.search);
+if (params.get('fb')) {
+  localStorage.setItem('vidoi_fb_project', params.get('fb').trim());
+}
+if (params.get('role') === 'him' || params.get('role') === 'her') {
+  localStorage.setItem('vidoi_my_role', params.get('role'));
+  STATE.addWho = getMyRole();
+}
+if (params.get('pin') && /^\d{4}$/.test(params.get('pin'))) {
+  localStorage.setItem('vidoi_family_pin', params.get('pin'));
+  localStorage.setItem('vidoi_trusted_couple', params.get('pin'));
+  DB.familyPin = params.get('pin');
+}
+if (params.get('join')) {
+  DB.familyCode = getCleanFamCode(params.get('join'));
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(DB));
+  if (window.history && window.history.replaceState) {
+    window.history.replaceState({}, document.title, window.location.pathname);
+  }
+  setTimeout(() => {
+    goTab('tab-fam');
+    toast(`🎉 Đã liên kết bảo mật với mã gia đình ${DB.familyCode}!`);
+  }, 300);
+}
+
+initAuthGate();
 setupSegmentedControls();
 renderApp();
+if (AUTH.unlocked) {
+  startCloudListener();
+  setTimeout(() => syncCloudNow(false), 600);
+}
 
-// Handle URL query parameters (e.g. ?action=add)
-const params = new URLSearchParams(window.location.search);
-if (params.get('action') === 'add') {
+if (params.get('action') === 'add' && AUTH.unlocked) {
   openAddSheet();
-} else if (params.get('tab')) {
+} else if (params.get('tab') && AUTH.unlocked) {
   const t = params.get('tab');
   if (['tx', 'bud', 'fam'].includes(t)) goTab('tab-' + t);
 }

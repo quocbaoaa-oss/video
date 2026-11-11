@@ -1,4 +1,4 @@
-const CACHE_NAME = 'vidoi-pwa-v1';
+const CACHE_NAME = 'vidoi-pwa-v5-bao-oanh';
 const ASSETS = [
   './',
   './index.html',
@@ -10,16 +10,15 @@ const ASSETS = [
   './icons/favicon.png'
 ];
 
-// Install: Cache essential files
+// Install: Cache essential files & activate immediately
 self.addEventListener('install', event => {
+  self.skipWaiting();
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => {
-      return cache.addAll(ASSETS);
-    }).then(() => self.skipWaiting())
+    caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS))
   );
 });
 
-// Activate: Cleanup old caches
+// Activate: Delete ALL old caches immediately and take control
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(keys => {
@@ -30,11 +29,27 @@ self.addEventListener('activate', event => {
   );
 });
 
-// Fetch: Stale-While-Revalidate strategy
+// Fetch: Network-First for HTML/navigation so updates appear immediately;
+// fallback to cache only when offline.
 self.addEventListener('fetch', event => {
-  // Only handle GET requests and same-origin or http(s)
   if (event.request.method !== 'GET') return;
-  
+  const url = new URL(event.request.url);
+  if (url.origin !== self.location.origin) return;
+
+  const isHTML = event.request.mode === 'navigate' || url.pathname.endsWith('.html') || url.pathname.endsWith('/');
+  if (isHTML) {
+    event.respondWith(
+      fetch(event.request, { cache: 'no-store' }).then(networkResponse => {
+        if (networkResponse && networkResponse.status === 200) {
+          const clone = networkResponse.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+        }
+        return networkResponse;
+      }).catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
   event.respondWith(
     caches.match(event.request).then(cachedResponse => {
       const fetchPromise = fetch(event.request).then(networkResponse => {
@@ -45,10 +60,7 @@ self.addEventListener('fetch', event => {
           });
         }
         return networkResponse;
-      }).catch(() => {
-        // Network failed, if no cache either, return fallback
-        return cachedResponse;
-      });
+      }).catch(() => cachedResponse);
 
       return cachedResponse || fetchPromise;
     })

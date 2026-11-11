@@ -56,7 +56,14 @@ final class AppStore {
         fileURL = dir.appendingPathComponent("vidoi.json")
         if let data = try? Data(contentsOf: fileURL),
            let s = try? JSONDecoder().decode(Snapshot.self, from: data) {
-            people = s.people
+            var loadedPeople = s.people
+            if loadedPeople.indices.contains(0), ["Tôi", "Minh"].contains(loadedPeople[0].name) {
+                loadedPeople[0].name = "Bảo"
+            }
+            if loadedPeople.indices.contains(1), ["Vợ/Chồng", "Lan", "Loan", "Bà xã"].contains(loadedPeople[1].name) {
+                loadedPeople[1].name = "Oanh"
+            }
+            people = loadedPeople
             meID = s.meID
             creatorID = s.creatorID ?? s.meID
             transactions = s.transactions
@@ -79,8 +86,8 @@ final class AppStore {
             largeTxAlertThreshold = s.largeTxAlertThreshold ?? 2_000_000
             notifications = s.notifications ?? []
         } else {
-            let me = Person(name: "Tôi", colorHex: "4C8DFF")
-            let partner = Person(name: "Vợ/Chồng", colorHex: "FF7EB6")
+            let me = Person(name: "Bảo", colorHex: "4C8DFF")
+            let partner = Person(name: "Oanh", colorHex: "FF7EB6")
             people = [me, partner]
             meID = me.id
             creatorID = me.id
@@ -869,11 +876,11 @@ final class AppStore {
         ]
         notifications = [
             AppNotification(emoji: "⚠️", title: "Mua sắm đã vượt ngân sách 19%", subtitle: "Chung · hôm nay"),
-            AppNotification(emoji: "💬", title: "Lan đã bình luận “Dạ đúng rồi anh 🎂”", subtitle: "Ăn tối gia đình"),
-            AppNotification(emoji: "💸", title: "Lan chi chung 1.800.000 ₫", subtitle: "Ăn tối gia đình", isUnread: false)
+            AppNotification(emoji: "💬", title: "Oanh đã bình luận “Dạ đúng rồi anh 🎂”", subtitle: "Ăn tối gia đình"),
+            AppNotification(emoji: "💸", title: "Oanh chi chung 1.800.000 ₫", subtitle: "Ăn tối gia đình", isUnread: false)
         ]
         ratioMe = 62; onboarded = true
-        setPartnerName("Lan")
+        setPartnerName("Oanh")
         save()
         if sync.isCloudEnabled { startCloudSync() }
     }

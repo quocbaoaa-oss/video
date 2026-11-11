@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Ví Đôi – Prototype</title>
 <style>
@@ -69,7 +69,7 @@ input[type=range]{width:100%;accent-color:var(--shared);margin:12px 0}
  <p class="sub center" style="margin-top:20px">Dữ liệu được mã hóa; mở app bằng Face ID.</p></div>
 <div class="scr" id="s2"><div class="nav"><span class="back" onclick="go('s1')">‹ Quay lại</span></div><h1>Hồ sơ của bạn</h1><p class="sub">Để vợ/chồng nhận ra bạn trong app</p>
  <div class="center" style="margin:16px"><span class="av l" id="myav" style="background:var(--him)">M</span></div>
- <input class="input" id="myname" value="Minh" oninput="$('#myav').textContent=this.value.charAt(0).toUpperCase()||'?'">
+ <input class="input" id="myname" value="Bảo" oninput="$('#myav').textContent=this.value.charAt(0).toUpperCase()||'?'">
  <div class="sub" style="margin:10px 0 6px">Màu của bạn trong app</div>
  <div style="display:flex;gap:10px"><span class="av clickable" style="background:var(--him)" onclick="$('#myav').style.background='var(--him)'"></span><span class="av clickable" style="background:var(--her)" onclick="$('#myav').style.background='var(--her)'"></span><span class="av clickable" style="background:var(--teal)" onclick="$('#myav').style.background='var(--teal)'"></span><span class="av clickable" style="background:var(--warn)" onclick="$('#myav').style.background='var(--warn)'"></span></div>
  <div class="bottom"><div class="btn" onclick="go('s3')">Tiếp tục</div></div></div>
@@ -79,19 +79,19 @@ input[type=range]{width:100%;accent-color:var(--shared);margin:12px 0}
 <div class="scr center" id="s4"><div class="nav"><span class="back" onclick="go('s3')">‹ Quay lại</span></div><h1>Mời vợ/chồng</h1><p class="sub">Gửi mã này, hiệu lực 48 giờ</p>
  <div class="code"><b>X</b><b>K</b><b>7</b><b>P</b><b>2</b><b>A</b></div><div class="card" style="width:150px;height:150px;margin:10px auto;display:grid;place-items:center;font-size:80px">▦</div>
  <div class="btn" onclick="toast('Đã mở chia sẻ Zalo / iMessage')">Chia sẻ qua Zalo / iMessage</div><div class="btn alt" onclick="toast('Đã sao chép mã XK7P2A')">Sao chép mã</div>
- <div class="tip" style="margin-top:14px;text-align:left" id="wait">⏳ Đang chờ Lan tham gia…</div>
- <div class="btn ok" onclick="go('s5')" style="margin-top:0">▶ Giả lập: Lan nhập mã</div></div>
+ <div class="tip" style="margin-top:14px;text-align:left" id="wait">⏳ Đang chờ Oanh tham gia…</div>
+ <div class="btn ok" onclick="go('s5')" style="margin-top:0">▶ Giả lập: Oanh nhập mã</div></div>
 <div class="scr center" id="s5"><div class="nav"><span class="back" onclick="go('s4')">‹ Quay lại</span></div><h1>Nhập mã mời</h1><p class="sub">Mã 6 ký tự từ vợ/chồng bạn</p>
  <div class="code"><b>X</b><b>K</b><b>7</b><b>P</b><b>2</b><b>A</b></div><div class="btn alt" onclick="toast('Mở camera quét QR…')">📷 Quét mã QR</div>
- <div class="card" style="margin-top:20px"><span class="av l" style="background:var(--him)">M</span><p style="margin:8px 0"><b>Minh</b> mời bạn vào<br>“Gia đình Minh & Lan”</p><div class="btn" onclick="go('s6')">Tham gia</div></div></div>
+ <div class="card" style="margin-top:20px"><span class="av l" style="background:var(--him)">M</span><p style="margin:8px 0"><b>Bảo</b> mời bạn vào<br>“Gia đình Bảo & Oanh”</p><div class="btn" onclick="go('s6')">Tham gia</div></div></div>
 <div class="scr" id="s6"><h1>Thiết lập chia sẻ</h1><p class="sub">Có thể đổi bất cứ lúc nào</p>
  <div class="card"><div class="tog"><span>👥 <b>Ví chung</b><div class="sub">Sinh hoạt, hóa đơn, tiết kiệm</div></span><div class="sw on"><i></i></div></div><div class="tog"><span>🔒 <b>Ví riêng của tôi</b><div class="sub">Chỉ mình tôi xem chi tiết</div></span><div class="sw on"><i></i></div></div></div>
  <div class="card"><b>Giao dịch riêng hiển thị với vợ/chồng</b><div class="seg" id="privseg"><div>Ẩn hẳn</div><div class="on">Chỉ tổng</div><div>Chi tiết</div></div><div class="sub" id="privhint">“Chỉ tổng”: hiện “Chi riêng” và số tiền, không lộ mô tả.</div></div>
  <div class="card"><b>Thông báo</b><div class="tog">Khi vợ/chồng chi chung &gt; 2tr<div class="sw on"><i></i></div></div><div class="tog">Nhắc ghi chép lúc 21:00<div class="sw on"><i></i></div></div></div>
- <div class="btn" onclick="go('home');toast('Chào mừng đến Gia đình Minh & Lan 🎉')">Bắt đầu 🎉</div></div>
+ <div class="btn" onclick="go('home');toast('Chào mừng đến Gia đình Bảo & Oanh 🎉')">Bắt đầu 🎉</div></div>
 
 <!-- HOME -->
-<div class="scr tab" id="home"><div class="sub">Chào buổi tối,</div><h1>Minh & Lan 👋</h1>
+<div class="scr tab" id="home"><div class="sub">Chào buổi tối,</div><h1>Bảo & Oanh 👋</h1>
  <div class="seg" id="scope"><div class="on">Chúng ta</div><div>Tôi</div><div>Vợ</div></div>
  <div class="card hero"><div>Chi tháng 11</div><div class="big" id="spent"></div><div class="bar" style="background:#fff5"><i id="hbar" style="background:#fff"></i></div><div class="sub" style="color:#fffd;margin-top:6px" id="left"></div></div>
  <div style="display:flex;gap:12px"><div class="card grow"><div class="sub">Thu</div><div class="amt pos">32.000.000 ₫</div></div><div class="card grow clickable" onclick="go('bal')"><div class="sub">Cân đối ›</div><div class="amt" style="color:var(--shared)" id="hbal"></div></div></div>
@@ -108,7 +108,7 @@ input[type=range]{width:100%;accent-color:var(--shared);margin:12px 0}
 
 <!-- FAMILY -->
 <div class="scr tab" id="fam"><h1>Gia đình</h1>
- <div class="card center"><span class="av l" style="background:var(--him)">M</span> <span class="av l" style="background:var(--her)">L</span><div style="margin:8px 0"><b>Gia đình Minh & Lan</b></div><div class="sub">Mã mời: <b>XK7P2A</b></div></div>
+ <div class="card center"><span class="av l" style="background:var(--him)">M</span> <span class="av l" style="background:var(--her)">L</span><div style="margin:8px 0"><b>Gia đình Bảo & Oanh</b></div><div class="sub">Mã mời: <b>XK7P2A</b></div></div>
  <div class="card clickable" onclick="go('bal')" style="display:flex;justify-content:space-between"><b>⚖️ Cân đối chi tiêu chung</b><span class="link">›</span></div>
  <div class="card"><b>Quyền riêng tư</b><div class="tog">Ẩn hoàn toàn giao dịch riêng<div class="sw" id="swHide" onclick="toggleHide(this)"><i></i></div></div><div class="tog">Tính chi riêng vào tổng<div class="sw on"><i></i></div></div><div class="tog">Báo khi vợ/chồng chi &gt; 2.000.000 ₫<div class="sw on"><i></i></div></div></div>
  <div class="card"><b>Mục tiêu chung</b><div class="row" style="display:block">✈️ Du lịch Đà Nẵng · 8/15tr<div class="bar"><i style="width:53%;background:var(--shared)"></i></div></div><div class="row" style="display:block">🏠 Quỹ mua nhà · 120/800tr<div class="bar"><i style="width:15%;background:var(--shared)"></i></div></div></div>
@@ -117,10 +117,10 @@ input[type=range]{width:100%;accent-color:var(--shared);margin:12px 0}
 <!-- REPORT -->
 <div class="scr" id="rep"><div class="nav"><span class="back" onclick="go('home')">‹ Tổng quan</span><b>Tháng 11/2026</b><span></span></div><h1>Báo cáo</h1>
  <div class="seg" id="repseg"><div class="on">Danh mục</div><div>Xu hướng</div><div>So sánh</div></div>
- <div id="rv0"><div class="seg" id="repscope"><div class="on">Chúng ta</div><div>Minh</div><div>Lan</div></div><div class="card"><div class="donut" id="donut"><div id="dtxt"></div></div><div id="legend"></div></div></div>
- <div id="rv1" style="display:none"><div class="card"><b>Chi 6 tháng gần nhất</b><div class="cols" id="cols"></div><div class="sub" style="margin-top:8px"><span class="dot" style="background:var(--him)"></span>Minh <span class="dot" style="background:var(--her);margin-left:10px"></span>Lan</div></div>
+ <div id="rv0"><div class="seg" id="repscope"><div class="on">Chúng ta</div><div>Bảo</div><div>Oanh</div></div><div class="card"><div class="donut" id="donut"><div id="dtxt"></div></div><div id="legend"></div></div></div>
+ <div id="rv1" style="display:none"><div class="card"><b>Chi 6 tháng gần nhất</b><div class="cols" id="cols"></div><div class="sub" style="margin-top:8px"><span class="dot" style="background:var(--him)"></span>Bảo <span class="dot" style="background:var(--her);margin-left:10px"></span>Oanh</div></div>
   <div class="card"><b>💡 Nhận xét</b><div class="tip" style="margin:8px 0 0">Chi ăn uống tăng 18% so với tháng 10.</div><div class="tip g" style="margin:8px 0 0">Bạn tiết kiệm được 8,2tr (26% thu nhập) – tốt hơn tháng trước!</div></div></div>
- <div id="rv2" style="display:none"><div class="card"><b>Ai chi bao nhiêu</b><div style="margin-top:10px">Minh · <span id="cm"></span><div class="bar"><i id="bm" style="background:var(--him)"></i></div></div><div style="margin-top:10px">Lan · <span id="cl"></span><div class="bar"><i id="bl" style="background:var(--her)"></i></div></div></div>
+ <div id="rv2" style="display:none"><div class="card"><b>Ai chi bao nhiêu</b><div style="margin-top:10px">Bảo · <span id="cm"></span><div class="bar"><i id="bm" style="background:var(--him)"></i></div></div><div style="margin-top:10px">Oanh · <span id="cl"></span><div class="bar"><i id="bl" style="background:var(--her)"></i></div></div></div>
   <div class="card"><b>Chung / Riêng</b><div style="display:flex;height:22px;border-radius:11px;overflow:hidden;margin:10px 0"><div id="bsh" style="background:var(--shared)"></div><div id="bpr" style="flex:1;background:#bbb"></div></div><div class="sub" id="shtxt"></div></div>
   <div class="btn alt" onclick="toast('Đã xuất báo cáo PDF')">⬇ Xuất PDF / CSV</div></div></div>
 
@@ -128,22 +128,22 @@ input[type=range]{width:100%;accent-color:var(--shared);margin:12px 0}
 <div class="scr" id="bal"><div class="nav"><span class="back" onclick="go('home')">‹ Quay lại</span><span class="link" onclick="go('balset')">⚙ Tỷ lệ</span></div><h1>Cân đối</h1><p class="sub">Tháng 11 · chỉ tính khoản chi <b>chung</b></p>
  <div class="card center" style="margin-top:10px"><span class="av l" style="background:var(--him);width:56px;height:56px;font-size:24px">M</span> <span style="font-size:22px">⇄</span> <span class="av l" style="background:var(--her);width:56px;height:56px;font-size:24px">L</span>
  <div style="font-size:15px;margin:12px 0 4px" id="balwho"></div><div style="font-size:34px;font-weight:700;color:var(--shared)" id="balamt"></div><div class="sub" id="balsub"></div>
- <div class="btn" id="balbtn" onclick="settle()">Đánh dấu đã chuyển</div><div class="btn alt" onclick="toast('Đã nhắc Lan 🔔')">Nhắc Lan</div></div>
- <div class="card"><b>Đã chi cho khoản chung</b><div style="margin-top:10px">Minh · <span id="pm"></span><div class="bar"><i id="pmb" style="background:var(--him)"></i></div></div><div style="margin-top:10px">Lan · <span id="pl"></span><div class="bar"><i id="plb" style="background:var(--her)"></i></div></div></div>
+ <div class="btn" id="balbtn" onclick="settle()">Đánh dấu đã chuyển</div><div class="btn alt" onclick="toast('Đã nhắc Oanh 🔔')">Nhắc Oanh</div></div>
+ <div class="card"><b>Đã chi cho khoản chung</b><div style="margin-top:10px">Bảo · <span id="pm"></span><div class="bar"><i id="pmb" style="background:var(--him)"></i></div></div><div style="margin-top:10px">Oanh · <span id="pl"></span><div class="bar"><i id="plb" style="background:var(--her)"></i></div></div></div>
  <div class="card clickable" onclick="go('ball')" style="display:flex;justify-content:space-between"><b>🕘 Lịch sử tất toán</b><span class="link">›</span></div></div>
 <div class="scr" id="balset"><div class="nav"><span class="back" onclick="go('bal')">‹ Quay lại</span></div><h1>Tỷ lệ đóng góp</h1><p class="sub">Chọn cách chia khoản chung</p>
  <div class="card"><div class="seg" id="ratseg"><div data-r="50">50/50</div><div class="on" data-r="60">Theo thu nhập</div><div data-r="x">Tùy chỉnh</div></div>
- <div style="display:flex;justify-content:space-between;margin-top:10px"><b style="color:var(--him)">Minh <span id="rm">60</span>%</b><b style="color:var(--her)">Lan <span id="rl">40</span>%</b></div>
- <input type="range" min="10" max="90" value="60" id="slider"><div class="sub">Thu nhập: Minh 20tr · Lan 12tr → 62,5 / 37,5, làm tròn 60/40</div></div>
+ <div style="display:flex;justify-content:space-between;margin-top:10px"><b style="color:var(--him)">Bảo <span id="rm">60</span>%</b><b style="color:var(--her)">Oanh <span id="rl">40</span>%</b></div>
+ <input type="range" min="10" max="90" value="60" id="slider"><div class="sub">Thu nhập: Bảo 20tr · Oanh 12tr → 62,5 / 37,5, làm tròn 60/40</div></div>
  <div class="card"><b>Công thức</b><div class="tog">Tự cập nhật khi thu nhập đổi<div class="sw on"><i></i></div></div><div class="tog">Chu kỳ tất toán: <b>Cuối tháng</b><span></span></div><div class="tog">Nhắc tất toán<div class="sw on"><i></i></div></div></div>
- <div class="tip">Cả hai cần đồng ý khi đổi tỷ lệ. Lan sẽ nhận yêu cầu xác nhận.</div><div class="btn" onclick="applyRatio()">Gửi yêu cầu thay đổi</div></div>
+ <div class="tip">Cả hai cần đồng ý khi đổi tỷ lệ. Oanh sẽ nhận yêu cầu xác nhận.</div><div class="btn" onclick="applyRatio()">Gửi yêu cầu thay đổi</div></div>
 <div class="scr" id="ball"><div class="nav"><span class="back" onclick="go('bal')">‹ Quay lại</span></div><h1>Lịch sử tất toán</h1>
  <div class="card" id="hist"></div><div class="card"><b>Khoản chung tháng 11</b><div id="sharedlist"></div></div><div class="sub center">Chạm giao dịch để loại khỏi cân đối</div></div>
 
 <!-- ADD SHEET -->
 <div class="sheet" id="sheet"><div style="display:flex;justify-content:space-between"><b style="color:var(--coral);cursor:pointer" onclick="openSheet(0)">Hủy</b><b>Thêm giao dịch</b><span></span></div>
  <div class="seg" id="kind"><div class="on">Chi</div><div>Thu</div></div><div class="amount"><span id="num">0</span> ₫</div><div class="grid" id="cats"></div>
- <div class="card" style="margin-top:10px"><div class="tog"><span id="who">Người chi: Minh</span><span class="link" onclick="swapWho()">Đổi</span></div><div class="tog"><span>👥 Chi chung <span class="sub" id="vis">· cả hai cùng thấy</span></span><div class="sw on" id="visSw"><i></i></div></div></div>
+ <div class="card" style="margin-top:10px"><div class="tog"><span id="who">Người chi: Bảo</span><span class="link" onclick="swapWho()">Đổi</span></div><div class="tog"><span>👥 Chi chung <span class="sub" id="vis">· cả hai cùng thấy</span></span><div class="sw on" id="visSw"><i></i></div></div></div>
  <div class="pad" id="pad"></div><div class="btn" onclick="save()">Lưu</div></div>
 
 <div class="tabs" id="tabs"><div class="tab on" data-t="home"><b>🏠</b>Tổng quan</div><div class="tab" data-t="tx"><b>🧾</b>Giao dịch</div><div><div class="fab" onclick="openSheet(1)">＋</div></div><div class="tab" data-t="bud"><b>📊</b>Ngân sách</div><div class="tab" data-t="fam"><b>👨‍👩‍👧</b>Gia đình</div></div>
@@ -152,7 +152,7 @@ input[type=range]{width:100%;accent-color:var(--shared);margin:12px 0}
 <script>
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const f=v=>Math.round(v).toLocaleString('vi-VN');
-const U={M:{n:'Minh',c:'var(--him)'},L:{n:'Lan',c:'var(--her)'}};
+const U={M:{n:'Bảo',c:'var(--him)'},L:{n:'Oanh',c:'var(--her)'}};
 const CATS=[['🍜','Ăn uống'],['🛒','Chợ'],['🏠','Nhà cửa'],['💡','Hóa đơn'],['🚗','Đi lại'],['👶','Con cái'],['💊','Sức khỏe'],['🎮','Giải trí']];
 const COL=['var(--coral)','var(--teal)','var(--shared)','var(--warn)','#bbb'];
 let T=[ // d: ngày, s: shared, x: excluded from balance
@@ -166,7 +166,7 @@ let T=[ // d: ngày, s: shared, x: excluded from balance
  {i:'🚗',t:'Xăng xe',c:'Đi lại',a:120000,u:'M',s:1,d:'3 ngày trước'}];
 const BASE={'Ăn uống':2400000,'Chợ':1600000,'Nhà cửa':0,'Hóa đơn':350000,'Đi lại':980000,'Giải trí':1700000,'Con cái':0,'Sức khỏe':0}; // chi trước đó trong tháng
 const LIM={'Ăn uống':6000000,'Chợ':4000000,'Giải trí':2000000,'Đi lại':2000000,'Hóa đơn':3000000,'Nhà cửa':2500000};
-let ratio=60,hide=false,scope=0,settled=false,hist=[['Tháng 10','Lan → Minh · 0,9tr','✅'],['Tháng 9','Minh → Lan · 0,3tr','✅']];
+let ratio=60,hide=false,scope=0,settled=false,hist=[['Tháng 10','Oanh → Bảo · 0,9tr','✅'],['Tháng 9','Bảo → Oanh · 0,3tr','✅']];
 const spend=(sc=0)=>T.filter(x=>sc==0?true:sc==1?x.u=='M':x.u=='L').reduce((s,x)=>s+x.a,0);
 
 function go(id){$$('.scr').forEach(s=>s.classList.remove('on'));$('#'+id).classList.add('on');
@@ -184,19 +184,19 @@ let rs=0;seg('repscope',i=>{rs=i;render()});
 function toggleHide(el){el.classList.toggle('on');hide=el.classList.contains('on');render();toast(hide?'Giao dịch riêng của vợ/chồng đã ẩn hoàn toàn':'Hiện “Chi riêng” trong danh sách')}
 
 function rowHTML(x,showDate){
- const priv=!x.s&&x.u=='L'; // giao dịch riêng của vợ, người dùng là Minh
+ const priv=!x.s&&x.u=='L'; // giao dịch riêng của vợ, người dùng là Bảo
  if(priv&&hide)return'';
  const masked=priv;
  return `<div class="row"><div class="ic">${masked?'🔒':x.i}</div><div class="grow">${masked?'Chi riêng':x.t}<div class="sub"><span class="av s" style="background:${U[x.u].c}">${U[x.u].n[0]}</span> ${U[x.u].n} · ${x.s?'Chung':'Riêng'}${showDate?' · '+x.d:''}</div></div><div class="amt neg">-${f(x.a)}</div></div>`}
 
 function balance(){const sh=T.filter(x=>x.s&&!x.x);const pm=sh.filter(x=>x.u=='M').reduce((s,x)=>s+x.a,0),pl=sh.filter(x=>x.u=='L').reduce((s,x)=>s+x.a,0),tot=pm+pl;
- const diff=pl-tot*(100-ratio)/100; // >0: Lan chi nhiều hơn phần của mình => Minh chuyển cho Lan
- return {pm,pl,tot,owe:-diff}} // owe>0: Lan -> Minh
+ const diff=pl-tot*(100-ratio)/100; // >0: Oanh chi nhiều hơn phần của mình => Bảo chuyển cho Oanh
+ return {pm,pl,tot,owe:-diff}} // owe>0: Oanh -> Bảo
 
 function render(){
  const sc=scope;const total=spend(sc)+Object.values(BASE).reduce((a,b)=>a+b,0)*(sc==0?1:sc==1?.55:.45)+ (sc==0?4600000:0);
  $('#spent').textContent=f(total)+' ₫';$('#hbar').style.width=Math.min(100,total/20000000*100)+'%';$('#left').textContent=`Còn ${f(Math.max(0,20000000-total))} ₫ / ngân sách 20.000.000 ₫`;
- const b=balance();$('#hbal').textContent=settled?'Đã cân bằng ✓':(b.owe>0?'Lan → Minh ':'Minh → Lan ')+f(Math.abs(b.owe))+' ₫';
+ const b=balance();$('#hbal').textContent=settled?'Đã cân bằng ✓':(b.owe>0?'Oanh → Bảo ':'Bảo → Oanh ')+f(Math.abs(b.owe))+' ₫';
  $('#recent').innerHTML=T.slice().reverse().slice(0,4).map(x=>rowHTML(x)).join('')||'<div class="sub">Chưa có giao dịch</div>';
  // tx
  const flt=$$('#txf div').findIndex(d=>d.classList.contains('on'));const list=T.filter(x=>flt==0||(flt==1?x.s:!x.s)).slice().reverse();
@@ -217,17 +217,17 @@ function render(){
  const tm=spend(1)+1e7*.55*0.9,tl=spend(2)+1e7*.45*.9,tt=tm+tl;$('#cm').textContent=f(tm)+' ₫';$('#cl').textContent=f(tl)+' ₫';$('#bm').style.width=tm/tt*100+'%';$('#bl').style.width=tl/tt*100+'%';
  const shs=T.filter(x=>x.s).reduce((s,x)=>s+x.a,0),ps=spend()-shs;$('#bsh').style.width=shs/spend()*100+'%';$('#shtxt').innerHTML=`<span class="dot" style="background:var(--shared)"></span>Chung ${f(shs)} ₫ · <span class="dot" style="background:#bbb"></span>Riêng ${f(ps)} ₫`;
  // balance
- $('#balwho').textContent=settled?'Hai bạn đã cân bằng 🎉':(b.owe>0?'Lan nên chuyển cho Minh':'Minh nên chuyển cho Lan');
+ $('#balwho').textContent=settled?'Hai bạn đã cân bằng 🎉':(b.owe>0?'Oanh nên chuyển cho Bảo':'Bảo nên chuyển cho Oanh');
  $('#balamt').textContent=settled?'0 ₫':f(Math.abs(b.owe))+' ₫';$('#balsub').textContent=`để cân bằng theo tỷ lệ ${ratio}/${100-ratio}`;$('#balbtn').style.display=settled?'none':'block';
  $('#pm').textContent=`${f(b.pm)} ₫ (${Math.round(b.pm/b.tot*100)}%)`;$('#pl').textContent=`${f(b.pl)} ₫ (${Math.round(b.pl/b.tot*100)}%)`;$('#pmb').style.width=b.pm/b.tot*100+'%';$('#plb').style.width=b.pl/b.tot*100+'%';
- $('#hist').innerHTML=`<div class="row"><div class="ic">${settled?'✅':'⏳'}</div><div class="grow">Tháng 11<div class="sub">${settled?'Đã tất toán':'Lan → Minh · '+f(Math.abs(b.owe))+' ₫'}</div></div><b style="color:${settled?'var(--inc)':'var(--warn)'}">${settled?'Đã xong':'Chờ'}</b></div>`+hist.map(h=>`<div class="row"><div class="ic">${h[2]}</div><div class="grow">${h[0]}<div class="sub">${h[1]}</div></div><b class="pos">Đã xong</b></div>`).join('');
+ $('#hist').innerHTML=`<div class="row"><div class="ic">${settled?'✅':'⏳'}</div><div class="grow">Tháng 11<div class="sub">${settled?'Đã tất toán':'Oanh → Bảo · '+f(Math.abs(b.owe))+' ₫'}</div></div><b style="color:${settled?'var(--inc)':'var(--warn)'}">${settled?'Đã xong':'Chờ'}</b></div>`+hist.map(h=>`<div class="row"><div class="ic">${h[2]}</div><div class="grow">${h[0]}<div class="sub">${h[1]}</div></div><b class="pos">Đã xong</b></div>`).join('');
  $('#sharedlist').innerHTML=T.filter(x=>x.s).slice().reverse().map(x=>`<div class="row clickable" onclick="excl(${T.indexOf(x)})" style="${x.x?'opacity:.4;text-decoration:line-through':''}"><div class="ic">${x.i}</div><div class="grow">${x.t}<div class="sub">${U[x.u].n} trả</div></div><b>${f(x.a)}</b></div>`).join('');
 }
 function excl(i){T[i].x=!T[i].x;render()}
 function settle(){settled=true;render();toast('Đã ghi nhận tất toán tháng 11 ✅')}
 const sl=$('#slider');sl.oninput=()=>{ratio=+sl.value;$('#rm').textContent=ratio;$('#rl').textContent=100-ratio;$$('#ratseg div').forEach(d=>d.classList.toggle('on',d.dataset.r=='x'))};
 seg('ratseg',(i,d)=>{if(d.dataset.r!='x'){sl.value=d.dataset.r;sl.oninput();d.classList.add('on');$$('#ratseg div').forEach(x=>x!==d&&x.classList.remove('on'))}});
-function applyRatio(){ratio=+sl.value;settled=false;toast(`Đã gửi yêu cầu ${ratio}/${100-ratio} cho Lan – Lan đã đồng ý ✅`);go('bal')}
+function applyRatio(){ratio=+sl.value;settled=false;toast(`Đã gửi yêu cầu ${ratio}/${100-ratio} cho Oanh – Oanh đã đồng ý ✅`);go('bal')}
 
 // add sheet
 let n='',who='M',cat=0;$('#cats').innerHTML=CATS.map((c,i)=>`<div class="cat ${i?'':'on'}"><span>${c[0]}</span>${c[1]}</div>`).join('');
@@ -237,6 +237,7 @@ $('#visSw').addEventListener('click',()=>{$('#vis').textContent=$('#visSw').clas
 function swapWho(){who=who=='M'?'L':'M';$('#who').textContent='Người chi: '+U[who].n}
 function openSheet(o){$('#sheet').classList.toggle('on',!!o)}
 function save(){if(!n)return toast('Nhập số tiền trước nhé');const s=$('#visSw').classList.contains('on')?1:0;
- T.push({i:CATS[cat][0],t:CATS[cat][1],c:CATS[cat][1],a:+n,u:who,s,d:'Hôm nay'});n='';$('#num').textContent='0';openSheet(0);settled=false;go('home');toast(s?'Đã lưu & đồng bộ với Lan':'Đã lưu (riêng tư)')}
+ T.push({i:CATS[cat][0],t:CATS[cat][1],c:CATS[cat][1],a:+n,u:who,s,d:'Hôm nay'});n='';$('#num').textContent='0';openSheet(0);settled=false;go('home');toast(s?'Đã lưu & đồng bộ với Oanh':'Đã lưu (riêng tư)')}
 go('s0');
 </script></body></html>
+
