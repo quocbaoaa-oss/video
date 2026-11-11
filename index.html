@@ -747,30 +747,129 @@
     .pad button.op { color: var(--coral); font-weight: 800; }
     .pad button.equal { background: linear-gradient(135deg, var(--coral), var(--coral2)); color: #fff; font-weight: 800; border: 0; }
 
-    /* Categories Grid */
+    /* Categories Grid — Ultra-High Contrast Selection & Customizer */
+    .cat-header-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin: 8px 2px 6px;
+      gap: 6px;
+    }
+    .cat-selected-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12.5px;
+      font-weight: 700;
+      color: var(--txt);
+      background: var(--card);
+      border: 1.5px solid var(--card-border);
+      padding: 4px 10px;
+      border-radius: 12px;
+      box-shadow: var(--sh);
+    }
     .grid-cats {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
       gap: 9px;
-      margin: 10px 0;
+      margin: 6px 0 12px;
     }
     .cat-item {
+      position: relative;
       background: var(--card);
-      border-radius: 16px;
-      padding: 12px 6px;
+      border-radius: 18px;
+      padding: 11px 5px 10px;
       text-align: center;
       font-size: 11.5px;
       font-weight: 600;
+      color: var(--txt);
       cursor: pointer;
       border: 2px solid var(--card-border);
-      transition: 0.15s;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+      transition: all 0.18s cubic-bezier(0.22, 1, 0.36, 1);
+      user-select: none;
     }
-    .cat-item span { font-size: 24px; display: block; margin-bottom: 4px; }
+    .cat-item span {
+      font-size: 25px;
+      display: block;
+      margin-bottom: 4px;
+      transition: transform 0.18s ease;
+    }
+    .cat-item:active { transform: scale(0.95); }
     .cat-item.on {
+      background: linear-gradient(135deg, var(--coral) 0%, var(--coral2) 100%) !important;
+      color: #FFFFFF !important;
+      border-color: rgba(255, 255, 255, 0.65) !important;
+      font-weight: 800;
+      transform: translateY(-3px) scale(1.03);
+      box-shadow: 0 10px 22px rgba(37, 99, 235, 0.36), 0 0 0 2.5px var(--coral);
+      z-index: 2;
+    }
+    body.role-her .cat-item.on {
+      box-shadow: 0 10px 24px rgba(236, 72, 153, 0.42), 0 0 0 2.5px var(--coral);
+    }
+    .cat-item.inc-mode.on {
+      background: linear-gradient(135deg, #059669 0%, #10B981 100%) !important;
+      box-shadow: 0 10px 22px rgba(16, 185, 129, 0.38), 0 0 0 2.5px #10B981 !important;
+    }
+    .cat-item.on span {
+      transform: scale(1.14);
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+    }
+    .cat-item.on::after {
+      content: '✓';
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #FFFFFF;
+      color: var(--coral);
+      font-size: 11px;
+      font-weight: 900;
+      display: grid;
+      place-items: center;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+    }
+    .cat-item.inc-mode.on::after {
+      color: #059669;
+    }
+    .cat-item.add-cat-tile {
+      border: 2px dashed var(--coral);
+      background: var(--ic);
+      color: var(--coral);
+      font-weight: 700;
+    }
+
+    /* Emoji Picker Grid inside Category Manager Modal */
+    .emoji-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 6px;
+      max-height: 148px;
+      overflow-y: auto;
+      padding: 6px;
+      background: var(--fill);
+      border-radius: 14px;
+      margin: 6px 0 10px;
+    }
+    .emoji-cell {
+      height: 38px;
+      border-radius: 10px;
+      font-size: 21px;
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      background: var(--card);
+      border: 2px solid transparent;
+      transition: all 0.12s;
+    }
+    .emoji-cell.on {
       border-color: var(--coral);
       background: var(--ic);
-      font-weight: 700;
-      transform: translateY(-1px);
+      transform: scale(1.1);
+      box-shadow: 0 3px 8px rgba(0,0,0,0.12);
     }
 
     /* PWA Install Banner */
@@ -1634,6 +1733,12 @@
     </div>
 
     <div class="card">
+      <h2>🗂 Hạng mục Chi tiêu & Thu nhập</h2>
+      <div class="sub" style="margin-bottom:8px">Thêm mới, đổi tên hoặc đổi biểu tượng (icon) cho các mục Ăn uống, Nhà cửa, Cho vay, Gửi tiết kiệm, Đầu tư, Lương thưởng…</div>
+      <div class="btn sm" style="width:100%" onclick="openCatManager()">⚙️ Quản lý & Tùy chỉnh hạng mục</div>
+    </div>
+
+    <div class="card">
       <h2>Dữ liệu & Sao lưu</h2>
       <div class="btn alt sm" style="margin:8px 0;width:100%" onclick="exportCSV()">⬇ Xuất file báo cáo CSV</div>
       <div class="btn alt sm" style="margin:8px 0;width:100%" onclick="exportJSON()">💾 Sao lưu toàn bộ dữ liệu (JSON)</div>
@@ -1720,6 +1825,15 @@
         <div class="q-btn" onclick="addAmountFast(200000)">+200k</div>
         <div class="q-btn" onclick="addAmountFast(500000)">+500k</div>
         <div class="q-btn" onclick="addAmountFast(1000000)">+1tr</div>
+      </div>
+
+      <!-- Categories Header & Active Selection Indicator -->
+      <div class="cat-header-bar">
+        <div class="cat-selected-badge" id="selected-cat-badge" onclick="editSelectedCatNow()" title="Chạm để sửa tên / icon mục đang chọn">
+          <span id="selected-cat-txt">🍜 Ăn uống</span>
+          <span style="color:var(--coral);font-size:11px">✏️ Sửa</span>
+        </div>
+        <span class="link" style="font-size:12.5px" onclick="openCatManager()">⚙️ Quản lý / ＋ Thêm mục</span>
       </div>
 
       <!-- Categories Grid -->
@@ -1817,6 +1931,39 @@
     </div>
   </div>
 
+  <!-- Category Manager & Customizer Modal (Add / Edit Name & Icon for Expense & Income) -->
+  <div class="dlg" id="cat-manager-modal">
+    <div style="width:365px;max-width:94vw;max-height:86vh;display:flex;flex-direction:column;text-align:left;padding:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <h2 style="padding:0;font-size:17px">🗂 Tùy chỉnh Hạng mục</h2>
+        <span class="ic clickable" style="width:30px;height:30px;font-size:14px" onclick="closeCatManager()">✕</span>
+      </div>
+
+      <div class="seg" id="cat-mgr-kind-seg" style="margin:4px 0 10px">
+        <div class="on" onclick="switchCatMgrKind('e')">💸 Chi tiêu & Tài chính</div>
+        <div onclick="switchCatMgrKind('i')">💰 Thu nhập & Thu hồi</div>
+      </div>
+
+      <!-- Add / Edit Form Card -->
+      <div style="background:var(--fill);border-radius:18px;padding:10px 12px;margin-bottom:10px;border:1.5px solid var(--card-border)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <b style="font-size:13px;color:var(--coral)" id="cat-form-title">＋ Thêm hạng mục mới</b>
+          <span class="sub link" id="cat-form-cancel" style="display:none;font-size:12px" onclick="resetCatForm()">Hủy sửa</span>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input class="input" id="cat-edit-icon" readonly onclick="activateTextInput(this)" onblur="this.readOnly=true" maxlength="4" value="🍜" style="width:54px;margin:0;text-align:center;font-size:22px;padding:8px 4px" title="Chọn icon bên dưới hoặc chạm để gõ emoji">
+          <input class="input" id="cat-edit-name" enterkeyhint="done" readonly onclick="activateTextInput(this)" onblur="this.readOnly=true" onkeydown="if(event.key==='Enter'){this.blur();saveCatFromManager();}" placeholder="Chạm nhập tên mục (VD: Đầu tư vàng)…" maxlength="22" style="margin:0;flex:1;font-weight:700">
+        </div>
+        <div class="sub" style="margin-top:6px">Chạm chọn nhanh biểu tượng (Icon):</div>
+        <div class="emoji-grid" id="cat-emoji-picker"></div>
+        <button class="btn sm" style="width:100%" id="cat-save-btn" onclick="saveCatFromManager()">💾 Lưu hạng mục</button>
+      </div>
+
+      <div class="sub" style="margin-bottom:4px">Danh sách hạng mục hiện có (Chạm ✏️ để sửa tên/icon):</div>
+      <div id="cat-mgr-list" style="flex:1;overflow-y:auto;max-height:220px;border-top:1px solid var(--sep)"></div>
+    </div>
+  </div>
+
   <!-- Photo Fullscreen Zoom Modal -->
   <div class="scrim" id="photo-zoom-modal" style="display:grid;place-items:center;z-index:120" onclick="this.classList.remove('on')">
     <img id="photo-zoom-img" style="max-width:92%;max-height:85%;border-radius:14px;box-shadow:0 15px 40px rgba(0,0,0,0.6)">
@@ -1836,8 +1983,8 @@ const formatShort = n => {
   return String(Math.round(n));
 };
 
-// Default Categories
-const CATEGORIES = [
+// Default Expense & Financial Categories (Bao gồm Cho vay, Gửi tiết kiệm, Đầu tư...)
+const DEFAULT_EXP_CATEGORIES = [
   ['🍜', 'Ăn uống'],
   ['🛒', 'Chợ & Siêu thị'],
   ['🏠', 'Nhà cửa'],
@@ -1845,12 +1992,46 @@ const CATEGORIES = [
   ['🚗', 'Đi lại'],
   ['👶', 'Con cái'],
   ['🛍️', 'Mua sắm'],
-  ['🎮', 'Giải trí']
+  ['🎮', 'Giải trí'],
+  ['🤝', 'Cho vay'],
+  ['🏦', 'Gửi tiết kiệm'],
+  ['📈', 'Đầu tư'],
+  ['🏥', 'Sức khỏe']
 ];
-const getCatIcon = name => (CATEGORIES.find(c => c[1] === name) || ['💼'])[0];
+
+// Default Income & Recovery Categories
+const DEFAULT_INC_CATEGORIES = [
+  ['💰', 'Lương & Thưởng'],
+  ['📈', 'Lãi đầu tư'],
+  ['🏦', 'Rút tiết kiệm'],
+  ['🤝', 'Thu nợ cho vay'],
+  ['🏪', 'Kinh doanh'],
+  ['🎁', 'Biếu tặng / Khác']
+];
+
+// Curated 36 Emojis for One-Tap Category Icon Selection
+const EMOJI_PALETTE = [
+  '🍜','☕','🛒','🏠','💡','🚗','⛽','👶','🛍️','🎮','🤝','🏦',
+  '📈','🪙','💎','🏥','💊','✈️','🎓','🎁','💰','💼','🏪','🏘️',
+  '📱','💻','🐶','💇‍♀️','🏋️‍♂️','🧧','🛡️','🔧','❤️','🎉','📚','🧾'
+];
+
+function getActiveCategories(kind = 'e') {
+  if (typeof DB !== 'undefined' && DB) {
+    const list = kind === 'i' ? DB.incomeCategories : DB.expenseCategories;
+    if (Array.isArray(list) && list.length) return list;
+  }
+  return kind === 'i' ? DEFAULT_INC_CATEGORIES : DEFAULT_EXP_CATEGORIES;
+}
+
+const getCatIcon = name => {
+  const all = [...getActiveCategories('e'), ...getActiveCategories('i')];
+  const found = all.find(c => c[1] === name);
+  return found ? found[0] : '💼';
+};
 
 // Color palette
-const COLORS = ['#FF6B6B', '#2EC4B6', '#7C5CFF', '#F59E0B', '#EF4444', '#10B981'];
+const COLORS = ['#FF6B6B', '#2EC4B6', '#7C5CFF', '#F59E0B', '#EF4444', '#10B981', '#3B82F6', '#EC4899'];
 
 // Role Manager: 'him' (Chồng) or 'her' (Vợ) per device
 const ROLE_KEY = 'vidoi_my_role';
@@ -1872,6 +2053,8 @@ function getInitialData() {
       him: { name: 'Bảo', color: '#4C8DFF', role: 'Chồng' },
       her: { name: 'Oanh', color: '#FF7EB6', role: 'Vợ' }
     },
+    expenseCategories: DEFAULT_EXP_CATEGORIES.map(c => [...c]),
+    incomeCategories: DEFAULT_INC_CATEGORIES.map(c => [...c]),
     wallets: [
       { id: 'vcb', name: 'Ví chung VCB', icon: '🏦', balance: 0, owner: 'S', color: '#7C5CFF,#a78bfa' },
       { id: 'cash', name: 'Tiền mặt (Bảo)', icon: '💵', balance: 0, owner: 'him', color: '#22C55E,#4ade80' },
@@ -1886,12 +2069,19 @@ function getInitialData() {
       'Đi lại': 1000000,
       'Con cái': 2000000,
       'Mua sắm': 1500000,
-      'Giải trí': 1200000
+      'Giải trí': 1200000,
+      'Cho vay': 2000000,
+      'Gửi tiết kiệm': 5000000,
+      'Đầu tư': 5000000,
+      'Sức khỏe': 1500000
     },
     privateBudgets: {
       'Mua sắm': 1000000,
       'Ăn uống': 1200000,
-      'Giải trí': 800000
+      'Giải trí': 800000,
+      'Cho vay': 1000000,
+      'Gửi tiết kiệm': 2000000,
+      'Đầu tư': 2000000
     },
     goals: [],
     transactions: [],
@@ -1916,6 +2106,28 @@ function ensureDBFields(obj) {
   if (!obj.users) obj.users = def.users;
   obj.users.him.name = 'Bảo';
   obj.users.her.name = 'Oanh';
+  if (!Array.isArray(obj.expenseCategories) || !obj.expenseCategories.length) {
+    obj.expenseCategories = def.expenseCategories;
+  } else if (!obj.customCatsMigrated) {
+    // Ensure new default categories (Cho vay, Gửi tiết kiệm, Đầu tư, Sức khỏe) are present
+    const extraDefaults = [
+      ['🤝', 'Cho vay'],
+      ['🏦', 'Gửi tiết kiệm'],
+      ['📈', 'Đầu tư'],
+      ['🏥', 'Sức khỏe']
+    ];
+    extraDefaults.forEach(item => {
+      if (!obj.expenseCategories.some(c => c[1] === item[1])) {
+        obj.expenseCategories.push([...item]);
+      }
+    });
+    obj.customCatsMigrated = true;
+  }
+  if (!Array.isArray(obj.incomeCategories) || !obj.incomeCategories.length) {
+    obj.incomeCategories = def.incomeCategories;
+  }
+  if (!obj.budgets) obj.budgets = def.budgets;
+  if (!obj.privateBudgets) obj.privateBudgets = def.privateBudgets;
   return obj;
 }
 
@@ -2781,7 +2993,8 @@ function openAddSheet(editTx = null) {
   STATE.editingTxId = editTx ? editTx.id : null;
   STATE.addExp = editTx ? String(editTx.amount) : '';
   STATE.addKind = editTx ? editTx.kind : 'e';
-  const catIdx = editTx ? CATEGORIES.findIndex(c => c[1] === editTx.category) : 0;
+  const activeCats = getActiveCategories(STATE.addKind);
+  const catIdx = editTx ? activeCats.findIndex(c => c[1] === editTx.category) : 0;
   STATE.addCatIdx = catIdx >= 0 ? catIdx : 0;
   STATE.addShared = editTx ? editTx.shared : true;
   STATE.addWho = editTx ? editTx.who : getMyRole();
@@ -2808,6 +3021,7 @@ function openAddSheet(editTx = null) {
   $('#add-shared-hint').textContent = STATE.addShared ? '· cả hai cùng thấy' : '· 🔒 chỉ mình tôi thấy';
   $('#sw-add-rec').classList.remove('on');
   $$('#add-kind-seg div').forEach((d, i) => d.classList.toggle('on', (STATE.addKind === 'e' ? 0 : 1) === i));
+  $('#add-amt-display').style.color = STATE.addKind === 'i' ? 'var(--inc)' : 'var(--txt)';
 
   renderAddCats();
   renderAddChips();
@@ -2828,18 +3042,216 @@ function closeAddSheet() {
 }
 
 function renderAddCats() {
-  $('#add-cats-grid').innerHTML = CATEGORIES.map((c, i) => `
-    <div class="cat-item ${i === STATE.addCatIdx ? 'on' : ''}" onclick="selectAddCat(${i})">
+  const activeCats = getActiveCategories(STATE.addKind);
+  if (STATE.addCatIdx >= activeCats.length) STATE.addCatIdx = 0;
+  const isInc = STATE.addKind === 'i';
+  const curCat = activeCats[STATE.addCatIdx] || activeCats[0] || ['🍜', 'Ăn uống'];
+  if ($('#selected-cat-txt')) {
+    $('#selected-cat-txt').textContent = `${curCat[0]} ${curCat[1]}`;
+  }
+  $('#add-cats-grid').innerHTML = activeCats.map((c, i) => `
+    <div class="cat-item ${isInc ? 'inc-mode' : ''} ${i === STATE.addCatIdx ? 'on' : ''}" onclick="selectAddCat(${i})">
       <span>${c[0]}</span>
       ${c[1]}
     </div>
-  `).join('');
+  `).join('') + `
+    <div class="cat-item add-cat-tile" onclick="openCatManager(STATE.addKind)">
+      <span>➕</span>
+      Thêm / Sửa
+    </div>
+  `;
 }
 
 function selectAddCat(i) {
   closeNumberPad();
+  const activeCats = getActiveCategories(STATE.addKind);
   STATE.addCatIdx = i;
-  $$('.cat-item').forEach((elem, idx) => elem.classList.toggle('on', idx === i));
+  const curCat = activeCats[i] || activeCats[0];
+  if ($('#selected-cat-txt') && curCat) {
+    $('#selected-cat-txt').textContent = `${curCat[0]} ${curCat[1]}`;
+  }
+  $$('#add-cats-grid .cat-item:not(.add-cat-tile)').forEach((elem, idx) => elem.classList.toggle('on', idx === i));
+}
+
+/* ==========================================================================
+   CATEGORY MANAGER: ADD, RENAME & CHANGE ICON (CHO VAY, ĐẦU TƯ, TIẾT KIỆM...)
+   ========================================================================== */
+const CAT_MGR = {
+  kind: 'e',
+  editingIdx: null
+};
+
+function openCatManager(defaultKind) {
+  closeNumberPad();
+  CAT_MGR.kind = defaultKind || STATE.addKind || 'e';
+  CAT_MGR.editingIdx = null;
+  resetCatForm();
+  renderCatManager();
+  $('#cat-manager-modal').classList.add('on');
+}
+
+function closeCatManager() {
+  if ($('#cat-edit-name')) {
+    $('#cat-edit-name').blur();
+    $('#cat-edit-name').readOnly = true;
+  }
+  if ($('#cat-edit-icon')) {
+    $('#cat-edit-icon').blur();
+    $('#cat-edit-icon').readOnly = true;
+  }
+  $('#cat-manager-modal').classList.remove('on');
+}
+
+function switchCatMgrKind(kind) {
+  CAT_MGR.kind = kind === 'i' ? 'i' : 'e';
+  resetCatForm();
+  renderCatManager();
+}
+
+function resetCatForm() {
+  CAT_MGR.editingIdx = null;
+  const defIcon = CAT_MGR.kind === 'i' ? '💰' : '🍜';
+  if ($('#cat-edit-icon')) {
+    $('#cat-edit-icon').value = defIcon;
+    $('#cat-edit-icon').readOnly = true;
+  }
+  if ($('#cat-edit-name')) {
+    $('#cat-edit-name').value = '';
+    $('#cat-edit-name').readOnly = true;
+  }
+  if ($('#cat-form-title')) $('#cat-form-title').textContent = '＋ Thêm hạng mục mới';
+  if ($('#cat-save-btn')) $('#cat-save-btn').textContent = '＋ Thêm hạng mục mới';
+  if ($('#cat-form-cancel')) $('#cat-form-cancel').style.display = 'none';
+  renderCatEmojiPicker(defIcon);
+}
+
+function renderCatEmojiPicker(selectedIcon) {
+  const cur = selectedIcon || ($('#cat-edit-icon') && $('#cat-edit-icon').value) || '🍜';
+  if (!$('#cat-emoji-picker')) return;
+  $('#cat-emoji-picker').innerHTML = EMOJI_PALETTE.map(em => `
+    <div class="emoji-cell ${em === cur ? 'on' : ''}" onclick="selectCatEmoji('${em}')">${em}</div>
+  `).join('');
+}
+
+function selectCatEmoji(em) {
+  if ($('#cat-edit-icon')) $('#cat-edit-icon').value = em;
+  renderCatEmojiPicker(em);
+}
+
+function renderCatManager() {
+  $$('#cat-mgr-kind-seg div').forEach((d, idx) => {
+    d.classList.toggle('on', (CAT_MGR.kind === 'e' ? 0 : 1) === idx);
+  });
+  const list = getActiveCategories(CAT_MGR.kind);
+  renderCatEmojiPicker($('#cat-edit-icon') ? $('#cat-edit-icon').value : list[0][0]);
+  if (!$('#cat-mgr-list')) return;
+  $('#cat-mgr-list').innerHTML = list.map((c, idx) => `
+    <div class="row" style="padding:8px 4px">
+      <div class="ic" style="width:36px;height:36px;font-size:20px">${c[0]}</div>
+      <div class="grow">
+        <b style="font-size:14px">${c[1]}</b>
+        <div class="sub">${CAT_MGR.kind === 'e' ? 'Hạng mục Chi tiêu / Tài chính' : 'Hạng mục Thu nhập'}</div>
+      </div>
+      <button class="btn sm alt" style="padding:6px 10px;font-size:12px" onclick="editCatItem(${idx})">✏️ Sửa</button>
+      ${list.length > 1 ? `<span class="ic clickable" style="width:32px;height:32px;color:var(--exp);background:rgba(239,68,68,0.1)" onclick="deleteCatItem(${idx})" title="Xóa mục này">🗑</span>` : ''}
+    </div>
+  `).join('');
+}
+
+function editCatItem(idx) {
+  const list = getActiveCategories(CAT_MGR.kind);
+  const item = list[idx];
+  if (!item) return;
+  CAT_MGR.editingIdx = idx;
+  if ($('#cat-edit-icon')) $('#cat-edit-icon').value = item[0];
+  if ($('#cat-edit-name')) $('#cat-edit-name').value = item[1];
+  if ($('#cat-form-title')) $('#cat-form-title').textContent = `✏️ Đang sửa: ${item[0]} ${item[1]}`;
+  if ($('#cat-save-btn')) $('#cat-save-btn').textContent = '💾 Cập nhật tên & icon';
+  if ($('#cat-form-cancel')) $('#cat-form-cancel').style.display = 'inline';
+  renderCatEmojiPicker(item[0]);
+}
+
+function editSelectedCatNow() {
+  openCatManager(STATE.addKind);
+  editCatItem(STATE.addCatIdx);
+}
+
+function saveCatFromManager() {
+  const icon = (($('#cat-edit-icon') && $('#cat-edit-icon').value) || '').trim() || '💼';
+  const name = (($('#cat-edit-name') && $('#cat-edit-name').value) || '').trim();
+  if (!name) {
+    return toast('Vui lòng chạm vào ô tên để nhập tên hạng mục!');
+  }
+  const list = getActiveCategories(CAT_MGR.kind);
+  const dupIdx = list.findIndex((c, i) => c[1].toLowerCase() === name.toLowerCase() && i !== CAT_MGR.editingIdx);
+  if (dupIdx >= 0) {
+    return toast(`Hạng mục "${name}" đã tồn tại!`);
+  }
+
+  if (CAT_MGR.editingIdx !== null && list[CAT_MGR.editingIdx]) {
+    const oldName = list[CAT_MGR.editingIdx][1];
+    list[CAT_MGR.editingIdx] = [icon, name];
+    // Propagate rename & icon change to existing transactions and budgets
+    DB.transactions.forEach(t => {
+      if (t.category === oldName && t.kind === CAT_MGR.kind) {
+        t.category = name;
+        t.icon = icon;
+        if (t.title === oldName) t.title = name;
+        t.updatedAt = Date.now();
+      }
+    });
+    if (CAT_MGR.kind === 'e') {
+      if (DB.budgets && oldName in DB.budgets && oldName !== name) {
+        DB.budgets[name] = DB.budgets[oldName];
+        delete DB.budgets[oldName];
+      }
+      if (DB.privateBudgets && oldName in DB.privateBudgets && oldName !== name) {
+        DB.privateBudgets[name] = DB.privateBudgets[oldName];
+        delete DB.privateBudgets[oldName];
+      }
+    }
+    toast(`Đã cập nhật hạng mục: ${icon} ${name} ✅`);
+  } else {
+    list.push([icon, name]);
+    if (CAT_MGR.kind === 'e' && DB.budgets && !(name in DB.budgets)) {
+      DB.budgets[name] = 2000000;
+    }
+    if (STATE.addKind === CAT_MGR.kind) {
+      STATE.addCatIdx = list.length - 1;
+    }
+    toast(`Đã thêm hạng mục mới: ${icon} ${name} 🎉`);
+  }
+
+  saveData();
+  resetCatForm();
+  renderCatManager();
+  renderAddCats();
+  renderApp();
+}
+
+function deleteCatItem(idx) {
+  const list = getActiveCategories(CAT_MGR.kind);
+  if (list.length <= 1) return toast('Cần giữ lại ít nhất 1 hạng mục!');
+  const item = list[idx];
+  if (!item) return;
+  confirmDlg(
+    `Xóa hạng mục "${item[0]} ${item[1]}"?`,
+    'Các giao dịch cũ thuộc mục này vẫn được giữ nguyên trong lịch sử.',
+    'Xóa mục',
+    () => {
+      list.splice(idx, 1);
+      if (CAT_MGR.kind === 'e' && DB.budgets) {
+        delete DB.budgets[item[1]];
+      }
+      if (STATE.addCatIdx >= list.length) STATE.addCatIdx = 0;
+      saveData();
+      resetCatForm();
+      renderCatManager();
+      renderAddCats();
+      renderApp();
+      toast(`Đã xóa hạng mục ${item[1]}`);
+    }
+  );
 }
 
 function renderAddChips() {
@@ -2993,8 +3405,8 @@ function saveTransaction() {
     return toast('Vui lòng nhập số tiền hợp lệ');
   }
 
-  const cat = CATEGORIES[STATE.addCatIdx] || CATEGORIES[0];
-  const isInc = STATE.addKind === 'i';
+  const activeCats = getActiveCategories(STATE.addKind);
+  const cat = activeCats[STATE.addCatIdx] || activeCats[0] || ['💼', 'Khác'];
   const note = $('#add-note-input').value.trim();
 
   if (STATE.editingTxId) {
@@ -3005,9 +3417,9 @@ function saveTransaction() {
       if (oldW) oldW.balance += (existing.kind === 'e' ? existing.amount : -existing.amount);
 
       existing.day = STATE.addDay;
-      existing.icon = isInc ? '💼' : cat[0];
-      existing.title = note || (isInc ? 'Thu nhập' : cat[1]);
-      existing.category = isInc ? 'Thu' : cat[1];
+      existing.icon = cat[0];
+      existing.title = note || cat[1];
+      existing.category = cat[1];
       existing.amount = amount;
       existing.who = STATE.addWho;
       existing.shared = STATE.addShared;
@@ -3034,9 +3446,9 @@ function saveTransaction() {
   const newTx = {
     id: Date.now(),
     day: STATE.addDay,
-    icon: isInc ? '💼' : cat[0],
-    title: note || (isInc ? 'Thu nhập' : cat[1]),
-    category: isInc ? 'Thu' : cat[1],
+    icon: cat[0],
+    title: note || cat[1],
+    category: cat[1],
     amount: amount,
     who: STATE.addWho,
     shared: STATE.addShared,
@@ -3587,6 +3999,9 @@ function buildCompactPayload() {
     splitRatio: DB.splitRatio,
     bank: DB.bank,
     budgets: DB.budgets,
+    privateBudgets: DB.privateBudgets,
+    expenseCategories: DB.expenseCategories,
+    incomeCategories: DB.incomeCategories,
     wallets: DB.wallets,
     goals: DB.goals,
     deletedTxIds: (DB.deletedTxIds || []).slice(-300),
@@ -3774,6 +4189,13 @@ function mergeCloudPayload(remote, silent = false) {
       changed = true;
     }
     if (remote.budgets) DB.budgets = remote.budgets;
+    if (remote.privateBudgets) DB.privateBudgets = remote.privateBudgets;
+    if (Array.isArray(remote.expenseCategories) && remote.expenseCategories.length) {
+      DB.expenseCategories = remote.expenseCategories;
+    }
+    if (Array.isArray(remote.incomeCategories) && remote.incomeCategories.length) {
+      DB.incomeCategories = remote.incomeCategories;
+    }
     if (Array.isArray(remote.goals)) DB.goals = remote.goals;
     if (Array.isArray(remote.wallets)) DB.wallets = remote.wallets;
     DB.updatedAt = remote.ts;
@@ -4070,6 +4492,7 @@ function setupSegmentedControls() {
       $$('#add-kind-seg div').forEach(x => x.classList.remove('on'));
       d.classList.add('on');
       STATE.addKind = i === 0 ? 'e' : 'i';
+      STATE.addCatIdx = 0;
       $('#add-amt-display').style.color = i === 1 ? 'var(--inc)' : 'var(--txt)';
       renderAddCats();
     };
