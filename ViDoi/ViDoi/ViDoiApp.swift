@@ -62,24 +62,49 @@ struct LockView: View {
 
 struct MainTabs: View {
     @Binding var showAdd: Bool
+    @State private var selectedTab = 0
+    @State private var lastNonAddTab = 0
+
     var body: some View {
-        TabView {
-            HomeView().tabItem { Label("Tổng quan", systemImage: "house.fill") }
-            TransactionsView().tabItem { Label("Giao dịch", systemImage: "list.bullet.rectangle") }
-            BudgetView().tabItem { Label("Ngân sách", systemImage: "chart.pie.fill") }
-            FamilyView().tabItem { Label("Gia đình", systemImage: "person.2.fill") }
+        TabView(selection: $selectedTab) {
+            HomeView()
+                .tabItem { Label("Tổng quan", systemImage: "house.fill") }
+                .tag(0)
+            TransactionsView()
+                .tabItem { Label("Giao dịch", systemImage: "list.bullet.rectangle") }
+                .tag(1)
+            Color.clear
+                .tabItem { Label("Ghi chép", systemImage: "plus.circle") }
+                .tag(2)
+            BudgetView()
+                .tabItem { Label("Ngân sách", systemImage: "chart.pie.fill") }
+                .tag(3)
+            FamilyView()
+                .tabItem { Label("Gia đình", systemImage: "person.2.fill") }
+                .tag(4)
+        }
+        .onChange(of: selectedTab) { _, newValue in
+            if newValue == 2 {
+                selectedTab = lastNonAddTab
+                showAdd = true
+            } else {
+                lastNonAddTab = newValue
+            }
         }
         .overlay(alignment: .bottom) {
-            Button { showAdd = true } label: {
+            Button {
+                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                showAdd = true
+            } label: {
                 Image(systemName: "plus")
-                    .font(.system(size: 26, weight: .bold))
+                    .font(.system(size: 25, weight: .bold))
                     .foregroundStyle(.white)
-                    .frame(width: 58, height: 58)
+                    .frame(width: 56, height: 56)
                     .background(LinearGradient(colors: [.coral, Color(hex: "FF8A6B")], startPoint: .topLeading, endPoint: .bottomTrailing), in: Circle())
-                    .shadow(color: .coral.opacity(0.4), radius: 10, y: 6)
+                    .shadow(color: .coral.opacity(0.4), radius: 10, y: 5)
             }
             .accessibilityLabel("Thêm giao dịch")
-            .padding(.bottom, 18)
+            .padding(.bottom, 12)
         }
     }
 }

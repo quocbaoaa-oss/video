@@ -35,6 +35,16 @@ struct OnboardingView: View {
 
     private var welcome: some View {
         VStack(spacing: 20) {
+            VStack(spacing: 10) {
+                Image("AppLogo")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 88, height: 88)
+                    .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+                    .shadow(color: Color.coral.opacity(0.35), radius: 10, y: 6)
+                Text("Ví Đôi").font(.title2.bold())
+            }
+            .padding(.top, 8)
             TabView(selection: $page) {
                 ForEach(slides.indices, id: \.self) { i in
                     VStack(spacing: 16) {

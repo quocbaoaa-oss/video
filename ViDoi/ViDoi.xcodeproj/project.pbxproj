@@ -10,6 +10,7 @@
 		05D99BFD55E4F80B174F300A /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E49B8AE0236D48B3599B7A3 /* OnboardingView.swift */; };
 		0A87B20C18BBA19BF24EE2EF /* BalanceViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 827F6EACAD57F649F402F07C /* BalanceViews.swift */; };
 		0E4F18A992D75446139B7352 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00E609BDC7CD2A08B5154170 /* HomeView.swift */; };
+		4D60B97A83979400E0125AC8 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = FB081EC9D591D2E0D933A15A /* Assets.xcassets */; };
 		507B21155C36185AC3940122 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7AF07F5BDA6897262220A7A3 /* Models.swift */; };
 		514C22EE2E365FC91BDFE037 /* FirebaseSyncService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7409629E53CCA85010EBB7C0 /* FirebaseSyncService.swift */; };
 		53F99C1206B827D319D8D6CE /* AppStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9708A7CD9AAF759DC7A7619F /* AppStore.swift */; };
@@ -37,7 +38,7 @@
 		38D254E3C9816032DC166CD2 /* FamilyViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FamilyViews.swift; sourceTree = "<group>"; };
 		402711646AB708CD76F9A2B2 /* TransactionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionsView.swift; sourceTree = "<group>"; };
 		4E49B8AE0236D48B3599B7A3 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
-		63CDB8AD66F497EE6ADB0AEC /* ViDoi.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ViDoi.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		63CDB8AD66F497EE6ADB0AEC /* ViDoi.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = ViDoi.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		7409629E53CCA85010EBB7C0 /* FirebaseSyncService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirebaseSyncService.swift; sourceTree = "<group>"; };
 		79B935B54C280705B95DDD54 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		7A1A001D719FD58DEDF82FCF /* ViDoiTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = ViDoiTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -48,6 +49,7 @@
 		DD18B9A8E2A61C0E81FB21CB /* ViDoiApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViDoiApp.swift; sourceTree = "<group>"; };
 		EE0552743BEC89C6FE610ED1 /* AddTransactionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddTransactionView.swift; sourceTree = "<group>"; };
 		F08BEEAF3E11735BD80D9DE0 /* ViDoiTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViDoiTests.swift; sourceTree = "<group>"; };
+		FB081EC9D591D2E0D933A15A /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -82,6 +84,7 @@
 			children = (
 				EE0552743BEC89C6FE610ED1 /* AddTransactionView.swift */,
 				9708A7CD9AAF759DC7A7619F /* AppStore.swift */,
+				FB081EC9D591D2E0D933A15A /* Assets.xcassets */,
 				827F6EACAD57F649F402F07C /* BalanceViews.swift */,
 				7E8677243620696EB7989A9D /* BudgetReportViews.swift */,
 				38D254E3C9816032DC166CD2 /* FamilyViews.swift */,
@@ -122,6 +125,7 @@
 			buildConfigurationList = CE0B52C92C2493A7F38CC2D9 /* Build configuration list for PBXNativeTarget "ViDoi" */;
 			buildPhases = (
 				B63C7DA02946C7579FBB38B9 /* Sources */,
+				3BDC39CB9E13641BB882838E /* Resources */,
 			);
 			buildRules = (
 			);
@@ -144,6 +148,7 @@
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
 					975754515A39485467F5C343 = {
+						DevelopmentTeam = 7SWD44767U;
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -167,6 +172,17 @@
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		3BDC39CB9E13641BB882838E /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4D60B97A83979400E0125AC8 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		B63C7DA02946C7579FBB38B9 /* Sources */ = {
@@ -305,9 +321,10 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = RUUQGXH2V8;
+				DEVELOPMENT_TEAM = 7SWD44767U;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "Ví Đôi";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Chụp ảnh hóa đơn để đính kèm vào giao dịch";
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "Mở Ví Đôi bằng Face ID";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Đính kèm ảnh hóa đơn vào giao dịch";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -329,9 +346,10 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = RUUQGXH2V8;
+				DEVELOPMENT_TEAM = 7SWD44767U;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "Ví Đôi";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Chụp ảnh hóa đơn để đính kèm vào giao dịch";
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "Mở Ví Đôi bằng Face ID";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "Đính kèm ảnh hóa đơn vào giao dịch";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

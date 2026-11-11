@@ -3,6 +3,8 @@ import SwiftUI
 struct FamilyView: View {
     @Environment(AppStore.self) private var store
     @State private var confirmReset = false
+    @State private var confirmStartFresh = false
+    @State private var showEditCouple = false
 
     var body: some View {
         @Bindable var store = store
@@ -18,9 +20,29 @@ struct FamilyView: View {
                         Text("Mã mời: \(store.familyCode)").font(.footnote).foregroundStyle(.secondary)
                         Label(store.syncState.label, systemImage: store.sync.isCloudEnabled ? "icloud.fill" : "iphone")
                             .font(.caption).foregroundStyle(.secondary)
+                        HStack(spacing: 12) {
+                            Button {
+                                showEditCouple = true
+                            } label: {
+                                Label("Đổi tên 2 vợ chồng", systemImage: "pencil")
+                                    .font(.caption.bold())
+                            }
+                            .buttonStyle(.bordered)
+
+                            Button {
+                                withAnimation(.snappy) { store.switchActivePerson() }
+                            } label: {
+                                Label("Đang xem: \(store.me.name)", systemImage: "arrow.left.arrow.right")
+                                    .font(.caption.bold())
+                            }
+                            .buttonStyle(.bordered)
+                        }
+                        .padding(.top, 2)
                         ShareLink(item: "Tham gia gia đình trên Ví Đôi với mã: \(store.familyCode)") {
                             Label("Mời vợ/chồng", systemImage: "person.badge.plus")
+                                .font(.footnote.bold())
                         }
+                        .padding(.top, 2)
                     }
                     .frame(maxWidth: .infinity).listRowBackground(Color.clear)
                 }
@@ -68,13 +90,94 @@ struct FamilyView: View {
                     ShareLink(item: store.exportCSV(), preview: SharePreview("ChiTieu_ViDoi.csv")) {
                         Label("⬇ Xuất dữ liệu giao dịch (CSV)", systemImage: "square.and.arrow.up")
                     }
+                    Button("✨ Xóa giao dịch mẫu — Bắt đầu ghi thật từ 0 ₫") {
+                        confirmStartFresh = true
+                    }
+                    .foregroundStyle(Color.coral)
                     Button("Nạp dữ liệu mẫu") { store.loadDemo() }
-                    Button("Xóa toàn bộ dữ liệu", role: .destructive) { confirmReset = true }
+                    Button("Xóa toàn bộ & thiết lập lại từ đầu", role: .destructive) { confirmReset = true }
                 }
             }
+            .contentMargins(.bottom, 40, for: .scrollContent)
             .navigationTitle("Gia đình")
+            .sheet(isPresented: $showEditCouple) {
+                EditCoupleProfileSheet().presentationDetents([.medium])
+            }
+            .confirmationDialog(
+                "Xóa các giao dịch mẫu để bắt đầu ghi thật từ 0 ₫? (Tên hai vợ chồng, danh mục và ngân sách vẫn được giữ nguyên)",
+                isPresented: $confirmStartFresh,
+                titleVisibility: .visible
+            ) {
+                Button("Xóa giao dịch mẫu & bắt đầu ghi thật", role: .destructive) {
+                    store.startFreshRealUsage()
+                }
+            }
             .confirmationDialog("Xóa toàn bộ dữ liệu trên máy này?", isPresented: $confirmReset, titleVisibility: .visible) {
                 Button("Xóa và làm lại", role: .destructive) { store.resetAll() }
+            }
+        }
+    }
+}
+
+struct EditCoupleProfileSheet: View {
+    @Environment(AppStore.self) private var store
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var myName = ""
+    @State private var myColor = "4C8DFF"
+    @State private var partnerName = ""
+    @State private var partnerColor = "FF7EB6"
+
+    private let colors = ["4C8DFF", "FF7EB6", "2EC4B6", "FF6B6B", "7C5CFF", "F59E0B", "22C55E", "EC4899"]
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Thông tin của bạn") {
+                    TextField("Tên của bạn (vd: Quốc Bảo, Hùng…)", text: $myName)
+                    HStack(spacing: 10) {
+                        ForEach(colors, id: \.self) { c in
+                            Circle().fill(Color(hex: c)).frame(width: 28, height: 28)
+                                .overlay(Circle().stroke(Color.primary, lineWidth: myColor == c ? 2.5 : 0))
+                                .onTapGesture { myColor = c }
+                        }
+                    }
+                    .padding(.vertical, 4)
+                }
+                Section("Thông tin Vợ / Chồng") {
+                    TextField("Tên vợ/chồng (vd: Lan, Bà xã…)", text: $partnerName)
+                    HStack(spacing: 10) {
+                        ForEach(colors, id: \.self) { c in
+                            Circle().fill(Color(hex: c)).frame(width: 28, height: 28)
+                                .overlay(Circle().stroke(Color.primary, lineWidth: partnerColor == c ? 2.5 : 0))
+                                .onTapGesture { partnerColor = c }
+                        }
+                    }
+                    .padding(.vertical, 4)
+                }
+            }
+            .navigationTitle("Thông tin 2 vợ chồng")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) { Button("Hủy") { dismiss() } }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Lưu") {
+                        store.updateCoupleProfile(
+                            myName: myName,
+                            myColorHex: myColor,
+                            partnerName: partnerName,
+                            partnerColorHex: partnerColor
+                        )
+                        dismiss()
+                    }
+                    .bold()
+                }
+            }
+            .onAppear {
+                myName = store.me.name
+                myColor = store.me.colorHex
+                partnerName = store.partner.name
+                partnerColor = store.partner.colorHex
             }
         }
     }

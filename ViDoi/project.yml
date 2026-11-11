@@ -18,6 +18,7 @@ targets:
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         INFOPLIST_KEY_NSFaceIDUsageDescription: "Mở Ví Đôi bằng Face ID"
         INFOPLIST_KEY_NSPhotoLibraryUsageDescription: "Đính kèm ảnh hóa đơn vào giao dịch"
+        INFOPLIST_KEY_NSCameraUsageDescription: "Chụp ảnh hóa đơn để đính kèm vào giao dịch"
         INFOPLIST_KEY_CFBundleDisplayName: "Ví Đôi"
         INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: UIInterfaceOrientationPortrait
   ViDoiTests:

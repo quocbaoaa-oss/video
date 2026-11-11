@@ -11,11 +11,14 @@ struct TransactionsView: View {
     @State private var query = ""
     @State private var filter: Filter = .all
     @State private var category: String?
+    @State private var selectedMonth: Date = Date()
+    @State private var filterByMonth = true
     @State private var deleted: Txn?
     @State private var editingTx: Txn?
 
     private var filtered: [Txn] {
         store.visibleTransactions.filter { t in
+            if filterByMonth, !store.inMonth(t.date, of: selectedMonth) { return false }
             switch filter {
             case .all: break
             case .shared: if !t.isShared { return false }
@@ -42,8 +45,32 @@ struct TransactionsView: View {
     var body: some View {
         NavigationStack {
             List {
-                if let c = category {
-                    Button("Danh mục: \(store.emoji(for: c)) \(c)  ✕") { category = nil }
+                Section {
+                    VStack(spacing: 8) {
+                        if filterByMonth {
+                            MonthSwitcher(month: $selectedMonth)
+                        }
+                        HStack {
+                            Button {
+                                withAnimation { filterByMonth.toggle() }
+                            } label: {
+                                Label(
+                                    filterByMonth ? "Theo tháng (\(Fmt.monthTitle(selectedMonth)))" : "Đang xem: Tất cả các tháng",
+                                    systemImage: "calendar"
+                                )
+                                .font(.caption.bold())
+                                .foregroundStyle(Color.coral)
+                            }
+                            .buttonStyle(.plain)
+                            Spacer()
+                            if let c = category {
+                                Button("Danh mục: \(store.emoji(for: c)) \(c) ✕") { category = nil }
+                                    .font(.caption.bold())
+                            }
+                        }
+                    }
+                    .listRowInsets(EdgeInsets(top: 6, leading: 0, bottom: 6, trailing: 0))
+                    .listRowBackground(Color.clear)
                 }
                 ForEach(groups, id: \.day) { g in
                     Section {
@@ -71,10 +98,12 @@ struct TransactionsView: View {
                     }
                 }
             }
+            .contentMargins(.bottom, 40, for: .scrollContent)
+            .scrollDismissesKeyboard(.interactively)
             .overlay {
                 if groups.isEmpty {
                     ContentUnavailableView("Chưa có giao dịch", systemImage: "magnifyingglass",
-                                           description: Text("Thử đổi bộ lọc hoặc bấm ＋ để thêm giao dịch."))
+                                           description: Text("Thử đổi tháng, đổi bộ lọc hoặc bấm ＋ để thêm giao dịch."))
                 }
             }
             .searchable(text: $query, prompt: "Tìm giao dịch, danh mục, ghi chú, bình luận")
@@ -114,8 +143,11 @@ struct TransactionDetailView: View {
     let id: UUID
     @State private var confirmDelete = false
     @State private var showEdit = false
+    @State private var showCamera = false
+    @State private var showReceiptPreview = false
     @State private var commentDraft = ""
     @State private var photoItem: PhotosPickerItem?
+    @FocusState private var commentFocused: Bool
 
     private static let timeFmt: DateFormatter = {
         let f = DateFormatter(); f.locale = Locale(identifier: "vi_VN"); f.dateFormat = "HH:mm d/M"; return f
@@ -165,10 +197,20 @@ struct TransactionDetailView: View {
                     // Hóa đơn đính kèm
                     Section("📎 Hóa đơn") {
                         if let data = t.receiptImageData, let ui = UIImage(data: data) {
-                            Image(uiImage: ui)
-                                .resizable().scaledToFill()
-                                .frame(maxHeight: 200).clipped()
-                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                            Button { showReceiptPreview = true } label: {
+                                Image(uiImage: ui)
+                                    .resizable().scaledToFill()
+                                    .frame(maxHeight: 200).clipped()
+                                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                                    .overlay(alignment: .bottomTrailing) {
+                                        Label("Xem rõ", systemImage: "magnifyingglass")
+                                            .font(.caption2.bold())
+                                            .padding(.horizontal, 8).padding(.vertical, 4)
+                                            .background(.ultraThinMaterial, in: Capsule())
+                                            .padding(6)
+                                    }
+                            }
+                            .buttonStyle(.plain)
                         } else if t.hasReceipt {
                             RoundedRectangle(cornerRadius: 12)
                                 .fill(Color(.tertiarySystemFill))
@@ -181,9 +223,14 @@ struct TransactionDetailView: View {
                                     .foregroundStyle(.secondary)
                                 }
                         }
-                        HStack {
+                        HStack(spacing: 14) {
+                            if UIImagePickerController.isSourceTypeAvailable(.camera) {
+                                Button { showCamera = true } label: {
+                                    Label("Chụp ảnh", systemImage: "camera.fill")
+                                }
+                            }
                             PhotosPicker(selection: $photoItem, matching: .images) {
-                                Label(t.hasReceipt ? "Đổi ảnh hóa đơn" : "＋ Chọn ảnh hóa đơn", systemImage: "photo")
+                                Label(t.hasReceipt ? "Đổi ảnh" : "＋ Chọn ảnh", systemImage: "photo")
                             }
                             Spacer()
                             if t.hasReceipt && store.canEdit(t) {
@@ -236,6 +283,7 @@ struct TransactionDetailView: View {
 
                         HStack(spacing: 8) {
                             TextField("Viết bình luận…", text: $commentDraft)
+                                .focused($commentFocused)
                                 .textFieldStyle(.roundedBorder)
                                 .submitLabel(.send)
                                 .onSubmit { submitComment(for: t.id) }
@@ -256,6 +304,7 @@ struct TransactionDetailView: View {
                     }
                 }
             }
+            .scrollDismissesKeyboard(.interactively)
             .navigationTitle("Chi tiết")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -267,6 +316,22 @@ struct TransactionDetailView: View {
             }
             .sheet(isPresented: $showEdit) {
                 AddTransactionView(editing: t).presentationDetents([.large])
+            }
+            .fullScreenCover(isPresented: $showCamera) {
+                CameraPicker { image in
+                    if let jpeg = image.jpegData(compressionQuality: 0.45) {
+                        var copy = t
+                        copy.receiptImageData = jpeg
+                        copy.hasReceipt = true
+                        store.update(copy)
+                    }
+                }
+                .ignoresSafeArea()
+            }
+            .sheet(isPresented: $showReceiptPreview) {
+                if let data = t.receiptImageData, let ui = UIImage(data: data) {
+                    ReceiptPreviewSheet(image: ui)
+                }
             }
             .confirmationDialog("Xóa giao dịch này?", isPresented: $confirmDelete, titleVisibility: .visible) {
                 Button("Xóa", role: .destructive) { store.delete(t); dismiss() }
@@ -294,6 +359,7 @@ struct TransactionDetailView: View {
     private func submitComment(for txID: UUID) {
         let text = commentDraft
         commentDraft = ""
+        commentFocused = false
         store.addComment(txID: txID, text: text)
     }
 }

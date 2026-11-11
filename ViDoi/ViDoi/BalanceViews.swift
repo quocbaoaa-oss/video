@@ -3,13 +3,17 @@ import SwiftUI
 // MARK: - Cân đối chi tiêu chung
 struct BalanceView: View {
     @Environment(AppStore.self) private var store
+    @State private var selectedMonth: Date = Date()
     @State private var showSettle = false
 
     var body: some View {
-        let b = store.balance()
+        let b = store.balance(in: selectedMonth)
+        let settled = store.isSettled(in: selectedMonth)
         let total = max(1, b.total)
         ScrollView {
             VStack(spacing: 14) {
+                MonthSwitcher(month: $selectedMonth)
+
                 pendingProposalBanner
 
                 VStack(spacing: 8) {
@@ -18,18 +22,18 @@ struct BalanceView: View {
                         Image(systemName: b.owe >= 0 ? "arrow.left" : "arrow.right").font(.title2)
                         AvatarView(person: store.partner, size: 56)
                     }
-                    Text(store.isSettled ? "Hai bạn đã cân bằng 🎉"
+                    Text(settled ? "Hai bạn đã cân bằng 🎉"
                          : (b.owe >= 0 ? "\(store.partner.name) nên chuyển cho \(store.me.name)" : "\(store.me.name) nên chuyển cho \(store.partner.name)"))
-                    Text(store.isSettled ? "0 ₫" : Fmt.vnd(abs(b.owe))).font(.system(size: 36, weight: .bold)).foregroundStyle(Color.shared)
+                    Text(settled ? "0 ₫" : Fmt.vnd(abs(b.owe))).font(.system(size: 36, weight: .bold)).foregroundStyle(Color.shared)
                     Text("để cân bằng theo tỷ lệ \(store.ratioMe)/\(100 - store.ratioMe)").font(.footnote).foregroundStyle(.secondary)
-                    if !store.isSettled {
+                    if !settled {
                         Button("✔ Đánh dấu đã chuyển") { showSettle = true }.buttonStyle(PrimaryButton())
                     }
                 }
                 .frame(maxWidth: .infinity).card()
 
                 VStack(alignment: .leading, spacing: 10) {
-                    Text("Đã chi cho khoản chung").font(.headline)
+                    Text("Đã chi cho khoản chung · \(Fmt.monthTitle(selectedMonth))").font(.headline)
                     Text("\(store.me.name) · \(Fmt.vnd(b.paidMe)) (\(b.paidMe * 100 / total)%)")
                     ProgressBar(value: Double(b.paidMe) / Double(total), color: Color(hex: store.me.colorHex))
                     Text("\(store.partner.name) · \(Fmt.vnd(b.paidPartner)) (\(b.paidPartner * 100 / total)%)")
@@ -55,9 +59,9 @@ struct BalanceView: View {
                 .buttonStyle(.plain)
 
                 VStack(alignment: .leading) {
-                    Text("Khoản chung tháng này").font(.headline)
+                    Text("Khoản chung · \(Fmt.monthTitle(selectedMonth))").font(.headline)
                     Text("Chạm để loại khỏi / đưa vào cân đối").font(.caption).foregroundStyle(.secondary)
-                    ForEach(store.monthExpenses(.all).filter { $0.isShared }) { t in
+                    ForEach(store.monthExpenses(.all, in: selectedMonth).filter { $0.isShared }) { t in
                         Button {
                             var n = t; n.countsInSettlement.toggle(); store.update(n)
                         } label: {
@@ -74,7 +78,7 @@ struct BalanceView: View {
         .background(Color(.systemGroupedBackground))
         .navigationTitle("Cân đối")
         .confirmationDialog("Xác nhận đã chuyển \(Fmt.vnd(abs(b.owe)))?", isPresented: $showSettle, titleVisibility: .visible) {
-            Button("Xác nhận tất toán") { store.settleMonth() }
+            Button("Xác nhận tất toán") { store.settleMonth(in: selectedMonth) }
         }
     }
 

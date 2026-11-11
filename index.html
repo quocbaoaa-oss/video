@@ -1,0 +1,2591 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Ví Đôi – Quản lý chi tiêu gia đình</title>
+  
+  <!-- PWA & Apple Web App Meta Tags -->
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#FF6B6B">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Ví Đôi">
+  <meta name="description" content="Ứng dụng quản lý chi tiêu gia đình thông minh cho hai vợ chồng">
+  <meta name="format-detection" content="telephone=no">
+
+  <!-- Icons -->
+  <link rel="icon" type="image/png" sizes="64x64" href="icons/favicon.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
+
+  <style>
+    :root {
+      --coral: #FF6B6B;
+      --coral2: #FF9A8B;
+      --teal: #2EC4B6;
+      --him: #4C8DFF;
+      --her: #FF7EB6;
+      --shared: #7C5CFF;
+      --inc: #22C55E;
+      --exp: #EF4444;
+      --warn: #F59E0B;
+      --bg: #F2F2F7;
+      --card: #FFFFFF;
+      --txt: #111111;
+      --mut: #8E8E93;
+      --sep: #E5E5EA;
+      --fill: #E5E5EA;
+      --ic: #F3F3F7;
+      --sh: 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04);
+      --sat: env(safe-area-inset-top, 0px);
+      --sab: env(safe-area-inset-bottom, 0px);
+      --sal: env(safe-area-inset-left, 0px);
+      --sar: env(safe-area-inset-right, 0px);
+    }
+    body.dark {
+      --bg: #000000;
+      --card: #1C1C1E;
+      --txt: #F5F5F7;
+      --mut: #98989F;
+      --sep: #2C2C2E;
+      --fill: #2C2C2E;
+      --ic: #2C2C2E;
+      --sh: none;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+    input, textarea {
+      user-select: text;
+    }
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--txt);
+      font-size: 14px;
+    }
+    /* PWA responsive shell: Fullscreen on mobile, centered device mockup on large desktop */
+    @media (min-width: 640px) {
+      body {
+        background: #E2E8F0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      body.dark {
+        background: #111827;
+      }
+      #app-shell {
+        width: 420px;
+        height: 890px;
+        max-height: 96vh;
+        border-radius: 46px;
+        border: 12px solid #1E293B;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
+        position: relative;
+        overflow: hidden;
+      }
+      #desktop-bar {
+        display: flex !important;
+      }
+    }
+    #desktop-bar {
+      display: none;
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 120px;
+      height: 28px;
+      background: #1E293B;
+      border-radius: 14px;
+      z-index: 100;
+    }
+    #app-shell {
+      width: 100%;
+      height: 100%;
+      height: 100dvh;
+      background: var(--bg);
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Screen Views */
+    .scr {
+      position: absolute;
+      inset: 0;
+      padding-top: calc(var(--sat) + 12px);
+      padding-bottom: calc(var(--sab) + 88px);
+      padding-left: calc(var(--sal) + 16px);
+      padding-right: calc(var(--sar) + 16px);
+      overflow-y: auto;
+      overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
+      display: none;
+      background: var(--bg);
+    }
+    .scr::-webkit-scrollbar { display: none; }
+    .scr.on { display: block; }
+    .scr.no-tab {
+      padding-bottom: calc(var(--sab) + 24px);
+    }
+
+    /* Typography & Core Elements */
+    h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.5px; margin: 4px 0 12px; }
+    h2 { font-size: 18px; font-weight: 600; margin-bottom: 6px; }
+    .sub { font-size: 12px; color: var(--mut); line-height: 1.4; }
+    .amt { font-weight: 700; font-variant-numeric: tabular-nums; }
+    .pos { color: var(--inc); }
+    .neg { color: var(--exp); }
+    .center { text-align: center; }
+    .clickable { cursor: pointer; }
+
+    /* Cards & Components */
+    .card {
+      background: var(--card);
+      border-radius: 20px;
+      padding: 14px;
+      margin-bottom: 12px;
+      box-shadow: var(--sh);
+      position: relative;
+    }
+    .hero {
+      background: linear-gradient(135deg, var(--coral), var(--coral2));
+      color: #FFF;
+      box-shadow: 0 10px 24px rgba(255, 107, 107, 0.35);
+      display: flex;
+      gap: 14px;
+      align-items: center;
+      padding: 16px;
+    }
+    .nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 36px;
+      margin-bottom: 8px;
+    }
+    .back {
+      color: var(--coral);
+      font-weight: 600;
+      font-size: 15px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+    }
+    .link {
+      color: var(--shared);
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 14px;
+      border: 0;
+      border-radius: 16px;
+      background: var(--coral);
+      color: #FFF;
+      font-size: 15px;
+      font-weight: 600;
+      text-align: center;
+      cursor: pointer;
+      transition: transform 0.12s, opacity 0.2s;
+    }
+    .btn:active { transform: scale(0.97); }
+    .btn.alt {
+      background: var(--card);
+      color: var(--coral);
+      border: 1.5px solid var(--coral);
+    }
+    .btn.sm {
+      padding: 8px 12px;
+      font-size: 13px;
+      border-radius: 12px;
+      width: auto;
+    }
+    .btn.red { background: var(--exp); color: #fff; }
+    .btn.ok { background: var(--inc); color: #fff; }
+
+    /* Segmented Controls */
+    .seg {
+      display: flex;
+      background: var(--fill);
+      border-radius: 11px;
+      padding: 2px;
+      margin: 8px 0;
+    }
+    .seg div {
+      flex: 1;
+      text-align: center;
+      padding: 7px 4px;
+      border-radius: 9px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    .seg .on {
+      background: var(--card);
+      color: var(--txt);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+    }
+
+    /* Toggle Switch */
+    .tog {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--sep);
+      font-size: 14px;
+    }
+    .tog:last-child { border-bottom: 0; }
+    .sw {
+      width: 48px;
+      height: 28px;
+      border-radius: 14px;
+      background: #C7C7CC;
+      position: relative;
+      cursor: pointer;
+      transition: 0.25s;
+      flex: none;
+    }
+    .sw i {
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: #FFF;
+      transition: 0.25s;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+    .sw.on { background: var(--inc); }
+    .sw.on i { left: 22px; }
+
+    /* Avatars */
+    .av {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: inline-grid;
+      place-items: center;
+      color: #FFF;
+      font-weight: 700;
+      font-size: 15px;
+      flex: none;
+    }
+    .av.s { width: 20px; height: 20px; font-size: 11px; }
+    .av.m { width: 28px; height: 28px; font-size: 13px; }
+    .av.l { width: 68px; height: 68px; font-size: 28px; }
+    .av.ring { box-shadow: 0 0 0 3px var(--bg); }
+
+    /* Chips & Horizontal Scroll */
+    .hs {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      margin: 0 -16px 12px;
+      padding: 2px 16px 6px;
+      scrollbar-width: none;
+    }
+    .hs::-webkit-scrollbar { display: none; }
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 7px 12px;
+      border-radius: 20px;
+      background: var(--fill);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: 0.15s;
+    }
+    .chip:active { transform: scale(0.96); }
+    .chip.on {
+      background: var(--coral);
+      color: #FFF;
+    }
+
+    /* Rows */
+    .row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--sep);
+    }
+    .row:last-child { border-bottom: 0; }
+    .ic {
+      width: 42px;
+      height: 42px;
+      border-radius: 13px;
+      display: grid;
+      place-items: center;
+      background: var(--ic);
+      font-size: 20px;
+      flex: none;
+    }
+    .grow { flex: 1; min-width: 0; }
+    .tt { font-weight: 600; font-size: 14px; }
+    .bar {
+      height: 8px;
+      border-radius: 4px;
+      background: var(--fill);
+      overflow: hidden;
+      margin-top: 6px;
+    }
+    .bar i {
+      display: block;
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.4s ease;
+    }
+
+    /* Bottom TabBar */
+    .tabs {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: calc(var(--sab) + 64px);
+      padding-bottom: var(--sab);
+      background: rgba(255, 255, 255, 0.88);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-top: 1px solid var(--sep);
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      z-index: 50;
+    }
+    body.dark .tabs {
+      background: rgba(28, 28, 30, 0.88);
+    }
+    .tab {
+      flex: 1;
+      text-align: center;
+      font-size: 10px;
+      font-weight: 500;
+      color: var(--mut);
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      transition: color 0.15s;
+    }
+    .tab b {
+      font-size: 20px;
+      font-weight: 400;
+      display: block;
+      transition: transform 0.15s;
+    }
+    .tab.on {
+      color: var(--coral);
+      font-weight: 600;
+    }
+    .tab.on b {
+      transform: translateY(-2px) scale(1.1);
+    }
+    .fab-wrap {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .fab {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--coral), #FF8A6B);
+      color: #FFF;
+      font-size: 28px;
+      display: grid;
+      place-items: center;
+      margin-top: -24px;
+      box-shadow: 0 8px 18px rgba(255, 107, 107, 0.45);
+      cursor: pointer;
+      transition: transform 0.15s;
+    }
+    .fab:active { transform: scale(0.92); }
+
+    /* Add Transaction Sheet */
+    .scrim {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 80;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s;
+    }
+    .scrim.on { opacity: 1; pointer-events: auto; }
+    .sheet {
+      position: absolute;
+      inset: 32px 0 0;
+      background: var(--bg);
+      z-index: 85;
+      transform: translateY(105%);
+      transition: transform 0.32s cubic-bezier(0.2, 0.8, 0.2, 1);
+      border-radius: 28px 28px 0 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 -10px 40px rgba(0,0,0,0.25);
+    }
+    .sheet.on { transform: none; }
+    .sheet-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 18px;
+      background: var(--card);
+      border-bottom: 1px solid var(--sep);
+    }
+    .grab {
+      width: 36px;
+      height: 5px;
+      background: var(--fill);
+      border-radius: 3px;
+      margin: 8px auto 4px;
+    }
+    .sheet-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px 16px;
+      scrollbar-width: none;
+    }
+    .sheet-body::-webkit-scrollbar { display: none; }
+
+    /* Amount display & Keypad */
+    .amount {
+      font-size: 38px;
+      font-weight: 700;
+      text-align: center;
+      margin: 4px 0;
+      letter-spacing: -1px;
+      font-variant-numeric: tabular-nums;
+      min-height: 48px;
+      color: var(--txt);
+    }
+    .amount small {
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--mut);
+    }
+    .quick-amounts {
+      display: flex;
+      gap: 6px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin: 6px 0 12px;
+    }
+    .q-btn {
+      padding: 6px 12px;
+      background: var(--fill);
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .q-btn:active { background: var(--sep); transform: scale(0.95); }
+
+    /* Calculator Pad */
+    .pad {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      margin-top: 8px;
+    }
+    .pad button {
+      height: 44px;
+      font-size: 18px;
+      border: 0;
+      border-radius: 12px;
+      background: var(--card);
+      color: var(--txt);
+      cursor: pointer;
+      font-weight: 600;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+      transition: transform 0.08s, background 0.1s;
+    }
+    .pad button:active { background: var(--fill); transform: scale(0.95); }
+    .pad button.op { color: var(--coral); font-weight: 700; }
+    .pad button.equal { background: var(--coral); color: #fff; font-weight: 700; }
+
+    /* Categories Grid */
+    .grid-cats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin: 10px 0;
+    }
+    .cat-item {
+      background: var(--card);
+      border-radius: 14px;
+      padding: 10px 4px;
+      text-align: center;
+      font-size: 11px;
+      font-weight: 500;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: 0.15s;
+    }
+    .cat-item span { font-size: 22px; display: block; margin-bottom: 3px; }
+    .cat-item.on {
+      border-color: var(--coral);
+      background: rgba(255, 107, 107, 0.08);
+      font-weight: 600;
+    }
+
+    /* PWA Install Banner */
+    #pwa-banner {
+      display: none;
+      position: absolute;
+      top: calc(var(--sat) + 8px);
+      left: 12px;
+      right: 12px;
+      background: #1C1C1E;
+      color: #FFF;
+      border-radius: 16px;
+      padding: 12px 14px;
+      z-index: 95;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+      font-size: 13px;
+      animation: slideDown 0.3s ease;
+    }
+    @keyframes slideDown {
+      from { transform: translateY(-50px); opacity: 0; }
+      to { transform: none; opacity: 1; }
+    }
+
+    /* Toast Snackbar */
+    .snack {
+      position: absolute;
+      bottom: calc(var(--sab) + 80px);
+      left: 14px;
+      right: 14px;
+      background: #222222;
+      color: #FFFFFF;
+      padding: 12px 16px;
+      border-radius: 16px;
+      font-size: 13px;
+      z-index: 90;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      transform: translateY(140px);
+      transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.35);
+    }
+    .snack.on { transform: none; }
+    .snack b { color: #FF9A8B; cursor: pointer; }
+
+    /* Dialog */
+    .dlg {
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      z-index: 110;
+      display: none;
+      place-items: center;
+    }
+    .dlg.on { display: grid; }
+    .dlg > div {
+      width: 290px;
+      background: var(--card);
+      border-radius: 20px;
+      overflow: hidden;
+      text-align: center;
+      box-shadow: 0 12px 30px rgba(0,0,0,0.3);
+    }
+    .dlg h2 { padding: 18px 16px 6px; font-size: 17px; }
+    .dlg p { padding: 4px 18px 16px; font-size: 13px; color: var(--mut); line-height: 1.4; }
+    .dlg .bt { display: flex; border-top: 1px solid var(--sep); }
+    .dlg .bt div { flex: 1; padding: 13px; cursor: pointer; font-weight: 600; font-size: 15px; }
+    .dlg .bt div + div { border-left: 1px solid var(--sep); color: var(--exp); }
+
+    /* Month Selector */
+    .month-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 12px;
+      background: var(--card);
+      border-radius: 14px;
+      margin-bottom: 12px;
+      box-shadow: var(--sh);
+    }
+    .month-btn {
+      font-size: 18px;
+      font-weight: 700;
+      padding: 4px 10px;
+      color: var(--coral);
+      cursor: pointer;
+    }
+
+    /* Swipeable Rows */
+    .swr { position: relative; overflow: hidden; }
+    .swa {
+      position: absolute;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      width: 76px;
+      background: var(--exp);
+      color: #fff;
+      display: grid;
+      place-items: center;
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    .swc {
+      position: relative;
+      background: var(--card);
+      transition: transform 0.25s ease;
+      touch-action: pan-y;
+      cursor: pointer;
+    }
+
+    /* Input & Images */
+    .input {
+      background: var(--card);
+      color: var(--txt);
+      border-radius: 14px;
+      padding: 12px 14px;
+      margin: 8px 0;
+      border: 1.5px solid var(--sep);
+      width: 100%;
+      font-size: 15px;
+      outline: none;
+      transition: 0.2s;
+    }
+    .input:focus { border-color: var(--coral); }
+    .receipt-preview {
+      width: 100%;
+      max-height: 180px;
+      object-fit: cover;
+      border-radius: 14px;
+      margin: 8px 0;
+      display: none;
+      cursor: pointer;
+    }
+    .dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-right: 6px;
+    }
+    .donut {
+      width: 140px;
+      height: 140px;
+      border-radius: 50%;
+      margin: 10px auto;
+      display: grid;
+      place-items: center;
+    }
+    .donut div {
+      width: 90px;
+      height: 90px;
+      border-radius: 50%;
+      background: var(--card);
+      display: grid;
+      place-items: center;
+      text-align: center;
+      font-weight: 700;
+      font-size: 14px;
+    }
+    .cols {
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+      height: 120px;
+      margin-top: 12px;
+    }
+    .cols div {
+      flex: 1;
+      text-align: center;
+      font-size: 11px;
+      color: var(--mut);
+      cursor: pointer;
+    }
+    .cols span {
+      display: flex;
+      gap: 2px;
+      align-items: flex-end;
+      height: 96px;
+      justify-content: center;
+    }
+    .cols i {
+      width: 12px;
+      border-radius: 4px 4px 0 0;
+      display: block;
+      transition: height 0.4s;
+    }
+    .wcard {
+      width: 144px;
+      border-radius: 16px;
+      padding: 12px;
+      color: #fff;
+      cursor: pointer;
+      flex: none;
+    }
+    .tip {
+      background: #FFF6E0;
+      border-radius: 14px;
+      padding: 12px;
+      font-size: 13px;
+      margin-bottom: 10px;
+      color: #7A5A00;
+      line-height: 1.4;
+    }
+    .tip.g { background: #E8FAF0; color: #14693A; }
+    body.dark .tip { background: #3A2E10; color: #F5D98A; }
+    body.dark .tip.g { background: #12301F; color: #7EE0A7; }
+    .shake { animation: shake 0.35s; }
+    @keyframes shake { 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
+  </style>
+</head>
+<body>
+
+<div id="app-shell">
+  <div id="desktop-bar"></div>
+
+  <!-- PWA Install Banner -->
+  <div id="pwa-banner">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div style="display:flex;align-items:center;gap:10px">
+        <img src="icons/icon-192.png" style="width:36px;height:36px;border-radius:8px">
+        <div>
+          <b>Cài đặt Ví Đôi</b>
+          <div class="sub" style="color:#aaa" id="pwa-text">Thêm vào MH chính để dùng offline mượt mà</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <button id="pwa-install-btn" class="btn sm" style="padding:6px 12px;background:var(--coral);color:#fff" onclick="installPWA()">Cài đặt</button>
+        <span onclick="dismissPwa()" style="font-size:18px;cursor:pointer;padding:4px">✕</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 1. TAB HOME (TỔNG QUAN) ==================== -->
+  <div class="scr on" id="tab-home">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="display:flex;align-items:center" id="home-avatars"></div>
+        <div>
+          <div class="sub" id="home-greeting">Chào gia đình,</div>
+          <b style="font-size:16px" id="home-names">Minh & Lan</b>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <span class="ic clickable" style="width:36px;height:36px;position:relative" onclick="openNotif()">
+          🔔<span id="notif-badge" style="position:absolute;top:-2px;right:-2px;background:var(--exp);color:#fff;border-radius:10px;font-size:10px;min-width:16px;height:16px;display:grid;place-items:center;font-weight:700">2</span>
+        </span>
+        <span class="ic clickable" style="width:36px;height:36px" onclick="goTab('tab-set')">⚙️</span>
+      </div>
+    </div>
+
+    <!-- Month Bar -->
+    <div class="month-bar">
+      <span class="month-btn" onclick="changeMonth(-1)">‹</span>
+      <b style="font-size:15px" id="cur-month-text">Tháng 11/2026</b>
+      <span class="month-btn" onclick="changeMonth(1)">›</span>
+    </div>
+
+    <!-- Scope Filter -->
+    <div class="seg" id="home-scope">
+      <div class="on">Chúng ta</div>
+      <div id="scope-him">Tôi</div>
+      <div id="scope-her">Vợ</div>
+    </div>
+
+    <!-- Hero Card with SVG Budget Ring -->
+    <div class="card hero">
+      <svg width="100" height="100" viewBox="0 0 100 100" style="flex:none">
+        <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="9"/>
+        <circle id="budget-ring" cx="50" cy="50" r="42" fill="none" stroke="#FFFFFF" stroke-width="9" stroke-linecap="round" stroke-dasharray="0 264" transform="rotate(-90 50 50)" style="transition:stroke-dasharray 0.6s ease"/>
+        <text id="budget-pct" x="50" y="56" text-anchor="middle" fill="#FFFFFF" font-size="18" font-weight="700">0%</text>
+      </svg>
+      <div class="grow">
+        <div style="opacity:0.9;font-size:12px" id="hero-subtext">Đã chi tháng này</div>
+        <div style="font-size:26px;font-weight:700;margin:2px 0" id="hero-spent">0 ₫</div>
+        <div style="font-size:12px;opacity:0.9" id="hero-left">Còn 20.000.000 ₫</div>
+        <div style="font-size:11px;opacity:0.9;margin-top:4px" id="hero-fore">Dự kiến cuối tháng: 18,5tr ✅</div>
+      </div>
+    </div>
+
+    <!-- Quick Entry Chips -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin:8px 2px 6px">
+      <b>⚡ Ghi nhanh</b>
+      <span class="sub">Chạm để ghi ngay</span>
+    </div>
+    <div class="hs" id="quick-chips"></div>
+
+    <!-- Insights Alert -->
+    <div class="hs" id="home-insights"></div>
+
+    <!-- Income & Net Balance Cards -->
+    <div style="display:flex;gap:10px;margin-bottom:12px">
+      <div class="card grow" style="margin-bottom:0">
+        <div class="sub">Thu nhập</div>
+        <div class="amt pos" style="font-size:16px;margin-top:4px" id="home-inc">+0 ₫</div>
+      </div>
+      <div class="card grow" style="margin-bottom:0">
+        <div class="sub">Còn lại</div>
+        <div class="amt" style="font-size:16px;margin-top:4px" id="home-net">0 ₫</div>
+      </div>
+    </div>
+
+    <!-- Wallets Preview -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin:10px 2px 6px">
+      <b>Ví & Tài khoản</b>
+      <span class="link" onclick="goTab('tab-fam')">Xem tất cả</span>
+    </div>
+    <div class="hs" id="home-wallets"></div>
+
+    <!-- Goals Preview -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin:10px 2px 6px">
+      <b>Mục tiêu chung</b>
+      <span class="link" onclick="goTab('tab-fam')">Tất cả</span>
+    </div>
+    <div class="card clickable" onclick="goTab('tab-fam')" id="home-goals"></div>
+
+    <!-- Recent Transactions -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin:12px 2px 6px">
+      <b>Giao dịch gần đây</b>
+      <span class="link" onclick="goTab('tab-tx')">Tất cả</span>
+    </div>
+    <div class="card" id="home-recent" style="padding:0 14px"></div>
+  </div>
+
+  <!-- ==================== 2. TAB TRANSACTIONS (SỔ GIAO DỊCH) ==================== -->
+  <div class="scr" id="tab-tx">
+    <h1>Sổ giao dịch</h1>
+    <input class="input" id="search-input" placeholder="🔍 Tìm kiếm giao dịch, danh mục, ghi chú…" oninput="onSearch(this.value)">
+    <div class="hs" id="tx-filter-chips"></div>
+    <div id="tx-list"></div>
+  </div>
+
+  <!-- ==================== 3. TAB BUDGET & REPORT (NGÂN SÁCH & BÁO CÁO) ==================== -->
+  <div class="scr" id="tab-bud">
+    <h1>Ngân sách & Báo cáo</h1>
+    <div class="seg" id="bud-rep-seg">
+      <div class="on">Ngân sách</div>
+      <div>Báo cáo</div>
+    </div>
+
+    <!-- Subview 1: Budget Limits -->
+    <div id="view-budget">
+      <div class="seg" id="bud-scope-seg">
+        <div class="on">👥 Chung</div>
+        <div>🔒 Riêng của tôi</div>
+      </div>
+      <div id="bud-summary-card"></div>
+      <div class="card" id="bud-category-list"></div>
+    </div>
+
+    <!-- Subview 2: Reports -->
+    <div id="view-report" style="display:none">
+      <div class="seg" id="rep-subseg">
+        <div class="on">Danh mục</div>
+        <div>Xu hướng</div>
+        <div>So sánh</div>
+      </div>
+      
+      <!-- Rep 1: Donut -->
+      <div id="rep-pane-0">
+        <div class="card">
+          <div class="donut" id="rep-donut"><div id="rep-donut-txt">0 ₫</div></div>
+          <div id="rep-legend"></div>
+        </div>
+      </div>
+
+      <!-- Rep 2: Trend -->
+      <div id="rep-pane-1" style="display:none">
+        <div class="card">
+          <b>Chi tiêu 6 tháng gần nhất</b>
+          <div class="cols" id="rep-cols"></div>
+          <div class="sub" style="margin-top:10px">
+            <span class="dot" style="background:var(--him)"></span><span id="rep-col-him">Chồng</span>
+            <span class="dot" style="background:var(--her);margin-left:12px"></span><span id="rep-col-her">Vợ</span>
+          </div>
+        </div>
+        <div class="card">
+          <b>💡 Nhận xét chi tiêu</b>
+          <div id="rep-insights"></div>
+        </div>
+      </div>
+
+      <!-- Rep 3: Comparison -->
+      <div id="rep-pane-2" style="display:none">
+        <div class="card">
+          <b>Ai chi bao nhiêu (Khoản chung)</b>
+          <div style="margin-top:10px">
+            <span id="rep-cmp-him-lbl">Chồng</span> · <span id="rep-cmp-him-val">0 ₫</span>
+            <div class="bar"><i id="rep-cmp-him-bar" style="background:var(--him)"></i></div>
+          </div>
+          <div style="margin-top:10px">
+            <span id="rep-cmp-her-lbl">Vợ</span> · <span id="rep-cmp-her-val">0 ₫</span>
+            <div class="bar"><i id="rep-cmp-her-bar" style="background:var(--her)"></i></div>
+          </div>
+        </div>
+        <div class="card">
+          <b>Chung vs Riêng</b>
+          <div style="display:flex;height:20px;border-radius:10px;overflow:hidden;margin:10px 0">
+            <div id="rep-bar-shared" style="background:var(--shared);width:60%"></div>
+            <div id="rep-bar-priv" style="background:#CCC;flex:1"></div>
+          </div>
+          <div class="sub" id="rep-shared-txt">Chung: 0 ₫ · Riêng: 0 ₫</div>
+        </div>
+        <div class="card">
+          <b>Giao dịch lớn nhất tháng</b>
+          <div id="rep-biggest-list"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 4. TAB BALANCE & FAMILY (CÂN ĐỐI & GIA ĐÌNH) ==================== -->
+  <div class="scr" id="tab-fam">
+    <h1>Cân đối & Gia đình</h1>
+    
+    <!-- Balance Card -->
+    <div class="card center" style="padding:18px 14px">
+      <div style="display:flex;align-items:center;justify-content:center;gap:12px">
+        <span class="av l" id="bal-av-him" style="background:var(--him)">B</span>
+        <span style="font-size:22px" id="bal-arrow">⇄</span>
+        <span class="av l" id="bal-av-her" style="background:var(--her)">L</span>
+      </div>
+      <div style="font-size:15px;margin:10px 0 4px" id="bal-who">Lan nên chuyển cho Bảo</div>
+      <div style="font-size:32px;font-weight:700;color:var(--shared)" id="bal-amt">0 ₫</div>
+      <div class="sub" id="bal-sub">để cân bằng theo tỷ lệ 60/40</div>
+      <div style="display:flex;gap:8px;margin-top:14px" id="bal-action-btns">
+        <button class="btn sm ok" style="flex:1" onclick="settleBalance()">✔ Xác nhận đã chuyển</button>
+        <button class="btn sm alt" style="flex:1" onclick="openVietQR()">🏦 VietQR</button>
+      </div>
+    </div>
+
+    <!-- Ratio Contribution Setting -->
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <b>Tỷ lệ đóng góp khoản chung</b>
+        <span class="link" onclick="toggleRatioEdit()">Chỉnh sửa</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-weight:600;margin:6px 0">
+        <span style="color:var(--him)" id="ratio-lbl-him">Bảo 60%</span>
+        <span style="color:var(--her)" id="ratio-lbl-her">Lan 40%</span>
+      </div>
+      <div id="ratio-slider-wrap" style="display:none;margin-top:8px">
+        <input type="range" min="10" max="90" value="60" id="ratio-slider" style="width:100%" oninput="onRatioSlide(this.value)">
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <div class="btn sm alt" style="flex:1" onclick="setPresetRatio(50)">50 / 50</div>
+          <div class="btn sm alt" style="flex:1" onclick="setPresetRatio(60)">60 / 40</div>
+          <div class="btn sm alt" style="flex:1" onclick="setPresetRatio(70)">70 / 30</div>
+        </div>
+      </div>
+      <div class="sub" style="margin-top:6px">Khoản chung được chia theo tỷ lệ này để tính số tiền đối soát công bằng.</div>
+    </div>
+
+    <!-- Wallets & Accounts Management -->
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <b>Ví & Tài khoản</b>
+        <span class="link" onclick="toast('Tính năng thêm ví tùy chỉnh')">＋ Thêm</span>
+      </div>
+      <div id="family-wallets-list"></div>
+    </div>
+
+    <!-- Goals Management -->
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <b>Mục tiêu chung</b>
+        <span class="link" onclick="toast('Thêm mục tiêu tiết kiệm mới')">＋ Mới</span>
+      </div>
+      <div id="family-goals-list"></div>
+    </div>
+
+    <!-- Privacy & Settings Shortcut -->
+    <div class="card">
+      <b>Khoản riêng của vợ/chồng hiển thị với tôi</b>
+      <div class="seg" id="privacy-seg">
+        <div class="on">Ẩn hẳn</div>
+        <div>Chỉ tổng</div>
+        <div>Chi tiết</div>
+      </div>
+      <div class="sub" id="privacy-hint" style="margin-top:4px">Vợ/chồng không thấy gì về khoản riêng của nhau.</div>
+    </div>
+  </div>
+
+  <!-- ==================== 5. SUBVIEW: SETTINGS (CÀI ĐẶT) ==================== -->
+  <div class="scr no-tab" id="tab-set">
+    <div class="nav">
+      <span class="back" onclick="goTab('tab-home')">‹ Quay lại</span>
+      <b>Cài đặt</b>
+      <span style="width:40px"></span>
+    </div>
+
+    <div class="card">
+      <h2>Hồ sơ hai vợ chồng</h2>
+      <div style="display:flex;gap:10px;margin-top:8px">
+        <div style="flex:1">
+          <div class="sub">Tên Chồng</div>
+          <input class="input" id="cfg-name-him" value="Bảo" maxlength="12" onchange="saveProfileNames()">
+        </div>
+        <div style="flex:1">
+          <div class="sub">Tên Vợ</div>
+          <input class="input" id="cfg-name-her" value="Loan" maxlength="12" onchange="saveProfileNames()">
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="tog">
+        <span>🌙 Chế độ tối (Dark Mode)</span>
+        <div class="sw" id="sw-dark" onclick="toggleDark()"><i></i></div>
+      </div>
+      <div class="tog">
+        <span>💵 Đơn vị tiền tệ</span>
+        <b>VND (₫)</b>
+      </div>
+      <div class="tog">
+        <span>📅 Ngày bắt đầu tháng</span>
+        <b>Ngày 01</b>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Dữ liệu & Sao lưu</h2>
+      <div class="btn alt sm" style="margin:8px 0;width:100%" onclick="exportCSV()">⬇ Xuất file báo cáo CSV</div>
+      <div class="btn alt sm" style="margin:8px 0;width:100%" onclick="exportJSON()">💾 Sao lưu toàn bộ dữ liệu (JSON)</div>
+      <div class="btn alt sm red" style="margin:8px 0;width:100%;color:#fff" onclick="confirmResetData()">🗑 Xóa dữ liệu mẫu (Ghi chép thật từ 0 ₫)</div>
+      <div class="btn alt sm" style="margin:8px 0;width:100%" onclick="restoreSampleData()">↺ Nạp lại dữ liệu mẫu (Demo)</div>
+    </div>
+  </div>
+
+  <!-- ==================== 6. SUBVIEW: DETAIL GIAO DỊCH ==================== -->
+  <div class="scr no-tab" id="tab-detail">
+    <div class="nav">
+      <span class="back" onclick="goBack()">‹ Quay lại</span>
+      <span id="detail-head-actions"></span>
+    </div>
+    <div id="detail-content"></div>
+  </div>
+
+  <!-- ==================== 7. SUBVIEW: THÔNG BÁO ==================== -->
+  <div class="scr no-tab" id="tab-notif">
+    <div class="nav">
+      <span class="back" onclick="goBack()">‹ Quay lại</span>
+      <b>Thông báo</b>
+      <span class="link" onclick="markAllNotifRead()">Đọc hết</span>
+    </div>
+    <div class="card" id="notif-list" style="padding:0 14px"></div>
+  </div>
+
+  <!-- ==================== BOTTOM TAB BAR ==================== -->
+  <div class="tabs" id="bottom-tabs">
+    <div class="tab on" data-tab="tab-home" onclick="goTab('tab-home')">
+      <b>🏠</b>
+      <span>Tổng quan</span>
+    </div>
+    <div class="tab" data-tab="tab-tx" onclick="goTab('tab-tx')">
+      <b>🧾</b>
+      <span>Giao dịch</span>
+    </div>
+    <div class="fab-wrap">
+      <div class="fab" onclick="openAddSheet()" aria-label="Thêm giao dịch">＋</div>
+    </div>
+    <div class="tab" data-tab="tab-bud" onclick="goTab('tab-bud')">
+      <b>📊</b>
+      <span>Ngân sách</span>
+    </div>
+    <div class="tab" data-tab="tab-fam" onclick="goTab('tab-fam')">
+      <b>👨‍👩‍👧</b>
+      <span>Gia đình</span>
+    </div>
+  </div>
+
+  <!-- ==================== ADD TRANSACTION SHEET ==================== -->
+  <div class="scrim" id="sheet-scrim" onclick="closeAddSheet()"></div>
+  <div class="sheet" id="add-sheet">
+    <div class="grab"></div>
+    <div class="sheet-head">
+      <span style="color:var(--coral);font-weight:600;cursor:pointer" onclick="closeAddSheet()">Hủy</span>
+      <b style="font-size:16px">Ghi chép giao dịch</b>
+      <span style="color:var(--coral);font-weight:700;cursor:pointer" onclick="saveTransaction()">Lưu</span>
+    </div>
+    <div class="sheet-body">
+      <!-- Kind: Chi / Thu -->
+      <div class="seg" id="add-kind-seg">
+        <div class="on">Chi tiêu</div>
+        <div>Thu nhập</div>
+      </div>
+
+      <!-- Amount -->
+      <div class="amount" id="add-amt-display">0 <small>₫</small></div>
+      <div class="sub center" id="add-amt-eval" style="min-height:16px;margin-bottom:4px"></div>
+
+      <!-- Quick Amount Suggestions -->
+      <div class="quick-amounts">
+        <div class="q-btn" onclick="addAmountFast(50000)">+50k</div>
+        <div class="q-btn" onclick="addAmountFast(100000)">+100k</div>
+        <div class="q-btn" onclick="addAmountFast(200000)">+200k</div>
+        <div class="q-btn" onclick="addAmountFast(500000)">+500k</div>
+        <div class="q-btn" onclick="addAmountFast(1000000)">+1tr</div>
+      </div>
+
+      <!-- Categories Grid -->
+      <div class="grid-cats" id="add-cats-grid"></div>
+
+      <!-- Note Input -->
+      <input class="input" id="add-note-input" placeholder="📝 Ghi chú (ví dụ: Cà phê sáng, Đi chợ...)">
+
+      <!-- Attributes Selection (Wallet, Date, Who, Receipt) -->
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin:4px 0 10px" id="add-chips-bar"></div>
+
+      <!-- Photo Receipt Upload & Preview -->
+      <input type="file" id="receipt-file-input" accept="image/*" capture="environment" style="display:none" onchange="onReceiptFileSelected(event)">
+      <img id="receipt-preview-img" class="receipt-preview" onclick="viewPhotoZoom(this.src)">
+      <div id="receipt-remove-btn" class="sub link" style="display:none;margin-bottom:8px" onclick="clearReceipt()">✕ Bỏ ảnh hóa đơn</div>
+
+      <!-- Shared & Recurring Toggles -->
+      <div class="card" style="padding:4px 14px">
+        <div class="tog">
+          <span>👥 Khoản chi chung <span class="sub" id="add-shared-hint">· cả hai cùng thấy</span></span>
+          <div class="sw on" id="sw-add-shared" onclick="toggleAddShared()"><i></i></div>
+        </div>
+        <div class="tog">
+          <span>🔁 Lặp lại hàng tháng</span>
+          <div class="sw" id="sw-add-rec" onclick="this.classList.toggle('on')"><i></i></div>
+        </div>
+      </div>
+
+      <!-- Calculator Keypad -->
+      <div class="pad" id="keypad"></div>
+      <button class="btn" style="margin:14px 0 24px" onclick="saveTransaction()">Lưu giao dịch</button>
+    </div>
+  </div>
+
+  <!-- Toast Snackbar -->
+  <div class="snack" id="toast"><span id="toast-msg"></span><b id="toast-act"></b></div>
+
+  <!-- Confirmation Dialog -->
+  <div class="dlg" id="confirm-dlg">
+    <div>
+      <h2 id="dlg-title">Xác nhận</h2>
+      <p id="dlg-msg">Nội dung xác nhận</p>
+      <div class="bt">
+        <div style="color:var(--txt)" onclick="closeDlg()">Hủy</div>
+        <div id="dlg-ok-btn" style="color:var(--coral)">Đồng ý</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Photo Fullscreen Zoom Modal -->
+  <div class="scrim" id="photo-zoom-modal" style="display:grid;place-items:center;z-index:120" onclick="this.classList.remove('on')">
+    <img id="photo-zoom-img" style="max-width:92%;max-height:85%;border-radius:14px;box-shadow:0 15px 40px rgba(0,0,0,0.6)">
+  </div>
+</div>
+
+<script>
+/* ==========================================================================
+   APP STATE & DATA ARCHITECTURE (Ví Đôi PWA)
+   ========================================================================== */
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const formatVND = v => Math.round(v).toLocaleString('vi-VN');
+const formatShort = n => {
+  if (Math.abs(n) >= 1e6) return (n / 1e6).toFixed(1).replace('.0', '').replace('.', ',') + 'tr';
+  if (Math.abs(n) >= 1000) return Math.round(n / 1000) + 'k';
+  return String(Math.round(n));
+};
+
+// Default Categories
+const CATEGORIES = [
+  ['🍜', 'Ăn uống'],
+  ['🛒', 'Chợ & Siêu thị'],
+  ['🏠', 'Nhà cửa'],
+  ['💡', 'Hóa đơn'],
+  ['🚗', 'Đi lại'],
+  ['👶', 'Con cái'],
+  ['🛍️', 'Mua sắm'],
+  ['🎮', 'Giải trí']
+];
+const getCatIcon = name => (CATEGORIES.find(c => c[1] === name) || ['💼'])[0];
+
+// Color palette
+const COLORS = ['#FF6B6B', '#2EC4B6', '#7C5CFF', '#F59E0B', '#EF4444', '#10B981'];
+
+// Initial Sample Data Generator
+function getInitialData() {
+  return {
+    users: {
+      him: { name: 'Bảo', color: '#4C8DFF', role: 'Chồng' },
+      her: { name: 'Loan', color: '#FF7EB6', role: 'Vợ' }
+    },
+    wallets: [
+      { id: 'vcb', name: 'Ví chung VCB', icon: '🏦', balance: 18500000, owner: 'S', color: '#7C5CFF,#a78bfa' },
+      { id: 'cash', name: 'Tiền mặt', icon: '💵', balance: 2450000, owner: 'him', color: '#22C55E,#4ade80' },
+      { id: 'momo', name: 'Momo', icon: '📱', balance: 1350000, owner: 'her', color: '#EC4899,#f9a8d4' },
+      { id: 'tcb', name: 'Thẻ tín dụng', icon: '💳', balance: -2800000, owner: 'him', color: '#EF4444,#fb7185' }
+    ],
+    budgets: {
+      'Ăn uống': 6000000,
+      'Chợ & Siêu thị': 4000000,
+      'Nhà cửa': 2500000,
+      'Hóa đơn': 3000000,
+      'Đi lại': 1000000,
+      'Con cái': 2000000,
+      'Mua sắm': 1500000,
+      'Giải trí': 1200000
+    },
+    privateBudgets: {
+      'Mua sắm': 1000000,
+      'Ăn uống': 1200000,
+      'Giải trí': 800000
+    },
+    goals: [
+      { id: 1, icon: '✈️', name: 'Du lịch Đà Nẵng', current: 8000000, target: 15000000, deadline: 'T1/2027' },
+      { id: 2, icon: '🏠', name: 'Quỹ mua nhà', current: 120000000, target: 800000000, deadline: '2029' },
+      { id: 3, icon: '👶', name: 'Học vấn cho con', current: 25000000, target: 100000000, deadline: '2035' }
+    ],
+    transactions: [
+      { id: 1, day: 1, icon: '🏠', title: 'Tiền nhà', category: 'Nhà cửa', amount: 2100000, who: 'him', shared: true, wallet: 'vcb', kind: 'e', note: 'Chuyển khoản chủ nhà', receipt: null, comments: [] },
+      { id: 2, day: 2, icon: '🛒', title: 'Co.opmart', category: 'Chợ & Siêu thị', amount: 1150000, who: 'her', shared: true, wallet: 'vcb', kind: 'e', note: 'Thực phẩm tuần', receipt: null, comments: [] },
+      { id: 3, day: 3, icon: '🍜', title: 'Ăn trưa', category: 'Ăn uống', amount: 85000, who: 'him', shared: true, wallet: 'cash', kind: 'e', note: '', receipt: null, comments: [] },
+      { id: 4, day: 4, icon: '💡', title: 'Tiền điện', category: 'Hóa đơn', amount: 1250000, who: 'him', shared: true, wallet: 'vcb', kind: 'e', note: 'Tháng trước', receipt: null, comments: [] },
+      { id: 5, day: 5, icon: '🛍️', title: 'Quần áo mới', category: 'Mua sắm', amount: 650000, who: 'her', shared: false, wallet: 'momo', kind: 'e', note: 'Đồ đi tiệc', receipt: null, comments: [] },
+      { id: 6, day: 5, icon: '💼', title: 'Lương tháng', category: 'Thu', amount: 22000000, who: 'him', shared: true, wallet: 'vcb', kind: 'i', note: 'Công ty chuyển khoản', receipt: null, comments: [] },
+      { id: 7, day: 5, icon: '💼', title: 'Lương tháng', category: 'Thu', amount: 14000000, who: 'her', shared: true, wallet: 'vcb', kind: 'i', note: 'Lương vợ', receipt: null, comments: [] },
+      { id: 8, day: 7, icon: '🍜', title: 'Ăn tối sinh nhật', category: 'Ăn uống', amount: 1800000, who: 'her', shared: true, wallet: 'vcb', kind: 'e', note: 'Nhà hàng sinh nhật', receipt: null, comments: [{ who: 'him', text: 'Món ngon quá em ơi!' }, { who: 'her', text: 'Dạ anh ❤️' }] },
+      { id: 9, day: 8, icon: '🚗', title: 'Xăng xe', category: 'Đi lại', amount: 120000, who: 'him', shared: true, wallet: 'cash', kind: 'e', note: '', receipt: null, comments: [] },
+      { id: 10, day: 9, icon: '☕', title: 'Cà phê sáng', category: 'Ăn uống', amount: 45000, who: 'her', shared: false, wallet: 'momo', kind: 'e', note: '', receipt: null, comments: [] },
+      { id: 11, day: 9, icon: '👶', title: 'Sữa cho bé', category: 'Con cái', amount: 560000, who: 'him', shared: true, wallet: 'cash', kind: 'e', note: '2 hộp sữa bột', receipt: null, comments: [] }
+    ],
+    ratio: 60, // 60% him, 40% her
+    settled: false,
+    privacy: 1 // 0: Ẩn hẳn, 1: Chỉ tổng, 2: Chi tiết
+  };
+}
+
+// Storage Manager with automatic localStorage sync
+const STORAGE_KEY = 'vidoi_pwa_data_v1';
+let DB = loadData();
+
+function loadData() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch (e) {
+    console.error('Lỗi đọc localStorage:', e);
+  }
+  const init = getInitialData();
+  saveData(init);
+  return init;
+}
+
+function saveData(data) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data || DB));
+  } catch (e) {
+    console.error('Lỗi lưu localStorage:', e);
+  }
+}
+
+// Global UI State
+const STATE = {
+  currentTab: 'tab-home',
+  history: [],
+  homeScope: 0, // 0: Chúng ta, 1: Chồng, 2: Vợ
+  selectedTxId: null,
+  monthOffset: 0, // 0: Hiện tại
+  txFilter: 0, // 0: Tất cả, 1: Chung, 2: Riêng, 3: Chồng, 4: Vợ
+  txCatFilter: null,
+  txSearchQuery: '',
+  addExp: '',
+  addKind: 'e', // 'e' (chi) or 'i' (thu)
+  addCatIdx: 0,
+  addWalletId: 'cash',
+  addWho: 'him',
+  addDay: new Date().getDate(),
+  addShared: true,
+  addReceipt: null,
+  calcOperatorActive: false
+};
+
+/* ==========================================================================
+   NAVIGATION & TABS
+   ========================================================================== */
+function goTab(tabId, pushHistory = true) {
+  if (tabId === STATE.currentTab) return;
+  if (pushHistory && STATE.currentTab) {
+    STATE.history.push(STATE.currentTab);
+  }
+  $$('.scr').forEach(s => s.classList.remove('on'));
+  const target = $('#' + tabId);
+  if (target) {
+    target.classList.add('on');
+    target.scrollTop = 0;
+  }
+  STATE.currentTab = tabId;
+
+  // Update bottom tabbar active state
+  const isMainTab = ['tab-home', 'tab-tx', 'tab-bud', 'tab-fam'].includes(tabId);
+  $('#bottom-tabs').style.display = isMainTab ? 'flex' : 'none';
+  $$('#bottom-tabs .tab').forEach(t => {
+    t.classList.toggle('on', t.dataset.tab === tabId);
+  });
+
+  renderApp();
+}
+
+function goBack() {
+  const prev = STATE.history.pop() || 'tab-home';
+  goTab(prev, false);
+}
+
+/* ==========================================================================
+   DATE & MONTH HELPERS
+   ========================================================================== */
+function getCurrentMonthInfo() {
+  const d = new Date();
+  d.setMonth(d.getMonth() + STATE.monthOffset);
+  const m = d.getMonth() + 1;
+  const y = d.getFullYear();
+  return { month: m, year: y, label: `Tháng ${m}/${y}` };
+}
+
+function changeMonth(delta) {
+  STATE.monthOffset += delta;
+  renderApp();
+  toast(getCurrentMonthInfo().label);
+}
+
+function formatDayLabel(day) {
+  const today = new Date().getDate();
+  if (day === today && STATE.monthOffset === 0) return 'Hôm nay';
+  if (day === today - 1 && STATE.monthOffset === 0) return 'Hôm qua';
+  return `Ngày ${day}`;
+}
+
+/* ==========================================================================
+   CORE BUSINESS CALCULATIONS
+   ========================================================================== */
+function isTxVisible(tx) {
+  if (tx.shared) return true;
+  if (tx.who === 'him') return true; // viewing as husband
+  // viewing wife's private transactions:
+  return DB.privacy !== 0; // 0: hidden completely
+}
+
+function isTxMasked(tx) {
+  return !tx.shared && tx.who === 'her' && DB.privacy === 1;
+}
+
+function getFilteredTransactions() {
+  return DB.transactions.filter(t => isTxVisible(t));
+}
+
+function calculateTotals(scope = 0) {
+  const txs = getFilteredTransactions();
+  let spend = 0, income = 0;
+  txs.forEach(t => {
+    const matchScope = scope === 0 || (scope === 1 && t.who === 'him') || (scope === 2 && t.who === 'her');
+    if (!matchScope) return;
+    if (t.kind === 'e') spend += t.amount;
+    else if (t.kind === 'i') income += t.amount;
+  });
+  return { spend, income, net: income - spend };
+}
+
+function calculateBalance() {
+  const shared = DB.transactions.filter(t => t.shared && t.kind === 'e');
+  const paidHim = shared.filter(t => t.who === 'him').reduce((s, t) => s + t.amount, 0);
+  const paidHer = shared.filter(t => t.who === 'her').reduce((s, t) => s + t.amount, 0);
+  const total = paidHim + paidHer;
+  const targetHim = total * (DB.ratio / 100);
+  const targetHer = total * ((100 - DB.ratio) / 100);
+  const owe = paidHim - targetHim; // owe > 0: Her owes Him. owe < 0: Him owes Her.
+  return { paidHim, paidHer, total, targetHim, targetHer, owe };
+}
+
+/* ==========================================================================
+   RENDER METHODS
+   ========================================================================== */
+function renderApp() {
+  renderHome();
+  renderTransactions();
+  renderBudgetAndReports();
+  renderFamilyAndBalance();
+}
+
+function renderHome() {
+  const u = DB.users;
+  $('#home-greeting').textContent = 'Chào gia đình,';
+  $('#home-names').textContent = `${u.him.name} & ${u.her.name}`;
+  $('#home-avatars').innerHTML = `
+    <span class="av ring" style="background:${u.him.color}">${u.him.name[0]}</span>
+    <span class="av ring" style="background:${u.her.color};margin-left:-8px">${u.her.name[0]}</span>
+  `;
+  $('#scope-him').textContent = u.him.name;
+  $('#scope-her').textContent = u.her.name;
+  $('#cur-month-text').textContent = getCurrentMonthInfo().label;
+
+  const totals = calculateTotals(STATE.homeScope);
+  const totalBudget = Object.values(DB.budgets).reduce((a, b) => a + b, 0);
+  const pct = totalBudget > 0 ? (totals.spend / totalBudget) * 100 : 0;
+
+  // Hero Card
+  $('#hero-spent').textContent = formatVND(totals.spend) + ' ₫';
+  $('#budget-pct').textContent = Math.round(pct) + '%';
+  const ringCirc = 264;
+  const ringFilled = Math.min(100, pct) / 100 * ringCirc;
+  $('#budget-ring').setAttribute('stroke-dasharray', `${ringFilled} ${ringCirc}`);
+
+  if (totals.spend > totalBudget) {
+    $('#hero-left').innerHTML = `<span style="color:#FFF;font-weight:700">⚠️ Vượt hạn mức ${formatVND(totals.spend - totalBudget)} ₫</span>`;
+  } else {
+    $('#hero-left').textContent = `Còn lại ${formatVND(totalBudget - totals.spend)} ₫ / ${formatShort(totalBudget)}`;
+  }
+  
+  const dayNow = Math.max(1, new Date().getDate());
+  const forecast = (totals.spend / dayNow) * 30;
+  $('#hero-fore').textContent = `Dự kiến cuối tháng: ~${formatShort(forecast)} ${forecast > totalBudget ? '⚠️' : '✅'}`;
+
+  // Income & Net
+  $('#home-inc').textContent = '+' + formatVND(totals.income) + ' ₫';
+  $('#home-net').textContent = formatVND(totals.net) + ' ₫';
+  $('#home-net').className = 'amt ' + (totals.net >= 0 ? 'pos' : 'neg');
+
+  // Quick log chips
+  const quickItems = [
+    ['☕', 'Cà phê', 45000, 'Ăn uống'],
+    ['🍜', 'Ăn sáng', 65000, 'Ăn uống'],
+    ['⛽', 'Xăng xe', 120000, 'Đi lại'],
+    ['🛒', 'Đi chợ', 250000, 'Chợ & Siêu thị'],
+    ['🚌', 'Gửi xe', 10000, 'Đi lại']
+  ];
+  $('#quick-chips').innerHTML = quickItems.map((q, i) => `
+    <div class="chip" onclick="quickAddTransaction(${i})">
+      ${q[0]} ${q[1]} <b>${formatShort(q[2])}</b>
+    </div>
+  `).join('');
+
+  // Insights
+  const b = calculateBalance();
+  const ins = [];
+  if (DB.settled) {
+    ins.push(['🎉', 'Hai bạn đã tất toán cân bằng tháng này', 'tab-fam']);
+  } else if (Math.abs(b.owe) > 10000) {
+    const whoFrom = b.owe > 0 ? u.her.name : u.him.name;
+    const whoTo = b.owe > 0 ? u.him.name : u.her.name;
+    ins.push(['⚖️', `<b>${whoFrom}</b> cần chuyển <b>${formatShort(Math.abs(b.owe))}</b> cho ${whoTo}`, 'tab-fam']);
+  }
+  ins.push(['💡', 'Tiền điện & Internet đến hạn ngày 15 tới', 'toast']);
+  $('#home-insights').innerHTML = ins.map(x => `
+    <div class="card clickable" style="margin-bottom:0;min-width:240px;display:flex;gap:10px;align-items:center" onclick="${x[2] === 'toast' ? `toast('${x[1]}')` : `goTab('${x[2]}')`}">
+      <span style="font-size:24px">${x[0]}</span>
+      <div style="font-size:13px">${x[1]}</div>
+    </div>
+  `).join('');
+
+  // Wallets Preview
+  $('#home-wallets').innerHTML = DB.wallets.map(w => `
+    <div class="wcard" style="background:linear-gradient(135deg, ${w.color.split(',')[0]}, ${w.color.split(',')[1]})" onclick="goTab('tab-fam')">
+      <div style="font-size:22px">${w.icon}</div>
+      <div style="font-size:12px;opacity:0.9;margin-top:6px">${w.name}</div>
+      <div style="font-weight:700;font-size:16px;margin-top:2px">${formatVND(w.balance)} ₫</div>
+    </div>
+  `).join('');
+
+  // Goals Preview
+  $('#home-goals').innerHTML = DB.goals.slice(0, 2).map(g => {
+    const p = Math.min(100, Math.round((g.current / g.target) * 100));
+    return `
+      <div style="margin-bottom:8px">
+        <div style="display:flex;justify-content:space-between">
+          <b>${g.icon} ${g.name}</b>
+          <span class="sub">${formatShort(g.current)} / ${formatShort(g.target)} (${p}%)</span>
+        </div>
+        <div class="bar"><i style="width:${p}%;background:var(--shared)"></i></div>
+      </div>
+    `;
+  }).join('');
+
+  // Recent 5 transactions
+  const rec = getFilteredTransactions().slice().sort((a, b) => b.day - a.day || b.id - a.id).slice(0, 5);
+  $('#home-recent').innerHTML = rec.length ? rec.map(t => renderTxRowHTML(t)).join('') : '<div class="center sub" style="padding:20px">Chưa có giao dịch nào</div>';
+  bindSwipeRows($('#home-recent'));
+}
+
+/* ==========================================================================
+   TRANSACTIONS TAB & ROWS
+   ========================================================================== */
+function renderTxRowHTML(t) {
+  const masked = isTxMasked(t);
+  const u = DB.users[t.who];
+  const title = masked ? 'Chi riêng' : t.title;
+  const isHim = t.who === 'him';
+  const canDelete = isHim && !masked;
+
+  return `
+    <div class="swr" style="border-bottom:1px solid var(--sep)">
+      ${canDelete ? `<div class="swa" onclick="deleteTransaction(${t.id})">Xóa</div>` : ''}
+      <div class="row swc" ${canDelete ? 'data-sw="1"' : ''} style="border-bottom:0" onclick="openTxDetail(${t.id})">
+        <div class="ic">${masked ? '🔒' : t.icon}</div>
+        <div class="grow">
+          <div class="tt">${title}</div>
+          <div class="sub">
+            <span class="av s" style="background:${u.color}">${u.name[0]}</span> ${u.name} · 
+            ${t.shared ? '👥 Chung' : '🔒 Riêng'} · ${formatDayLabel(t.day)}
+            ${t.receipt ? ' · 📎' : ''}
+            ${t.comments.length ? ` · 💬${t.comments.length}` : ''}
+          </div>
+        </div>
+        <div class="amt ${t.kind === 'i' ? 'pos' : 'neg'}">
+          ${t.kind === 'i' ? '+' : '-'}${formatVND(t.amount)} ₫
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderTransactions() {
+  const u = DB.users;
+  const chips = [
+    'Tất cả',
+    '👥 Chung',
+    '🔒 Riêng',
+    u.him.name,
+    u.her.name
+  ];
+  $('#tx-filter-chips').innerHTML = chips.map((c, i) => `
+    <div class="chip ${STATE.txFilter === i ? 'on' : ''}" onclick="setTxFilter(${i})">${c}</div>
+  `).join('') + (STATE.txCatFilter ? `
+    <div class="chip on" onclick="clearCatFilter()">${getCatIcon(STATE.txCatFilter)} ${STATE.txCatFilter} ✕</div>
+  ` : '');
+
+  let list = getFilteredTransactions();
+
+  // Apply chip filter
+  if (STATE.txFilter === 1) list = list.filter(t => t.shared);
+  else if (STATE.txFilter === 2) list = list.filter(t => !t.shared);
+  else if (STATE.txFilter === 3) list = list.filter(t => t.who === 'him');
+  else if (STATE.txFilter === 4) list = list.filter(t => t.who === 'her');
+
+  // Apply Category filter
+  if (STATE.txCatFilter) {
+    list = list.filter(t => t.category === STATE.txCatFilter);
+  }
+
+  // Apply search query
+  if (STATE.txSearchQuery.trim()) {
+    const q = STATE.txSearchQuery.trim().toLowerCase();
+    list = list.filter(t => {
+      if (isTxMasked(t)) return false;
+      return t.title.toLowerCase().includes(q) ||
+             t.category.toLowerCase().includes(q) ||
+             t.note.toLowerCase().includes(q);
+    });
+  }
+
+  list.sort((a, b) => b.day - a.day || b.id - a.id);
+  const days = [...new Set(list.map(t => t.day))];
+
+  if (list.length === 0) {
+    $('#tx-list').innerHTML = `
+      <div class="center" style="padding:40px 10px;color:var(--mut)">
+        <div style="font-size:48px;margin-bottom:8px">🔍</div>
+        <b>Không tìm thấy giao dịch nào</b>
+        <div class="sub" style="margin-top:4px">Thử tìm từ khóa khác hoặc bấm nút bên dưới để ghi mới</div>
+        <button class="btn sm alt" style="margin:16px auto;display:inline-block" onclick="openAddSheet()">＋ Ghi chép mới</button>
+      </div>
+    `;
+    return;
+  }
+
+  $('#tx-list').innerHTML = days.map(d => {
+    const dayTxs = list.filter(t => t.day === d);
+    const dayTotal = dayTxs.filter(t => t.kind === 'e').reduce((s, t) => s + t.amount, 0);
+    return `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin:8px 4px 4px">
+        <span class="sub" style="font-weight:700">${formatDayLabel(d)}</span>
+        <span class="sub">${dayTotal ? '-' + formatVND(dayTotal) + ' ₫' : ''}</span>
+      </div>
+      <div class="card" style="padding:0 14px">
+        ${dayTxs.map(t => renderTxRowHTML(t)).join('')}
+      </div>
+    `;
+  }).join('');
+
+  bindSwipeRows($('#tx-list'));
+}
+
+function setTxFilter(idx) {
+  STATE.txFilter = idx;
+  renderTransactions();
+}
+function clearCatFilter() {
+  STATE.txCatFilter = null;
+  renderTransactions();
+}
+function onSearch(v) {
+  STATE.txSearchQuery = v;
+  renderTransactions();
+}
+
+/* ==========================================================================
+   SWIPE TO DELETE ON MOBILE / TOUCH
+   ========================================================================== */
+function bindSwipeRows(container) {
+  if (!container) return;
+  container.querySelectorAll('.swc[data-sw="1"]').forEach(elem => {
+    let startX = 0, currentX = 0, isDragging = false, base = 0;
+    elem.addEventListener('pointerdown', e => {
+      startX = e.clientX;
+      isDragging = true;
+      base = elem.classList.contains('open') ? -76 : 0;
+      elem.style.transition = 'none';
+    });
+    elem.addEventListener('pointermove', e => {
+      if (!isDragging) return;
+      const dx = e.clientX - startX;
+      currentX = Math.max(-76, Math.min(0, base + dx));
+      elem.style.transform = `translateX(${currentX}px)`;
+    });
+    const onEnd = () => {
+      if (!isDragging) return;
+      isDragging = false;
+      elem.style.transition = 'transform 0.25s ease';
+      if (currentX < -38) {
+        elem.classList.add('open');
+        elem.style.transform = 'translateX(-76px)';
+      } else {
+        elem.classList.remove('open');
+        elem.style.transform = 'none';
+      }
+    };
+    elem.addEventListener('pointerup', onEnd);
+    elem.addEventListener('pointerleave', onEnd);
+  });
+}
+
+/* ==========================================================================
+   BUDGET & REPORT TAB
+   ========================================================================== */
+let budScope = 0; // 0: Shared, 1: Private
+function renderBudgetAndReports() {
+  const isBudget = $('#bud-rep-seg .on').textContent.trim() === 'Ngân sách';
+  $('#view-budget').style.display = isBudget ? 'block' : 'none';
+  $('#view-report').style.display = isBudget ? 'none' : 'block';
+
+  if (isBudget) {
+    const limits = budScope === 0 ? DB.budgets : DB.privateBudgets;
+    const catSpends = {};
+    getFilteredTransactions().filter(t => t.kind === 'e' && (budScope === 0 ? t.shared : (!t.shared && t.who === 'him'))).forEach(t => {
+      catSpends[t.category] = (catSpends[t.category] || 0) + t.amount;
+    });
+
+    const totalLim = Object.values(limits).reduce((a, b) => a + b, 0);
+    const totalSpent = Object.keys(limits).reduce((s, k) => s + (catSpends[k] || 0), 0);
+    const budgetPct = totalLim > 0 ? (totalSpent / totalLim) * 100 : 0;
+
+    $('#bud-summary-card').innerHTML = `
+      <div class="card center">
+        <div class="sub">${budScope === 0 ? 'Ngân sách Chung' : 'Ngân sách Riêng của tôi'}</div>
+        <div style="font-size:28px;font-weight:700;margin:4px 0">
+          ${formatVND(totalSpent)} <span class="sub" style="font-size:16px">/ ${formatVND(totalLim)} ₫</span>
+        </div>
+        <div class="bar"><i style="width:${Math.min(100, budgetPct)}%;background:${totalSpent > totalLim ? 'var(--exp)' : 'var(--coral)'}"></i></div>
+        <div class="sub" style="margin-top:6px">${totalSpent > totalLim ? '⚠️ Đã vượt hạn mức!' : `Còn lại ${formatVND(totalLim - totalSpent)} ₫`}</div>
+      </div>
+    `;
+
+    $('#bud-category-list').innerHTML = Object.keys(limits).map(k => {
+      const sp = catSpends[k] || 0;
+      const lim = limits[k];
+      const p = lim > 0 ? (sp / lim) * 100 : 0;
+      const col = p > 100 ? 'var(--exp)' : p >= 80 ? 'var(--warn)' : 'var(--inc)';
+      return `
+        <div class="row clickable" style="display:block" onclick="adjustCategoryLimit('${k}')">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <b>${getCatIcon(k)} ${k}</b>
+            <span class="sub">
+              ${formatShort(sp)} / ${formatShort(lim)}
+              ${p > 100 ? `<b class="neg">Vượt ${Math.round(p - 100)}%</b>` : p >= 80 ? `<b style="color:var(--warn)">Gần hết</b>` : ''}
+            </span>
+          </div>
+          <div class="bar"><i style="width:${Math.min(100, p)}%;background:${col}"></i></div>
+        </div>
+      `;
+    }).join('');
+  } else {
+    renderReportPanes();
+  }
+}
+
+function adjustCategoryLimit(cat) {
+  const current = (budScope === 0 ? DB.budgets[cat] : DB.privateBudgets[cat]) || 1000000;
+  confirmDlg(
+    `Ngân sách ${cat}`,
+    `Hạn mức hiện tại: ${formatVND(current)} ₫. Bạn có muốn tăng thêm 500.000 ₫?`,
+    'Tăng +500k',
+    () => {
+      if (budScope === 0) DB.budgets[cat] = current + 500000;
+      else DB.privateBudgets[cat] = current + 500000;
+      saveData();
+      renderApp();
+      toast(`Đã cập nhật hạn mức ${cat}`);
+    }
+  );
+}
+
+function renderReportPanes() {
+  const catSpends = {};
+  getFilteredTransactions().filter(t => t.kind === 'e').forEach(t => {
+    catSpends[t.category] = (catSpends[t.category] || 0) + t.amount;
+  });
+  const entries = Object.entries(catSpends).sort((a, b) => b[1] - a[1]);
+  const total = entries.reduce((s, e) => s + e[1], 0) || 1;
+
+  // Donut chart
+  let acc = 0;
+  const gradientStops = entries.map((e, idx) => {
+    const start = acc;
+    const p = (e[1] / total) * 100;
+    acc += p;
+    return `${COLORS[idx % COLORS.length]} ${start}% ${acc}%`;
+  }).join(', ');
+
+  $('#rep-donut').style.background = gradientStops ? `conic-gradient(${gradientStops})` : '#DDD';
+  $('#rep-donut-txt').innerHTML = `${(total / 1e6).toFixed(1).replace('.', ',')}tr<br><span class="sub">đã chi</span>`;
+
+  $('#rep-legend').innerHTML = entries.map((e, idx) => `
+    <div class="row clickable" onclick="filterByCat('${e[0]}')">
+      <span class="dot" style="background:${COLORS[idx % COLORS.length]}"></span>
+      <span class="grow">${getCatIcon(e[0])} ${e[0]}</span>
+      <b>${formatShort(e[1])}</b>
+      <span class="sub" style="width:40px;text-align:right">${Math.round((e[1] / total) * 100)}%</span>
+    </div>
+  `).join('');
+
+  // 6 months trend
+  const mockTrend = [
+    [12.5, 9.2], [14.0, 10.5], [11.8, 8.9], [13.2, 11.0], [15.5, 9.8], [total / 1e6 * 0.6, total / 1e6 * 0.4]
+  ];
+  const maxBar = Math.max(...mockTrend.flat());
+  $('#rep-cols').innerHTML = mockTrend.map((m, i) => `
+    <div onclick="toast('Tháng ${i + 6}: Chồng ${(m[0]).toFixed(1)}tr · Vợ ${(m[1]).toFixed(1)}tr')">
+      <span>
+        <i style="height:${(m[0] / maxBar) * 80}px;background:var(--him)"></i>
+        <i style="height:${(m[1] / maxBar) * 80}px;background:var(--her)"></i>
+      </span>
+      T${i + 6}
+    </div>
+  `).join('');
+  $('#rep-col-him').textContent = DB.users.him.name;
+  $('#rep-col-her').textContent = DB.users.her.name;
+
+  $('#rep-insights').innerHTML = `
+    <div class="tip">Chi tiêu tháng này đang ở mức hợp lý, kiểm soát tốt dưới hạn mức đề ra.</div>
+    <div class="tip g">Đang tiết kiệm được ~${Math.max(15, Math.min(45, Math.round((1 - total / 36000000) * 100)))}% tổng thu nhập gia đình.</div>
+  `;
+
+  // Comparison
+  const b = calculateBalance();
+  const shTotal = b.total || 1;
+  $('#rep-cmp-him-lbl').textContent = DB.users.him.name;
+  $('#rep-cmp-her-lbl').textContent = DB.users.her.name;
+  $('#rep-cmp-him-val').textContent = formatVND(b.paidHim) + ' ₫';
+  $('#rep-cmp-her-val').textContent = formatVND(b.paidHer) + ' ₫';
+  $('#rep-cmp-him-bar').style.width = (b.paidHim / shTotal * 100) + '%';
+  $('#rep-cmp-her-bar').style.width = (b.paidHer / shTotal * 100) + '%';
+
+  const sharedSum = b.total;
+  const privSum = total - sharedSum;
+  $('#rep-bar-shared').style.width = (sharedSum / total * 100) + '%';
+  $('#rep-shared-txt').innerHTML = `
+    <span class="dot" style="background:var(--shared)"></span>Chung: ${formatShort(sharedSum)} (${Math.round(sharedSum / total * 100)}%) · 
+    <span class="dot" style="background:#CCC"></span>Riêng: ${formatShort(privSum)}
+  `;
+
+  // Biggest transactions
+  const biggest = getFilteredTransactions().filter(t => t.kind === 'e').slice().sort((a, b) => b.amount - a.amount).slice(0, 4);
+  $('#rep-biggest-list').innerHTML = biggest.map(t => renderTxRowHTML(t)).join('');
+}
+
+function filterByCat(cat) {
+  STATE.txCatFilter = cat;
+  goTab('tab-tx');
+}
+
+/* ==========================================================================
+   BALANCE & FAMILY TAB
+   ========================================================================== */
+function renderFamilyAndBalance() {
+  const u = DB.users;
+  const b = calculateBalance();
+
+  $('#bal-av-him').textContent = u.him.name[0];
+  $('#bal-av-her').textContent = u.her.name[0];
+  $('#bal-av-him').style.background = u.him.color;
+  $('#bal-av-her').style.background = u.her.color;
+
+  if (DB.settled) {
+    $('#bal-who').textContent = 'Hai bạn đã tất toán cân bằng 🎉';
+    $('#bal-amt').textContent = '0 ₫';
+    $('#bal-sub').textContent = 'Tháng này đã hoàn tất thanh toán bù trừ';
+    $('#bal-action-btns').style.display = 'none';
+  } else {
+    $('#bal-action-btns').style.display = 'flex';
+    if (b.owe > 0) {
+      $('#bal-who').textContent = `${u.her.name} nên chuyển cho ${u.him.name}`;
+      $('#bal-arrow').textContent = '←';
+    } else {
+      $('#bal-who').textContent = `${u.him.name} nên chuyển cho ${u.her.name}`;
+      $('#bal-arrow').textContent = '→';
+    }
+    $('#bal-amt').textContent = formatVND(Math.abs(b.owe)) + ' ₫';
+    $('#bal-sub').textContent = `theo tỷ lệ đóng góp ${DB.ratio} / ${100 - DB.ratio}`;
+  }
+
+  $('#ratio-lbl-him').textContent = `${u.him.name} ${DB.ratio}%`;
+  $('#ratio-lbl-her').textContent = `${u.her.name} ${100 - DB.ratio}%`;
+  $('#ratio-slider').value = DB.ratio;
+
+  // Wallets List
+  $('#family-wallets-list').innerHTML = DB.wallets.map(w => `
+    <div class="row">
+      <div class="ic">${w.icon}</div>
+      <div class="grow">
+        <div class="tt">${w.name}</div>
+        <div class="sub">${w.owner === 'S' ? '👥 Ví chung' : w.owner === 'him' ? '🔒 Ví của ' + u.him.name : '🔒 Ví của ' + u.her.name}</div>
+      </div>
+      <div class="amt ${w.balance < 0 ? 'neg' : ''}">${formatVND(w.balance)} ₫</div>
+    </div>
+  `).join('');
+
+  // Goals List
+  $('#family-goals-list').innerHTML = DB.goals.map((g, i) => {
+    const p = Math.min(100, Math.round((g.current / g.target) * 100));
+    return `
+      <div style="padding:10px 0;border-bottom:1px solid var(--sep)">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <b>${g.icon} ${g.name}</b>
+          <span style="color:var(--shared);font-weight:700">${p}%</span>
+        </div>
+        <div class="bar" style="height:9px"><i style="width:${p}%;background:linear-gradient(90deg,var(--shared),#a78bfa)"></i></div>
+        <div style="display:flex;justify-content:space-between;margin:6px 0" class="sub">
+          <span>Đã tích lũy: ${formatVND(g.current)} ₫</span>
+          <span>Mục tiêu: ${formatShort(g.target)}</span>
+        </div>
+        <button class="btn sm alt" style="margin-top:4px" onclick="contributeGoal(${i}, 500000)">＋ Góp 500.000 ₫</button>
+      </div>
+    `;
+  }).join('');
+
+  // Privacy Hint
+  const hints = [
+    'Vợ/chồng không thấy gì về khoản riêng của nhau.',
+    'Hiện "Chi riêng" và số tiền, không xem được mô tả & hóa đơn.',
+    'Xem đầy đủ cả khoản riêng của nhau.'
+  ];
+  $('#privacy-hint').textContent = hints[DB.privacy];
+  $$('#privacy-seg div').forEach((d, i) => d.classList.toggle('on', i === DB.privacy));
+}
+
+function settleBalance() {
+  const b = calculateBalance();
+  confirmDlg(
+    'Xác nhận tất toán?',
+    `Ghi nhận đã chuyển ${formatVND(Math.abs(b.owe))} ₫ để cân bằng chi tiêu chung tháng này.`,
+    'Xác nhận',
+    () => {
+      DB.settled = true;
+      saveData();
+      renderApp();
+      toast('Đã tất toán cân bằng tháng này ✅');
+    }
+  );
+}
+
+function openVietQR() {
+  const b = calculateBalance();
+  const amt = Math.abs(b.owe);
+  toast(`Đã tạo liên kết VietQR chuyển ${formatShort(amt)} 🏦`);
+}
+
+function toggleRatioEdit() {
+  const el = $('#ratio-slider-wrap');
+  el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+function onRatioSlide(v) {
+  DB.ratio = Number(v);
+  DB.settled = false;
+  saveData();
+  renderApp();
+}
+
+function setPresetRatio(r) {
+  DB.ratio = r;
+  DB.settled = false;
+  $('#ratio-slider').value = r;
+  saveData();
+  renderApp();
+  toast(`Đã đổi tỷ lệ đóng góp thành ${r}/${100 - r}`);
+}
+
+function contributeGoal(idx, amount) {
+  DB.goals[idx].current = Math.min(DB.goals[idx].target, DB.goals[idx].current + amount);
+  saveData();
+  renderApp();
+  toast(`Đã góp +${formatShort(amount)} vào mục tiêu 🎉`);
+}
+
+/* ==========================================================================
+   ADD TRANSACTION SHEET & KEYPAD
+   ========================================================================== */
+function openAddSheet() {
+  STATE.addExp = '';
+  STATE.addKind = 'e';
+  STATE.addCatIdx = 0;
+  STATE.addShared = true;
+  STATE.addReceipt = null;
+  $('#add-note-input').value = '';
+  $('#receipt-preview-img').style.display = 'none';
+  $('#receipt-remove-btn').style.display = 'none';
+  $('#sw-add-shared').classList.add('on');
+  $('#sw-add-rec').classList.remove('on');
+  $$('#add-kind-seg div').forEach((d, i) => d.classList.toggle('on', i === 0));
+
+  renderAddCats();
+  renderAddChips();
+  updateAddAmountDisplay();
+
+  $('#add-sheet').classList.add('on');
+  $('#sheet-scrim').classList.add('on');
+}
+
+function closeAddSheet() {
+  $('#add-sheet').classList.remove('on');
+  $('#sheet-scrim').classList.remove('on');
+}
+
+function renderAddCats() {
+  $('#add-cats-grid').innerHTML = CATEGORIES.map((c, i) => `
+    <div class="cat-item ${i === STATE.addCatIdx ? 'on' : ''}" onclick="selectAddCat(${i})">
+      <span>${c[0]}</span>
+      ${c[1]}
+    </div>
+  `).join('');
+}
+
+function selectAddCat(i) {
+  STATE.addCatIdx = i;
+  $$('.cat-item').forEach((elem, idx) => elem.classList.toggle('on', idx === i));
+}
+
+function renderAddChips() {
+  const w = DB.wallets.find(x => x.id === STATE.addWalletId) || DB.wallets[0];
+  const u = DB.users[STATE.addWho];
+  $('#add-chips-bar').innerHTML = `
+    <div class="chip" onclick="cycleAddWallet()">${w.icon} ${w.name}</div>
+    <div class="chip" onclick="cycleAddWho()"><span class="av s" style="background:${u.color}">${u.name[0]}</span> ${u.name} chi</div>
+    <div class="chip" onclick="cycleAddDay()">📅 Ngày ${STATE.addDay}</div>
+    <div class="chip ${STATE.addReceipt ? 'on' : ''}" onclick="$('#receipt-file-input').click()">
+      📷 ${STATE.addReceipt ? 'Đã đính kèm ảnh' : 'Chụp / Ảnh hóa đơn'}
+    </div>
+  `;
+}
+
+function cycleAddWallet() {
+  const ids = DB.wallets.map(w => w.id);
+  const next = ids[(ids.indexOf(STATE.addWalletId) + 1) % ids.length];
+  STATE.addWalletId = next;
+  renderAddChips();
+}
+
+function cycleAddWho() {
+  STATE.addWho = STATE.addWho === 'him' ? 'her' : 'him';
+  renderAddChips();
+}
+
+function cycleAddDay() {
+  STATE.addDay = (STATE.addDay % 31) + 1;
+  renderAddChips();
+}
+
+function toggleAddShared() {
+  STATE.addShared = !STATE.addShared;
+  $('#sw-add-shared').classList.toggle('on', STATE.addShared);
+  $('#add-shared-hint').textContent = STATE.addShared ? '· cả hai cùng thấy' : '· 🔒 chỉ mình tôi thấy';
+}
+
+function addAmountFast(val) {
+  const current = evalAmount(STATE.addExp);
+  STATE.addExp = String(current + val);
+  updateAddAmountDisplay();
+}
+
+function evalAmount(exp) {
+  try {
+    const clean = exp.replace(/×/g, '*').replace(/÷/g, '/').replace(/−/g, '-');
+    if (!clean) return 0;
+    // Safe evaluation of simple math
+    const sanitized = clean.replace(/[^0-9+\-*/.]/g, '');
+    if (!sanitized) return 0;
+    const res = Function(`"use strict"; return (${sanitized})`)();
+    return typeof res === 'number' && !isNaN(res) ? Math.max(0, Math.round(res)) : 0;
+  } catch (e) {
+    return 0;
+  }
+}
+
+function updateAddAmountDisplay() {
+  const val = evalAmount(STATE.addExp);
+  const formatted = STATE.addExp.replace(/\d+/g, m => formatVND(+m));
+  $('#add-amt-display').innerHTML = (formatted || '0') + ' <small>₫</small>';
+  const hasOperator = /[+\-−×÷]/.test(STATE.addExp);
+  $('#add-amt-eval').textContent = hasOperator ? '= ' + formatVND(val) + ' ₫' : '';
+}
+
+// Build Keypad
+const KEYPAD_KEYS = [
+  '7', '8', '9', '⌫',
+  '4', '5', '6', '+',
+  '1', '2', '3', '−',
+  '000', '0', '×', '÷',
+  'C', '='
+];
+$('#keypad').innerHTML = KEYPAD_KEYS.map(k => {
+  const isOp = ['+', '−', '×', '÷'].includes(k);
+  const isEq = k === '=';
+  const isDel = k === '⌫';
+  return `<button class="${isOp ? 'op' : isEq ? 'equal' : ''}" onclick="onKeypadPress('${k}')">${k}</button>`;
+}).join('');
+
+function onKeypadPress(k) {
+  if (k === '⌫') {
+    STATE.addExp = STATE.addExp.slice(0, -1);
+  } else if (k === 'C') {
+    STATE.addExp = '';
+  } else if (k === '=') {
+    STATE.addExp = String(evalAmount(STATE.addExp) || '');
+  } else if (['+', '−', '×', '÷'].includes(k)) {
+    if (!STATE.addExp) return;
+    if (/[+\-−×÷]$/.test(STATE.addExp)) {
+      STATE.addExp = STATE.addExp.slice(0, -1) + k;
+    } else {
+      STATE.addExp += k;
+    }
+  } else {
+    STATE.addExp = (STATE.addExp + k).replace(/^0+(?=\d)/, '').slice(0, 24);
+  }
+  updateAddAmountDisplay();
+}
+
+// Photo attachment with camera or library
+function onReceiptFileSelected(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    STATE.addReceipt = ev.target.result;
+    const img = $('#receipt-preview-img');
+    img.src = STATE.addReceipt;
+    img.style.display = 'block';
+    $('#receipt-remove-btn').style.display = 'block';
+    renderAddChips();
+  };
+  reader.readAsDataURL(file);
+}
+
+function clearReceipt() {
+  STATE.addReceipt = null;
+  $('#receipt-file-input').value = '';
+  $('#receipt-preview-img').style.display = 'none';
+  $('#receipt-remove-btn').style.display = 'none';
+  renderAddChips();
+}
+
+function viewPhotoZoom(src) {
+  if (!src) return;
+  $('#photo-zoom-img').src = src;
+  $('#photo-zoom-modal').classList.add('on');
+}
+
+function saveTransaction() {
+  const amount = evalAmount(STATE.addExp);
+  if (amount <= 0) {
+    $('#add-amt-display').classList.add('shake');
+    setTimeout(() => $('#add-amt-display').classList.remove('shake'), 400);
+    return toast('Vui lòng nhập số tiền hợp lệ');
+  }
+
+  const cat = CATEGORIES[STATE.addCatIdx];
+  const isInc = STATE.addKind === 'i';
+  const note = $('#add-note-input').value.trim();
+
+  const newTx = {
+    id: Date.now(),
+    day: STATE.addDay,
+    icon: isInc ? '💼' : cat[0],
+    title: note || (isInc ? 'Thu nhập' : cat[1]),
+    category: isInc ? 'Thu' : cat[1],
+    amount: amount,
+    who: STATE.addWho,
+    shared: STATE.addShared,
+    wallet: STATE.addWalletId,
+    kind: STATE.addKind,
+    note: note,
+    receipt: STATE.addReceipt,
+    comments: []
+  };
+
+  DB.transactions.unshift(newTx);
+
+  // Update wallet balance
+  const w = DB.wallets.find(x => x.id === STATE.addWalletId);
+  if (w) {
+    w.balance += (STATE.addKind === 'i' ? amount : -amount);
+  }
+
+  DB.settled = false;
+  saveData();
+  closeAddSheet();
+  renderApp();
+
+  toast(STATE.addShared ? 'Đã lưu & đồng bộ khoản chung ✅' : 'Đã lưu vào khoản riêng 🔒');
+}
+
+function quickAddTransaction(idx) {
+  const q = [
+    ['☕', 'Cà phê', 45000, 'Ăn uống'],
+    ['🍜', 'Ăn sáng', 65000, 'Ăn uống'],
+    ['⛽', 'Xăng xe', 120000, 'Đi lại'],
+    ['🛒', 'Đi chợ', 250000, 'Chợ & Siêu thị'],
+    ['🚌', 'Gửi xe', 10000, 'Đi lại']
+  ][idx];
+
+  const newTx = {
+    id: Date.now(),
+    day: new Date().getDate(),
+    icon: q[0],
+    title: q[1],
+    category: q[3],
+    amount: q[2],
+    who: 'him',
+    shared: true,
+    wallet: 'cash',
+    kind: 'e',
+    note: 'Ghi nhanh',
+    receipt: null,
+    comments: []
+  };
+
+  DB.transactions.unshift(newTx);
+  const w = DB.wallets.find(x => x.id === 'cash');
+  if (w) w.balance -= q[2];
+  DB.settled = false;
+  saveData();
+  renderApp();
+
+  toast(`Đã ghi nhanh ${q[1]} ${formatShort(q[2])}`, 'Hoàn tác', () => {
+    deleteTransaction(newTx.id, false);
+  });
+}
+
+function deleteTransaction(id, promptConfirm = false) {
+  const idx = DB.transactions.findIndex(t => t.id === id);
+  if (idx < 0) return;
+  const removed = DB.transactions[idx];
+
+  const doDelete = () => {
+    DB.transactions.splice(idx, 1);
+    const w = DB.wallets.find(x => x.id === removed.wallet);
+    if (w) w.balance += (removed.kind === 'e' ? removed.amount : -removed.amount);
+    saveData();
+    renderApp();
+    toast(`Đã xóa "${removed.title}"`, 'Hoàn tác', () => {
+      DB.transactions.splice(idx, 0, removed);
+      if (w) w.balance -= (removed.kind === 'e' ? removed.amount : -removed.amount);
+      saveData();
+      renderApp();
+    });
+  };
+
+  if (promptConfirm) {
+    confirmDlg('Xóa giao dịch?', `Bạn có chắc muốn xóa "${removed.title}"?`, 'Xóa', doDelete);
+  } else {
+    doDelete();
+  }
+}
+
+/* ==========================================================================
+   TRANSACTION DETAIL VIEW
+   ========================================================================== */
+function openTxDetail(id) {
+  STATE.selectedTxId = id;
+  const t = DB.transactions.find(x => x.id === id);
+  if (!t) return;
+  const u = DB.users[t.who];
+  const masked = isTxMasked(t);
+  const w = DB.wallets.find(x => x.id === t.wallet) || { icon: '👛', name: 'Ví' };
+
+  $('#detail-head-actions').innerHTML = t.who === 'him' ? `
+    <span class="link" style="color:var(--exp)" onclick="deleteTransaction(${t.id}, true);goBack()">Xóa</span>
+  ` : '';
+
+  $('#detail-content').innerHTML = `
+    <div class="center" style="margin:16px 0 20px">
+      <div class="ic" style="width:68px;height:68px;font-size:32px;margin:0 auto 10px;border-radius:20px">${masked ? '🔒' : t.icon}</div>
+      <div style="font-size:34px;font-weight:700;letter-spacing:-1px" class="${t.kind === 'i' ? 'pos' : ''}">
+        ${t.kind === 'i' ? '+' : '-'}${formatVND(t.amount)} ₫
+      </div>
+      <div class="sub" style="font-size:14px;margin-top:2px">${masked ? 'Khoản chi riêng' : t.title}</div>
+    </div>
+
+    <div class="card">
+      <div class="row"><span class="sub grow">Danh mục</span><b>${masked ? '🔒 Ẩn' : t.category}</b></div>
+      <div class="row"><span class="sub grow">Người thực hiện</span><b><span class="av s" style="background:${u.color}">${u.name[0]}</span> ${u.name}</b></div>
+      <div class="row"><span class="sub grow">Ngày giao dịch</span><b>${formatDayLabel(t.day)}</b></div>
+      <div class="row"><span class="sub grow">Ví tài khoản</span><b>${masked ? '🔒 Ẩn' : w.icon + ' ' + w.name}</b></div>
+      <div class="row"><span class="sub grow">Phân loại</span><b>${t.shared ? '👥 Khoản Chung' : '🔒 Khoản Riêng'}</b></div>
+      ${t.note && !masked ? `<div class="row"><span class="sub grow">Ghi chú</span><b>${t.note}</b></div>` : ''}
+    </div>
+
+    ${t.receipt ? `
+      <div class="card">
+        <b>📎 Hóa đơn đính kèm</b>
+        <img src="${t.receipt}" style="width:100%;max-height:220px;object-fit:cover;border-radius:12px;margin-top:8px;cursor:pointer" onclick="viewPhotoZoom(this.src)">
+      </div>
+    ` : ''}
+
+    <div class="card">
+      <b>💬 Bình luận vợ chồng</b>
+      <div id="comments-box" style="margin-top:8px">
+        ${t.comments.map(c => `
+          <div style="display:flex;gap:8px;margin:8px 0;flex-direction:${c.who === 'him' ? 'row-reverse' : 'row'}">
+            <span class="av s" style="background:${DB.users[c.who].color}">${DB.users[c.who].name[0]}</span>
+            <div style="padding:8px 12px;border-radius:14px;background:var(--fill);font-size:13px;max-width:75%">
+              ${c.text}
+            </div>
+          </div>
+        `).join('') || '<div class="sub">Chưa có bình luận nào. Hỏi han nhẹ nhàng nhé ❤️</div>'}
+      </div>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <input class="input" id="comment-input" placeholder="Viết bình luận..." style="margin:0">
+        <button class="btn sm" style="width:72px" onclick="sendComment()">Gửi</button>
+      </div>
+    </div>
+  `;
+
+  goTab('tab-detail');
+}
+
+function sendComment() {
+  const input = $('#comment-input');
+  const text = input.value.trim();
+  if (!text) return;
+  const t = DB.transactions.find(x => x.id === STATE.selectedTxId);
+  if (!t) return;
+  t.comments.push({ who: 'him', text: text });
+  input.value = '';
+  saveData();
+  openTxDetail(t.id);
+  toast(`Đã gửi bình luận đến ${DB.users.her.name} 💬`);
+}
+
+/* ==========================================================================
+   NOTIFICATIONS
+   ========================================================================== */
+const NOTIFICATIONS = [
+  { id: 1, icon: '⚠️', title: 'Danh mục Mua sắm đã vượt hạn mức 15%', sub: 'Hôm nay', read: false },
+  { id: 2, icon: '💬', title: 'Lan đã bình luận vào khoản Ăn tối', sub: 'Hôm qua', read: false },
+  { id: 3, icon: '⏰', title: 'Nhắc nhở ghi chép chi tiêu lúc 21:00', sub: 'Định kỳ', read: true }
+];
+
+function openNotif() {
+  renderNotifs();
+  goTab('tab-notif');
+}
+
+function renderNotifs() {
+  $('#notif-list').innerHTML = NOTIFICATIONS.map(n => `
+    <div class="row" style="${n.read ? 'opacity:0.6' : ''}">
+      <div class="ic">${n.icon}</div>
+      <div class="grow">
+        <div class="tt">${n.title}</div>
+        <div class="sub">${n.sub}</div>
+      </div>
+      ${!n.read ? '<span class="dot" style="background:var(--coral);margin:0"></span>' : ''}
+    </div>
+  `).join('');
+  const unread = NOTIFICATIONS.filter(n => !n.read).length;
+  $('#notif-badge').style.display = unread ? 'grid' : 'none';
+  $('#notif-badge').textContent = unread;
+}
+
+function markAllNotifRead() {
+  NOTIFICATIONS.forEach(n => n.read = true);
+  renderNotifs();
+  toast('Đã đánh dấu đọc tất cả thông báo');
+}
+
+/* ==========================================================================
+   SETTINGS & DATA BACKUP / RESTORE
+   ========================================================================== */
+function saveProfileNames() {
+  DB.users.him.name = $('#cfg-name-him').value.trim() || 'Bảo';
+  DB.users.her.name = $('#cfg-name-her').value.trim() || 'Loan';
+  saveData();
+  renderApp();
+  toast('Đã cập nhật tên hai vợ chồng ✅');
+}
+
+function toggleDark() {
+  document.body.classList.toggle('dark');
+  $('#sw-dark').classList.toggle('on', document.body.classList.contains('dark'));
+  localStorage.setItem('vidoi_dark_mode', document.body.classList.contains('dark') ? '1' : '0');
+}
+
+function exportCSV() {
+  let csv = 'ID,Ngay,Loai,Danh muc,Tieu de,So tien,Nguoi chi,Chung/Rieng,Vi,Ghi chu\n';
+  DB.transactions.forEach(t => {
+    csv += `"${t.id}","${t.day}","${t.kind === 'i' ? 'Thu' : 'Chi'}","${t.category}","${t.title}","${t.amount}","${DB.users[t.who].name}","${t.shared ? 'Chung' : 'Rieng'}","${t.wallet}","${t.note}"\n`;
+  });
+  const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `ViDoi_BaoCao_${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  toast('Đã xuất báo cáo CSV thành công 📄');
+}
+
+function exportJSON() {
+  const json = JSON.stringify(DB, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `ViDoi_Backup_${new Date().toISOString().slice(0, 10)}.json`;
+  a.click();
+  toast('Đã tải file sao lưu JSON 💾');
+}
+
+function confirmResetData() {
+  confirmDlg(
+    'Xóa dữ liệu mẫu?',
+    'Toàn bộ giao dịch mẫu sẽ được xóa sạch. Bạn sẽ bắt đầu ghi chép thực tế từ 0 ₫.',
+    'Xóa sạch',
+    () => {
+      DB.transactions = [];
+      DB.settled = true;
+      saveData();
+      renderApp();
+      toast('Đã xóa dữ liệu mẫu. Bắt đầu ghi chép từ 0 ₫ ✨');
+    }
+  );
+}
+
+function restoreSampleData() {
+  DB = getInitialData();
+  saveData();
+  renderApp();
+  toast('Đã nạp lại dữ liệu mẫu ↺');
+}
+
+/* ==========================================================================
+   UI UTILITIES: TOAST & CONFIRM DIALOG
+   ========================================================================== */
+let toastTimeout;
+function toast(msg, actionText, actionFn) {
+  $('#toast-msg').textContent = msg;
+  const act = $('#toast-act');
+  act.textContent = actionText || '';
+  act.onclick = () => {
+    if (actionFn) actionFn();
+    $('#toast').classList.remove('on');
+  };
+  $('#toast').classList.add('on');
+  clearTimeout(toastTimeout);
+  toastTimeout = setTimeout(() => {
+    $('#toast').classList.remove('on');
+  }, actionText ? 5000 : 2500);
+}
+
+function confirmDlg(title, msg, okText, onOk) {
+  $('#dlg-title').textContent = title;
+  $('#dlg-msg').textContent = msg;
+  const okBtn = $('#dlg-ok-btn');
+  okBtn.textContent = okText || 'Đồng ý';
+  okBtn.onclick = () => {
+    closeDlg();
+    if (onOk) onOk();
+  };
+  $('#confirm-dlg').classList.add('on');
+}
+function closeDlg() {
+  $('#confirm-dlg').classList.remove('on');
+}
+
+/* ==========================================================================
+   PWA SERVICE WORKER & INSTALLATION PROMPT
+   ========================================================================== */
+let deferredPrompt = null;
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').then(reg => {
+      console.log('ServiceWorker registered:', reg.scope);
+    }).catch(err => {
+      console.error('ServiceWorker error:', err);
+    });
+  });
+}
+
+// Check if running in standalone mode (already installed as PWA)
+const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  if (!isStandalone && !localStorage.getItem('vidoi_pwa_dismissed')) {
+    $('#pwa-banner').style.display = 'block';
+  }
+});
+
+// For iOS Safari detection
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+if (isIOS && !isStandalone && !localStorage.getItem('vidoi_pwa_dismissed')) {
+  $('#pwa-text').textContent = 'Chạm Chia sẻ ➔ "Thêm vào MH chính" để dùng như App gốc';
+  $('#pwa-install-btn').style.display = 'none';
+  $('#pwa-banner').style.display = 'block';
+}
+
+function installPWA() {
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then(choice => {
+      if (choice.outcome === 'accepted') {
+        $('#pwa-banner').style.display = 'none';
+      }
+      deferredPrompt = null;
+    });
+  }
+}
+
+function dismissPwa() {
+  $('#pwa-banner').style.display = 'none';
+  localStorage.setItem('vidoi_pwa_dismissed', '1');
+}
+
+/* ==========================================================================
+   INITIALIZATION
+   ========================================================================== */
+// Dark mode preference
+if (localStorage.getItem('vidoi_dark_mode') === '1' || (!localStorage.getItem('vidoi_dark_mode') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  document.body.classList.add('dark');
+  $('#sw-dark').classList.add('on');
+}
+
+// Segmented controls binding
+function setupSegmentedControls() {
+  // Home scope
+  $$('#home-scope div').forEach((d, i) => {
+    d.onclick = () => {
+      $$('#home-scope div').forEach(x => x.classList.remove('on'));
+      d.classList.add('on');
+      STATE.homeScope = i;
+      renderHome();
+    };
+  });
+
+  // Budget vs Report
+  $$('#bud-rep-seg div').forEach((d, i) => {
+    d.onclick = () => {
+      $$('#bud-rep-seg div').forEach(x => x.classList.remove('on'));
+      d.classList.add('on');
+      renderBudgetAndReports();
+    };
+  });
+
+  // Budget Scope (Shared vs Private)
+  $$('#bud-scope-seg div').forEach((d, i) => {
+    d.onclick = () => {
+      $$('#bud-scope-seg div').forEach(x => x.classList.remove('on'));
+      d.classList.add('on');
+      budScope = i;
+      renderBudgetAndReports();
+    };
+  });
+
+  // Report sub-panes (0: Donut, 1: Trend, 2: Cmp)
+  $$('#rep-subseg div').forEach((d, i) => {
+    d.onclick = () => {
+      $$('#rep-subseg div').forEach(x => x.classList.remove('on'));
+      d.classList.add('on');
+      [0, 1, 2].forEach(p => $('#rep-pane-' + p).style.display = p === i ? 'block' : 'none');
+      renderReportPanes();
+    };
+  });
+
+  // Privacy levels (Family tab)
+  $$('#privacy-seg div').forEach((d, i) => {
+    d.onclick = () => {
+      DB.privacy = i;
+      saveData();
+      renderFamilyAndBalance();
+      renderHome();
+      toast('Mức riêng tư: ' + d.textContent.trim());
+    };
+  });
+
+  // Add sheet Kind (Chi vs Thu)
+  $$('#add-kind-seg div').forEach((d, i) => {
+    d.onclick = () => {
+      $$('#add-kind-seg div').forEach(x => x.classList.remove('on'));
+      d.classList.add('on');
+      STATE.addKind = i === 0 ? 'e' : 'i';
+      $('#add-amt-display').style.color = i === 1 ? 'var(--inc)' : 'var(--txt)';
+      renderAddCats();
+    };
+  });
+}
+
+setupSegmentedControls();
+renderApp();
+
+// Handle URL query parameters (e.g. ?action=add)
+const params = new URLSearchParams(window.location.search);
+if (params.get('action') === 'add') {
+  openAddSheet();
+} else if (params.get('tab')) {
+  const t = params.get('tab');
+  if (['tx', 'bud', 'fam'].includes(t)) goTab('tab-' + t);
+}
+</script>
+</body>
+</html>

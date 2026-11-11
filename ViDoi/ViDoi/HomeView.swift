@@ -3,15 +3,19 @@ import SwiftUI
 struct HomeView: View {
     @Environment(AppStore.self) private var store
     @State private var scope: Scope = .all
+    @State private var selectedMonth: Date = Date()
     @State private var undoTx: Txn?
 
-    private var spent: Int { store.spent(scope) }
+    private var spent: Int { store.spent(scope, in: selectedMonth) }
+    private var monthIncome: Int { store.income(in: selectedMonth) }
     private var progress: Double { Double(spent) / Double(max(1, store.monthlyBudget)) }
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 14) {
+                    MonthSwitcher(month: $selectedMonth)
+
                     Picker("Phạm vi", selection: $scope) {
                         Text("Chúng ta").tag(Scope.all)
                         Text(store.me.name).tag(Scope.me)
@@ -23,8 +27,8 @@ struct HomeView: View {
                     quickAdd
                     insights
                     HStack(spacing: 12) {
-                        VStack(alignment: .leading) { Text("Thu nhập").font(.caption).foregroundStyle(.secondary); Text("+" + Fmt.vnd(store.monthIncome)).bold().foregroundStyle(Color.income) }.card()
-                        VStack(alignment: .leading) { Text("Còn lại").font(.caption).foregroundStyle(.secondary); Text(Fmt.vnd(store.monthIncome - store.spent(.all))).bold() }.card()
+                        VStack(alignment: .leading) { Text("Thu nhập").font(.caption).foregroundStyle(.secondary); Text("+" + Fmt.vnd(monthIncome)).bold().foregroundStyle(Color.income) }.card()
+                        VStack(alignment: .leading) { Text("Còn lại").font(.caption).foregroundStyle(.secondary); Text(Fmt.vnd(monthIncome - store.spent(.all, in: selectedMonth))).bold() }.card()
                     }
                     wallets
                     goals
@@ -36,6 +40,24 @@ struct HomeView: View {
             .background(Color(.systemGroupedBackground))
             .navigationTitle("\(store.me.name) & \(store.partner.name)")
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button {
+                        withAnimation(.snappy) { store.switchActivePerson() }
+                    } label: {
+                        HStack(spacing: 6) {
+                            AvatarView(person: store.me, size: 22)
+                            Text(store.me.name).font(.caption.bold())
+                            Image(systemName: "arrow.left.arrow.right")
+                                .font(.system(size: 10, weight: .bold))
+                                .foregroundStyle(.secondary)
+                        }
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color(.secondarySystemGroupedBackground), in: Capsule())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Đổi góc nhìn vợ chồng")
+                }
                 ToolbarItemGroup(placement: .topBarTrailing) {
                     NavigationLink { NotificationsView() } label: {
                         ZStack(alignment: .topTrailing) {
@@ -50,7 +72,7 @@ struct HomeView: View {
                             }
                         }
                     }
-                    NavigationLink { ReportView() } label: { Image(systemName: "chart.bar.xaxis") }
+                    NavigationLink { ReportView(initialMonth: selectedMonth) } label: { Image(systemName: "chart.bar.xaxis") }
                 }
             }
             .overlay(alignment: .bottom) { undoBar }
@@ -119,11 +141,11 @@ struct HomeView: View {
     }
 
     private var insights: some View {
-        let over = store.categorySpend(.all).filter { c in
+        let over = store.categorySpend(.all, in: selectedMonth).filter { c in
             if let b = store.budgets.first(where: { $0.category == c.name }) { return c.amount > b.limit }
             return false
         }
-        let b = store.balance()
+        let b = store.balance(in: selectedMonth)
         return ScrollView(.horizontal, showsIndicators: false) {
             HStack {
                 ForEach(over, id: \.name) { c in
@@ -183,10 +205,10 @@ struct HomeView: View {
 
     private var recent: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("Gần đây").font(.headline)
-            let items = Array(store.visibleTransactions.prefix(5))
+            Text("Gần đây · \(Fmt.monthTitle(selectedMonth))").font(.headline)
+            let items = Array(store.visibleTransactions.filter { store.inMonth($0.date, of: selectedMonth) }.prefix(5))
             if items.isEmpty {
-                Text("Chưa có giao dịch. Bấm ＋ để ghi khoản đầu tiên.").foregroundStyle(.secondary).padding(.vertical, 12)
+                Text("Chưa có giao dịch trong tháng này. Bấm ＋ để ghi khoản đầu tiên.").foregroundStyle(.secondary).padding(.vertical, 12)
             }
             ForEach(items) { t in
                 NavigationLink { TransactionDetailView(id: t.id) } label: { TransactionRow(tx: t) }

@@ -313,6 +313,27 @@ final class AppStore {
         if let i = people.firstIndex(where: { $0.id != meID }) { people[i].name = name }
         save()
     }
+    func updateCoupleProfile(myName: String, myColorHex: String, partnerName: String, partnerColorHex: String) {
+        let cleanMe = myName.trimmingCharacters(in: .whitespacesAndNewlines)
+        let cleanPartner = partnerName.trimmingCharacters(in: .whitespacesAndNewlines)
+        if let i = people.firstIndex(where: { $0.id == meID }) {
+            if !cleanMe.isEmpty { people[i].name = cleanMe }
+            people[i].colorHex = myColorHex
+        }
+        if let j = people.firstIndex(where: { $0.id != meID }) {
+            if !cleanPartner.isEmpty { people[j].name = cleanPartner }
+            people[j].colorHex = partnerColorHex
+        }
+        save()
+    }
+    /// Đổi góc nhìn giữa 2 vợ chồng ngay trên máy để kiểm thử phân quyền & đối soát.
+    func switchActivePerson() {
+        let other = partner.id
+        guard other != meID else { return }
+        meID = other
+        ratioMe = 100 - ratioMe
+        save(pushToCloud: false)
+    }
 
     // MARK: - Privacy
     private func isPartnerPrivate(_ t: Txn) -> Bool { !t.isShared && t.userID != meID }
@@ -405,11 +426,13 @@ final class AppStore {
         let fairMe = total * ratioMe / 100
         return Balance(paidMe: pm, paidPartner: pp, total: total, owe: pm - fairMe)
     }
-    var isSettled: Bool { settledMonths.contains(monthKey) }
-    func settleMonth() {
-        if !isSettled {
-            settledMonths.append(monthKey)
-            pushNotification(emoji: "✅", title: "\(me.name) đã xác nhận tất toán \(Fmt.monthTitle(Date()).lowercased())", subtitle: "Cân đối chi tiêu chung")
+    func isSettled(in month: Date) -> Bool { settledMonths.contains(monthKey(for: month)) }
+    var isSettled: Bool { isSettled(in: Date()) }
+    func settleMonth(in month: Date = Date()) {
+        let mk = monthKey(for: month)
+        if !settledMonths.contains(mk) {
+            settledMonths.append(mk)
+            pushNotification(emoji: "✅", title: "\(me.name) đã xác nhận tất toán \(Fmt.monthTitle(month).lowercased())", subtitle: "Cân đối chi tiêu chung")
             save()
         }
     }
@@ -752,6 +775,25 @@ final class AppStore {
         ratioMe = 50; pendingRatio = nil; privacy = .totalsOnly
         onboarded = false; settledMonths = []; familyCode = fresh.familyCode
         notifications = []
+    }
+
+    /// Xóa toàn bộ giao dịch mẫu để bắt đầu ghi chép thực tế từ 0 ₫, nhưng giữ nguyên tên 2 vợ chồng, danh mục và hạn mức ngân sách.
+    func startFreshRealUsage() {
+        let allRemovedIDs = transactions.map(\.id)
+        for id in allRemovedIDs where !deletedTxIDs.contains(id) {
+            deletedTxIDs.append(id)
+        }
+        transactions = []
+        settledMonths = []
+        notifications = []
+        goals = []
+        recurringRules = []
+        wallets = [
+            Wallet(name: "Ví chung", emoji: "🏦", balance: 0, ownerID: nil),
+            Wallet(name: "Tiền mặt (\(me.name))", emoji: "💵", balance: 0, ownerID: meID),
+            Wallet(name: "Ví riêng (\(partner.name))", emoji: "📱", balance: 0, ownerID: partner.id)
+        ]
+        save()
     }
 
     // MARK: - Demo data

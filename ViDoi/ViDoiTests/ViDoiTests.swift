@@ -7,6 +7,9 @@ final class ViDoiTests: XCTestCase {
         XCTAssertEqual(AddTransactionView.evaluate("50000"), 50_000)
         XCTAssertEqual(AddTransactionView.evaluate("50000+25000"), 75_000)
         XCTAssertEqual(AddTransactionView.evaluate("100000-35000+10000"), 75_000)
+        XCTAssertEqual(AddTransactionView.evaluate("45000*3"), 135_000)
+        XCTAssertEqual(AddTransactionView.evaluate("150000/3"), 50_000)
+        XCTAssertEqual(AddTransactionView.evaluate("20000+30000*2"), 80_000)
     }
 
     func testBalanceCalculationWith60_40Ratio() {
@@ -76,5 +79,19 @@ final class ViDoiTests: XCTestCase {
         store.approvePendingRatio()
         XCTAssertEqual(store.ratioMe, 65)
         XCTAssertNil(store.pendingRatio)
+    }
+
+    func testStartFreshRealUsagePreservesProfileAndClearsDemoTransactions() {
+        let store = AppStore(sync: LocalOnlySync())
+        store.resetAll()
+        store.updateCoupleProfile(myName: "Quốc Bảo", myColorHex: "4C8DFF", partnerName: "Bà xã", partnerColorHex: "FF7EB6")
+        store.loadDemo()
+        XCTAssertFalse(store.transactions.isEmpty)
+
+        store.startFreshRealUsage()
+        XCTAssertTrue(store.transactions.isEmpty)
+        XCTAssertEqual(store.me.name, "Quốc Bảo")
+        XCTAssertEqual(store.partner.name, "Bà xã")
+        XCTAssertTrue(store.wallets.allSatisfy { $0.balance == 0 })
     }
 }
