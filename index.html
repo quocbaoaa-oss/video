@@ -872,6 +872,76 @@
       box-shadow: 0 3px 8px rgba(0,0,0,0.12);
     }
 
+    /* Home Executive Overview — KPI Grid, Assets Portfolio & 1-Day Event Alert */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .kpi-box {
+      background: var(--card);
+      border: 1.5px solid var(--card-border);
+      border-radius: 20px;
+      padding: 13px 14px;
+      box-shadow: var(--sh);
+      position: relative;
+      overflow: hidden;
+    }
+    .kpi-box.inc-box {
+      border-left: 4px solid var(--inc);
+    }
+    .kpi-box.exp-box {
+      border-left: 4px solid var(--exp);
+    }
+    .asset-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 9px;
+      margin-bottom: 10px;
+    }
+    .asset-tile {
+      background: var(--card);
+      border: 1.5px solid var(--card-border);
+      border-radius: 18px;
+      padding: 12px;
+      box-shadow: var(--sh);
+      cursor: pointer;
+      transition: transform 0.14s ease;
+    }
+    .asset-tile:active { transform: scale(0.97); }
+    .event-alert-card {
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.16), rgba(236, 72, 153, 0.14));
+      border: 1.5px solid rgba(245, 158, 11, 0.55);
+      border-radius: 20px;
+      padding: 12px 14px;
+      margin-bottom: 12px;
+      box-shadow: 0 8px 22px rgba(245, 158, 11, 0.14);
+      animation: pulseEventBorder 2.4s infinite;
+    }
+    @keyframes pulseEventBorder {
+      50% { border-color: var(--coral); }
+    }
+    .event-pill-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 10.5px;
+      font-weight: 800;
+      padding: 3px 8px;
+      border-radius: 10px;
+      background: #F59E0B;
+      color: #fff;
+    }
+    .event-pill-badge.today { background: #EF4444; }
+    .event-pill-badge.future { background: var(--shared); }
+    .cat-sum-row {
+      padding: 9px 0;
+      border-bottom: 1px solid var(--sep);
+      cursor: pointer;
+    }
+    .cat-sum-row:last-child { border-bottom: 0; }
+
     /* PWA Install Banner */
     #pwa-banner {
       display: none;
@@ -1404,24 +1474,81 @@
       <div id="scope-her">Vợ</div>
     </div>
 
-    <!-- Hero Card with SVG Budget Ring -->
-    <div class="card hero">
-      <svg width="100" height="100" viewBox="0 0 100 100" style="flex:none">
-        <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="9"/>
+    <!-- 1. URGENT 1-DAY BEFORE / TODAY FAMILY EVENT BANNER (Auto-appears 1 day prior) -->
+    <div id="home-urgent-events"></div>
+
+    <!-- 2. EXECUTIVE CASHFLOW OVERVIEW: TỔNG THU NHẬP · TỔNG CHI · CÒN LẠI -->
+    <div class="card hero" style="margin-bottom:10px;padding:16px 18px">
+      <svg width="92" height="92" viewBox="0 0 100 100" style="flex:none">
+        <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="9"/>
         <circle id="budget-ring" cx="50" cy="50" r="42" fill="none" stroke="#FFFFFF" stroke-width="9" stroke-linecap="round" stroke-dasharray="0 264" transform="rotate(-90 50 50)" style="transition:stroke-dasharray 0.6s ease"/>
-        <text id="budget-pct" x="50" y="56" text-anchor="middle" fill="#FFFFFF" font-size="18" font-weight="700">0%</text>
+        <text id="budget-pct" x="50" y="56" text-anchor="middle" fill="#FFFFFF" font-size="18" font-weight="800">0%</text>
       </svg>
       <div class="grow">
-        <div style="opacity:0.9;font-size:12px" id="hero-subtext">Đã chi tháng này</div>
-        <div style="font-size:26px;font-weight:700;margin:2px 0" id="hero-spent">0 ₫</div>
-        <div style="font-size:12px;opacity:0.9" id="hero-left">Còn 20.000.000 ₫</div>
-        <div style="font-size:11px;opacity:0.9;margin-top:4px" id="hero-fore">Dự kiến cuối tháng: 18,5tr ✅</div>
+        <div style="opacity:0.9;font-size:11.5px;font-weight:600" id="hero-subtext">Cân đối Thu - Chi tháng này</div>
+        <div style="font-size:25px;font-weight:800;margin:2px 0;letter-spacing:-0.6px" id="home-net">0 ₫</div>
+        <div style="font-size:11.5px;opacity:0.92" id="hero-left">Hạn mức chi: Còn 20.000.000 ₫</div>
+        <div style="font-size:11px;opacity:0.88;margin-top:3px" id="hero-fore">Dự kiến cuối tháng: 0 ₫ ✅</div>
       </div>
+    </div>
+
+    <!-- Big Dual KPI Cards: TỔNG THU NHẬP & TỔNG CHI TIÊU -->
+    <div class="kpi-grid">
+      <div class="kpi-box inc-box clickable" onclick="openAddSheetWithKind('i')">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span class="sub" style="font-weight:700">💰 TỔNG THU NHẬP</span>
+          <span style="font-size:11px;color:var(--inc);font-weight:700" id="home-inc-cnt">0 khoản</span>
+        </div>
+        <div class="amt pos" style="font-size:19px;font-weight:800;margin-top:5px" id="home-inc">+0 ₫</div>
+        <div class="sub" style="font-size:10.5px;margin-top:3px">Chạm để + ghi thu nhập</div>
+      </div>
+      <div class="kpi-box exp-box clickable" onclick="openAddSheetWithKind('e')">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span class="sub" style="font-weight:700">💸 TỔNG ĐÃ CHI</span>
+          <span style="font-size:11px;color:var(--exp);font-weight:700" id="home-exp-cnt">0 khoản</span>
+        </div>
+        <div class="amt neg" style="font-size:19px;font-weight:800;margin-top:5px" id="hero-spent">-0 ₫</div>
+        <div class="sub" style="font-size:10.5px;margin-top:3px">Chạm để + ghi chi tiêu</div>
+      </div>
+    </div>
+
+    <!-- 3. SỐ DƯ TÀI KHOẢN, VÍ, CHO VAY, TIẾT KIỆM & ĐẦU TƯ -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin:12px 2px 6px">
+      <b>🏦 Tài khoản, Ví, Cho vay & Đầu tư</b>
+      <span class="link" style="font-size:12.5px" onclick="promptAddWallet()">＋ Thêm ví</span>
+    </div>
+    <div class="asset-grid" id="home-asset-grid"></div>
+    <div class="hs" id="home-wallets" style="margin-bottom:12px"></div>
+
+    <!-- 4. TỔNG HỢP CÁC HẠNG MỤC THU & CHI -->
+    <div class="card" style="padding:14px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <b>📊 Tổng hợp các hạng mục Thu & Chi</b>
+        <span class="link" style="font-size:12px" onclick="openCatManager()">⚙️ Tùy chỉnh mục</span>
+      </div>
+      <div class="seg" id="home-cat-seg" style="margin:4px 0 10px">
+        <div class="on" onclick="setHomeCatTab('e')">💸 Khoản Chi</div>
+        <div onclick="setHomeCatTab('i')">💰 Khoản Thu</div>
+        <div onclick="setHomeCatTab('all')">📋 Tất cả mục</div>
+      </div>
+      <div id="home-cat-breakdown"></div>
+    </div>
+
+    <!-- 5. SỰ KIỆN & CÔNG VIỆC SẮP TỚI CỦA GIA ĐÌNH (Hiển thị trước 1 ngày ở Tổng quan) -->
+    <div class="card" style="padding:14px;border:1.5px solid var(--card-border)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <div>
+          <b>📅 Sự kiện & Công việc Gia đình</b>
+          <div class="sub" style="font-size:11px">Tự động ghim lên Tổng quan trước 1 ngày diễn ra</div>
+        </div>
+        <button class="btn sm" style="padding:6px 11px;font-size:12px" onclick="openEventModal()">＋ Thêm lịch</button>
+      </div>
+      <div id="home-events-list"></div>
     </div>
 
     <!-- Quick Entry Chips -->
     <div style="display:flex;justify-content:space-between;align-items:center;margin:8px 2px 6px">
-      <b>⚡ Ghi nhanh</b>
+      <b>⚡ Ghi nhanh 1 chạm</b>
       <span class="sub">Chạm để ghi ngay</span>
     </div>
     <div class="hs" id="quick-chips"></div>
@@ -1429,35 +1556,16 @@
     <!-- Insights Alert -->
     <div class="hs" id="home-insights"></div>
 
-    <!-- Income & Net Balance Cards -->
-    <div style="display:flex;gap:10px;margin-bottom:12px">
-      <div class="card grow" style="margin-bottom:0">
-        <div class="sub">Thu nhập</div>
-        <div class="amt pos" style="font-size:16px;margin-top:4px" id="home-inc">+0 ₫</div>
-      </div>
-      <div class="card grow" style="margin-bottom:0">
-        <div class="sub">Còn lại</div>
-        <div class="amt" style="font-size:16px;margin-top:4px" id="home-net">0 ₫</div>
-      </div>
-    </div>
-
-    <!-- Wallets Preview -->
-    <div style="display:flex;justify-content:space-between;align-items:center;margin:10px 2px 6px">
-      <b>Ví & Tài khoản</b>
-      <span class="link" onclick="goTab('tab-fam')">Xem tất cả</span>
-    </div>
-    <div class="hs" id="home-wallets"></div>
-
     <!-- Goals Preview -->
     <div style="display:flex;justify-content:space-between;align-items:center;margin:10px 2px 6px">
-      <b>Mục tiêu chung</b>
+      <b>🎯 Mục tiêu chung</b>
       <span class="link" onclick="goTab('tab-fam')">Tất cả</span>
     </div>
     <div class="card clickable" onclick="goTab('tab-fam')" id="home-goals"></div>
 
     <!-- Recent Transactions -->
     <div style="display:flex;justify-content:space-between;align-items:center;margin:12px 2px 6px">
-      <b>Giao dịch gần đây</b>
+      <b>🧾 Giao dịch gần đây</b>
       <span class="link" onclick="goTab('tab-tx')">Tất cả</span>
     </div>
     <div class="card" id="home-recent" style="padding:0 14px"></div>
@@ -1964,6 +2072,66 @@
     </div>
   </div>
 
+  <!-- Family Events & Upcoming Tasks Modal (Auto-highlights 1 day before on Home Overview) -->
+  <div class="dlg" id="event-modal">
+    <div style="width:368px;max-width:94vw;max-height:88vh;display:flex;flex-direction:column;text-align:left;padding:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div>
+          <h2 style="padding:0;font-size:17px">📅 Sự kiện & Công việc Gia đình</h2>
+          <div class="sub" style="font-size:11px">Tự động hiển thị nhắc nhở ở Tổng quan trước 1 ngày diễn ra</div>
+        </div>
+        <span class="ic clickable" style="width:30px;height:30px;font-size:14px" onclick="closeEventModal()">✕</span>
+      </div>
+
+      <!-- Add / Edit Event Box -->
+      <div style="background:var(--fill);border-radius:18px;padding:10px 12px;margin-bottom:10px;border:1.5px solid var(--card-border)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <b style="font-size:13px;color:var(--coral)" id="ev-form-title">＋ Thêm sự kiện / công việc sắp tới</b>
+          <span class="sub link" id="ev-form-cancel" style="display:none;font-size:12px" onclick="resetEventForm()">Hủy sửa</span>
+        </div>
+
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
+          <input class="input" id="ev-icon-input" readonly onclick="activateTextInput(this)" onblur="this.readOnly=true" value="📅" maxlength="4" style="width:50px;margin:0;text-align:center;font-size:20px;padding:8px 4px">
+          <input class="input" id="ev-title-input" enterkeyhint="done" readonly onclick="activateTextInput(this)" onblur="this.readOnly=true" onkeydown="if(event.key==='Enter')this.blur()" placeholder="Chạm nhập tên sự kiện / công việc…" style="margin:0;flex:1;font-weight:700">
+        </div>
+
+        <!-- Quick Emoji Row for Event -->
+        <div class="hs" style="margin-bottom:6px;gap:6px" id="ev-emoji-row"></div>
+
+        <!-- Date & Quick Date Presets -->
+        <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px">
+          <input type="date" class="input" id="ev-date-input" style="margin:0;flex:1;padding:8px 10px;font-size:13px;font-weight:700">
+          <input class="input" id="ev-amt-input" inputmode="numeric" enterkeyhint="done" readonly onclick="activateTextInput(this)" onblur="this.readOnly=true" onkeydown="if(event.key==='Enter')this.blur()" placeholder="Chi phí dự kiến (₫)" style="margin:0;width:44%;padding:8px 10px;font-size:13px">
+        </div>
+
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
+          <span class="chip" style="padding:4px 9px;font-size:11px" onclick="setQuickEventDate(1)">⏰ Ngày mai (Trước 1 ngày)</span>
+          <span class="chip" style="padding:4px 9px;font-size:11px" onclick="setQuickEventDate(0)">🔥 Hôm nay</span>
+          <span class="chip" style="padding:4px 9px;font-size:11px" onclick="setQuickEventDate(3)">+3 ngày</span>
+          <span class="chip" style="padding:4px 9px;font-size:11px" onclick="setQuickEventDate(7)">+1 tuần</span>
+        </div>
+
+        <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px">
+          <select class="input" id="ev-who-input" style="margin:0;flex:1;padding:7px 8px;font-size:12.5px;font-weight:600">
+            <option value="both">💑 Cả hai vợ chồng</option>
+            <option value="him">👨 Chồng (Bảo)</option>
+            <option value="her">👩 Vợ (Oanh)</option>
+          </select>
+          <select class="input" id="ev-repeat-input" style="margin:0;flex:1;padding:7px 8px;font-size:12.5px;font-weight:600">
+            <option value="none">Một lần</option>
+            <option value="monthly">🔁 Hàng tháng</option>
+            <option value="yearly">🎂 Hàng năm</option>
+          </select>
+        </div>
+
+        <button class="btn sm" style="width:100%" id="ev-save-btn" onclick="saveFamilyEvent()">💾 Lưu lịch sự kiện</button>
+      </div>
+
+      <div class="sub" style="margin-bottom:4px">Danh sách toàn bộ Sự kiện & Công việc:</div>
+      <div id="ev-modal-list" style="flex:1;overflow-y:auto;max-height:210px;border-top:1px solid var(--sep)"></div>
+    </div>
+  </div>
+
   <!-- Photo Fullscreen Zoom Modal -->
   <div class="scrim" id="photo-zoom-modal" style="display:grid;place-items:center;z-index:120" onclick="this.classList.remove('on')">
     <img id="photo-zoom-img" style="max-width:92%;max-height:85%;border-radius:14px;box-shadow:0 15px 40px rgba(0,0,0,0.6)">
@@ -2084,6 +2252,7 @@ function getInitialData() {
       'Đầu tư': 2000000
     },
     goals: [],
+    events: [],
     transactions: [],
     ratio: 60, // 60% Bảo, 40% Oanh
     settled: true,
@@ -2128,6 +2297,7 @@ function ensureDBFields(obj) {
   }
   if (!obj.budgets) obj.budgets = def.budgets;
   if (!obj.privateBudgets) obj.privateBudgets = def.privateBudgets;
+  if (!Array.isArray(obj.events)) obj.events = [];
   return obj;
 }
 
@@ -2254,14 +2424,19 @@ function getFilteredTransactions() {
 
 function calculateTotals(scope = 0) {
   const txs = getFilteredTransactions();
-  let spend = 0, income = 0;
+  let spend = 0, income = 0, expCount = 0, incCount = 0;
   txs.forEach(t => {
     const matchScope = scope === 0 || (scope === 1 && t.who === 'him') || (scope === 2 && t.who === 'her');
     if (!matchScope) return;
-    if (t.kind === 'e') spend += t.amount;
-    else if (t.kind === 'i') income += t.amount;
+    if (t.kind === 'e') {
+      spend += t.amount;
+      expCount++;
+    } else if (t.kind === 'i') {
+      income += t.amount;
+      incCount++;
+    }
   });
-  return { spend, income, net: income - spend };
+  return { spend, income, net: income - spend, expCount, incCount };
 }
 
 function calculateBalance() {
@@ -2276,8 +2451,12 @@ function calculateBalance() {
 }
 
 /* ==========================================================================
-   RENDER METHODS
+   RENDER METHODS & EXECUTIVE OVERVIEW (TỔNG QUAN MỚI)
    ========================================================================== */
+let homeCatTab = 'e'; // 'e' | 'i' | 'all'
+let showAllHomeCats = false;
+let showAllFutureEventsOnHome = false;
+
 function renderApp() {
   renderHome();
   renderTransactions();
@@ -2294,6 +2473,195 @@ function applyDeviceTheme(role) {
   if (metaTheme) {
     metaTheme.setAttribute('content', r === 'her' ? '#EC4899' : '#1D4ED8');
   }
+}
+
+function openAddSheetWithKind(kind, catName = null) {
+  openAddSheet(null);
+  STATE.addKind = kind === 'i' ? 'i' : 'e';
+  $$('#add-kind-seg div').forEach((d, idx) => d.classList.toggle('on', (STATE.addKind === 'e' ? 0 : 1) === idx));
+  $('#add-amt-display').style.color = STATE.addKind === 'i' ? 'var(--inc)' : 'var(--txt)';
+  const cats = getActiveCategories(STATE.addKind);
+  if (catName) {
+    const foundIdx = cats.findIndex(c => c[1] === catName);
+    STATE.addCatIdx = foundIdx >= 0 ? foundIdx : 0;
+  } else {
+    STATE.addCatIdx = 0;
+  }
+  renderAddCats();
+}
+
+function setHomeCatTab(mode) {
+  homeCatTab = mode;
+  $$('#home-cat-seg div').forEach((d, idx) => {
+    const m = idx === 0 ? 'e' : idx === 1 ? 'i' : 'all';
+    d.classList.toggle('on', m === mode);
+  });
+  renderHomeCategoryBreakdown(STATE.homeScope);
+}
+
+function renderHomeCategoryBreakdown(scope = 0) {
+  const box = $('#home-cat-breakdown');
+  if (!box) return;
+  const txs = getFilteredTransactions().filter(t => {
+    return scope === 0 || (scope === 1 && t.who === 'him') || (scope === 2 && t.who === 'her');
+  });
+
+  // Aggregate by (kind + category)
+  const map = new Map();
+  if (homeCatTab === 'e' || homeCatTab === 'all') {
+    getActiveCategories('e').forEach(c => {
+      map.set('e:' + c[1], { kind: 'e', icon: c[0], name: c[1], total: 0, count: 0 });
+    });
+  }
+  if (homeCatTab === 'i' || homeCatTab === 'all') {
+    getActiveCategories('i').forEach(c => {
+      map.set('i:' + c[1], { kind: 'i', icon: c[0], name: c[1], total: 0, count: 0 });
+    });
+  }
+
+  txs.forEach(t => {
+    if (homeCatTab !== 'all' && t.kind !== homeCatTab) return;
+    const key = t.kind + ':' + t.category;
+    if (!map.has(key)) {
+      map.set(key, { kind: t.kind, icon: t.icon || getCatIcon(t.category), name: t.category, total: 0, count: 0 });
+    }
+    const entry = map.get(key);
+    entry.total += t.amount;
+    entry.count += 1;
+  });
+
+  const allItems = Array.from(map.values()).sort((a, b) => b.total - a.total);
+  const nonZero = allItems.filter(x => x.total > 0);
+  const displayList = showAllHomeCats
+    ? allItems
+    : (nonZero.length > 0 ? nonZero : allItems.slice(0, 6));
+
+  const grandTotal = allItems.reduce((s, x) => s + x.total, 0) || 1;
+
+  box.innerHTML = displayList.map((item, idx) => {
+    const pct = item.total > 0 ? Math.round((item.total / grandTotal) * 100) : 0;
+    const barCol = item.kind === 'i' ? 'var(--inc)' : COLORS[idx % COLORS.length];
+    return `
+      <div class="cat-sum-row" onclick="${item.count > 0 ? `filterByCat('${item.name}')` : `openAddSheetWithKind('${item.kind}', '${item.name}')`}">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="ic" style="width:34px;height:34px;font-size:18px;border-radius:11px">${item.icon}</span>
+            <div>
+              <b style="font-size:13.5px">${item.name}</b>
+              <div class="sub" style="font-size:11px">
+                ${item.kind === 'i' ? '💰 Khoản thu' : '💸 Khoản chi'} · ${item.count > 0 ? `${item.count} giao dịch` : 'Chạm để + ghi ngay'}
+              </div>
+            </div>
+          </div>
+          <div style="text-align:right">
+            <div class="amt ${item.kind === 'i' ? 'pos' : (item.total > 0 ? 'neg' : '')}" style="font-size:14px">
+              ${item.total > 0 ? (item.kind === 'i' ? '+' : '-') : ''}${formatVND(item.total)} ₫
+            </div>
+            <div class="sub" style="font-size:10.5px">${pct}%</div>
+          </div>
+        </div>
+        <div class="bar" style="height:6px;margin-top:6px">
+          <i style="width:${item.total > 0 ? Math.max(4, pct) : 0}%;background:${barCol}"></i>
+        </div>
+      </div>
+    `;
+  }).join('') + (allItems.length > displayList.length || showAllHomeCats ? `
+    <div class="center" style="margin-top:8px">
+      <span class="link" style="font-size:12px" onclick="showAllHomeCats=!showAllHomeCats;renderHomeCategoryBreakdown(STATE.homeScope)">
+        ${showAllHomeCats ? '⌃ Thu gọn danh sách' : `⌄ Xem đầy đủ tất cả ${allItems.length} hạng mục`}
+      </span>
+    </div>
+  ` : '');
+}
+
+function renderHomeAssetsAndWallets(scope = 0) {
+  const txs = getFilteredTransactions();
+  // Calculate net totals for Cho vay, Gửi tiết kiệm, Đầu tư
+  let loanOut = 0, loanBack = 0;
+  let saveIn = 0, saveWithdraw = 0;
+  let investOut = 0, investProfit = 0;
+
+  txs.forEach(t => {
+    const cat = (t.category || '').toLowerCase();
+    if (t.kind === 'e' && cat.includes('cho vay')) loanOut += t.amount;
+    if (t.kind === 'i' && cat.includes('thu nợ')) loanBack += t.amount;
+    if (t.kind === 'e' && cat.includes('tiết kiệm')) saveIn += t.amount;
+    if (t.kind === 'i' && cat.includes('rút tiết kiệm')) saveWithdraw += t.amount;
+    if (t.kind === 'e' && cat.includes('đầu tư')) investOut += t.amount;
+    if (t.kind === 'i' && cat.includes('lãi đầu tư')) investProfit += t.amount;
+  });
+
+  const walletsTotal = DB.wallets.reduce((s, w) => s + (w.balance || 0), 0);
+  const netLoan = Math.max(0, loanOut - loanBack);
+  const goalsSaved = (DB.goals || []).reduce((s, g) => s + (g.current || 0), 0);
+  const netSaving = Math.max(0, saveIn - saveWithdraw) + goalsSaved;
+  const netInvest = investOut;
+
+  const grid = $('#home-asset-grid');
+  if (grid) {
+    grid.innerHTML = `
+      <div class="asset-tile" onclick="goTab('tab-fam')">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:20px">💳</span>
+          <span class="sub" style="font-size:10.5px">${DB.wallets.length} tài khoản</span>
+        </div>
+        <div class="sub" style="margin-top:4px;font-weight:600">Tổng Số dư các Ví</div>
+        <div style="font-size:16px;font-weight:800;margin-top:2px;color:var(--coral)">${formatVND(walletsTotal)} ₫</div>
+      </div>
+
+      <div class="asset-tile" onclick="openAddSheetWithKind('e', 'Cho vay')">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:20px">🤝</span>
+          <span class="sub" style="font-size:10.5px">Thu hồi: ${formatShort(loanBack)}</span>
+        </div>
+        <div class="sub" style="margin-top:4px;font-weight:600">Đang Cho vay</div>
+        <div style="font-size:16px;font-weight:800;margin-top:2px;color:#F59E0B">${formatVND(netLoan)} ₫</div>
+      </div>
+
+      <div class="asset-tile" onclick="openAddSheetWithKind('e', 'Gửi tiết kiệm')">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:20px">🏦</span>
+          <span class="sub" style="font-size:10.5px">Tích lũy chung</span>
+        </div>
+        <div class="sub" style="margin-top:4px;font-weight:600">Gửi Tiết kiệm</div>
+        <div style="font-size:16px;font-weight:800;margin-top:2px;color:#10B981">${formatVND(netSaving)} ₫</div>
+      </div>
+
+      <div class="asset-tile" onclick="openAddSheetWithKind('e', 'Đầu tư')">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:20px">📈</span>
+          <span class="sub" style="font-size:10.5px;color:var(--inc)">Lãi: +${formatShort(investProfit)}</span>
+        </div>
+        <div class="sub" style="margin-top:4px;font-weight:600">Danh mục Đầu tư</div>
+        <div style="font-size:16px;font-weight:800;margin-top:2px;color:#8B5CF6">${formatVND(netInvest)} ₫</div>
+      </div>
+    `;
+  }
+
+  // Wallets horizontal cards (Tap to edit balance or view in Family tab)
+  $('#home-wallets').innerHTML = DB.wallets.map(w => `
+    <div class="wcard" style="background:linear-gradient(135deg, ${w.color.split(',')[0]}, ${w.color.split(',')[1]})" onclick="promptEditWalletBalance('${w.id}')">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:22px">${w.icon}</span>
+        <span style="font-size:10px;background:rgba(255,255,255,0.22);padding:2px 6px;border-radius:8px">Sửa số dư</span>
+      </div>
+      <div style="font-size:12px;opacity:0.92;margin-top:6px">${w.name}</div>
+      <div style="font-weight:800;font-size:16px;margin-top:2px">${formatVND(w.balance)} ₫</div>
+    </div>
+  `).join('');
+}
+
+function promptEditWalletBalance(walletId) {
+  const w = DB.wallets.find(x => x.id === walletId);
+  if (!w) return;
+  const raw = prompt(`Cập nhật số dư thực tế cho "${w.icon} ${w.name}" (VND):`, String(w.balance || 0));
+  if (raw === null) return;
+  const val = parseInt(String(raw).replace(/[^0-9-]/g, ''), 10);
+  if (isNaN(val)) return toast('Số dư không hợp lệ');
+  w.balance = val;
+  saveData();
+  renderApp();
+  toast(`Đã cập nhật số dư ${w.name}: ${formatVND(val)} ₫ ✅`);
 }
 
 function renderHome() {
@@ -2322,27 +2690,37 @@ function renderHome() {
   const totalBudget = Object.values(DB.budgets).reduce((a, b) => a + b, 0);
   const pct = totalBudget > 0 ? (totals.spend / totalBudget) * 100 : 0;
 
-  // Hero Card
-  $('#hero-spent').textContent = formatVND(totals.spend) + ' ₫';
+  // Hero & Dual KPI Cards (Tổng thu nhập, Tổng đã chi, Còn lại)
+  $('#hero-spent').textContent = '-' + formatVND(totals.spend) + ' ₫';
+  if ($('#home-exp-cnt')) $('#home-exp-cnt').textContent = `${totals.expCount} khoản`;
+  if ($('#home-inc-cnt')) $('#home-inc-cnt').textContent = `${totals.incCount} khoản`;
   $('#budget-pct').textContent = Math.round(pct) + '%';
   const ringCirc = 264;
   const ringFilled = Math.min(100, pct) / 100 * ringCirc;
   $('#budget-ring').setAttribute('stroke-dasharray', `${ringFilled} ${ringCirc}`);
 
   if (totals.spend > totalBudget) {
-    $('#hero-left').innerHTML = `<span style="color:#FFF;font-weight:700">⚠️ Vượt hạn mức ${formatVND(totals.spend - totalBudget)} ₫</span>`;
+    $('#hero-left').innerHTML = `<span style="color:#FFF;font-weight:700">⚠️ Vượt hạn mức chi ${formatVND(totals.spend - totalBudget)} ₫</span>`;
   } else {
-    $('#hero-left').textContent = `Còn lại ${formatVND(totalBudget - totals.spend)} ₫ / ${formatShort(totalBudget)}`;
+    $('#hero-left').textContent = `Hạn mức chi: Còn ${formatVND(totalBudget - totals.spend)} ₫ / ${formatShort(totalBudget)}`;
   }
-  
+
   const dayNow = Math.max(1, new Date().getDate());
   const forecast = (totals.spend / dayNow) * 30;
-  $('#hero-fore').textContent = `Dự kiến cuối tháng: ~${formatShort(forecast)} ${forecast > totalBudget ? '⚠️' : '✅'}`;
+  $('#hero-fore').textContent = `Dự kiến chi cuối tháng: ~${formatShort(forecast)} ${forecast > totalBudget ? '⚠️' : '✅'}`;
 
-  // Income & Net
+  // Income & Net Cashflow
   $('#home-inc').textContent = '+' + formatVND(totals.income) + ' ₫';
-  $('#home-net').textContent = formatVND(totals.net) + ' ₫';
-  $('#home-net').className = 'amt ' + (totals.net >= 0 ? 'pos' : 'neg');
+  $('#home-net').textContent = (totals.net >= 0 ? '+' : '') + formatVND(totals.net) + ' ₫';
+
+  // Render Assets, Wallets, Loans, Savings & Investments
+  renderHomeAssetsAndWallets(STATE.homeScope);
+
+  // Render Category Summary Breakdown (Thu & Chi)
+  renderHomeCategoryBreakdown(STATE.homeScope);
+
+  // Render Upcoming Family Events (Auto-highlight 1 day before event!)
+  renderHomeEvents();
 
   // Quick log chips
   const quickItems = [
@@ -2368,20 +2746,11 @@ function renderHome() {
     const whoTo = b.owe > 0 ? u.him.name : u.her.name;
     ins.push(['⚖️', `<b>${whoFrom}</b> cần chuyển <b>${formatShort(Math.abs(b.owe))}</b> cho ${whoTo}`, 'tab-fam']);
   }
-  ins.push(['💡', 'Tiền điện & Internet đến hạn ngày 15 tới', 'toast']);
+  ins.push(['📅', 'Bấm vào lịch Sự kiện Gia đình để đặt việc cần nhớ trước 1 ngày', 'event']);
   $('#home-insights').innerHTML = ins.map(x => `
-    <div class="card clickable" style="margin-bottom:0;min-width:240px;display:flex;gap:10px;align-items:center" onclick="${x[2] === 'toast' ? `toast('${x[1]}')` : `goTab('${x[2]}')`}">
+    <div class="card clickable" style="margin-bottom:0;min-width:240px;display:flex;gap:10px;align-items:center" onclick="${x[2] === 'event' ? 'openEventModal()' : `goTab('${x[2]}')`}">
       <span style="font-size:24px">${x[0]}</span>
       <div style="font-size:13px">${x[1]}</div>
-    </div>
-  `).join('');
-
-  // Wallets Preview
-  $('#home-wallets').innerHTML = DB.wallets.map(w => `
-    <div class="wcard" style="background:linear-gradient(135deg, ${w.color.split(',')[0]}, ${w.color.split(',')[1]})" onclick="goTab('tab-fam')">
-      <div style="font-size:22px">${w.icon}</div>
-      <div style="font-size:12px;opacity:0.9;margin-top:6px">${w.name}</div>
-      <div style="font-weight:700;font-size:16px;margin-top:2px">${formatVND(w.balance)} ₫</div>
     </div>
   `).join('');
 
@@ -2403,6 +2772,315 @@ function renderHome() {
   const rec = getFilteredTransactions().slice().sort((a, b) => b.day - a.day || b.id - a.id).slice(0, 5);
   $('#home-recent').innerHTML = rec.length ? rec.map(t => renderTxRowHTML(t)).join('') : '<div class="center sub" style="padding:20px">Chưa có giao dịch nào</div>';
   bindSwipeRows($('#home-recent'));
+}
+
+/* ==========================================================================
+   FAMILY EVENTS & UPCOMING TASKS ENGINE (SHOWS ON OVERVIEW 1 DAY BEFORE)
+   ========================================================================== */
+const EVENT_EMOJIS = ['📅','🎉','🎂','❤️','💡','🏦','📈','🤝','✈️','🏥','👶','🛒','🏠','🚗'];
+let editingEventId = null;
+
+function getTodayDateString(offsetDays = 0) {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() + offsetDays);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function getEventDaysUntil(dateStr) {
+  if (!dateStr) return 999;
+  const parts = dateStr.split('-').map(Number);
+  if (parts.length !== 3) return 999;
+  const evDate = new Date(parts[0], parts[1] - 1, parts[2]);
+  evDate.setHours(0, 0, 0, 0);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return Math.round((evDate - today) / 86400000);
+}
+
+function formatVNDate(dateStr) {
+  if (!dateStr) return '';
+  const parts = dateStr.split('-');
+  if (parts.length !== 3) return dateStr;
+  return `${parts[2]}/${parts[1]}/${parts[0]}`;
+}
+
+function getEventCountdownBadge(days) {
+  if (days === 1) return `<span class="event-pill-badge">⏰ Nhắc trước 1 ngày · Ngày mai</span>`;
+  if (days === 0) return `<span class="event-pill-badge today">🔥 Diễn ra hôm nay</span>`;
+  if (days < 0) return `<span class="event-pill-badge today">⚠️ Quá hạn ${Math.abs(days)} ngày</span>`;
+  return `<span class="event-pill-badge future">Còn ${days} ngày</span>`;
+}
+
+function renderHomeEvents() {
+  const events = Array.isArray(DB.events) ? DB.events : [];
+  const activeEvents = events
+    .filter(ev => !ev.done)
+    .map(ev => ({ ...ev, daysUntil: getEventDaysUntil(ev.date) }))
+    .sort((a, b) => a.daysUntil - b.daysUntil);
+
+  // Events due within 1 day (daysUntil <= 1: Tomorrow, Today, or Overdue)
+  const dueWithin1Day = activeEvents.filter(ev => ev.daysUntil <= 1);
+  const futureEvents = activeEvents.filter(ev => ev.daysUntil > 1);
+
+  // 1. Top Urgent Banner on Home Overview (Strictly shows events 1 day before or today!)
+  const urgentBox = $('#home-urgent-events');
+  if (urgentBox) {
+    if (dueWithin1Day.length > 0) {
+      urgentBox.innerHTML = dueWithin1Day.map(ev => {
+        const whoLabel = ev.who === 'him' ? DB.users.him.name : ev.who === 'her' ? DB.users.her.name : 'Hai vợ chồng';
+        return `
+          <div class="event-alert-card">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+              ${getEventCountdownBadge(ev.daysUntil)}
+              <span class="sub" style="font-size:11px;font-weight:700">${formatVNDate(ev.date)} · ${whoLabel}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:4px">
+              <div style="display:flex;align-items:center;gap:8px">
+                <span style="font-size:24px">${ev.icon || '📅'}</span>
+                <div>
+                  <b style="font-size:14.5px">${ev.title}</b>
+                  ${ev.amount > 0 ? `<div class="sub" style="color:var(--coral);font-weight:700">Dự kiến: ${formatVND(ev.amount)} ₫</div>` : ''}
+                </div>
+              </div>
+              <button class="btn sm ok" style="padding:6px 10px;font-size:11.5px;white-space:nowrap" onclick="toggleEventDone(${ev.id})">✓ Xong</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    } else {
+      urgentBox.innerHTML = '';
+    }
+  }
+
+  // 2. Home Events Card
+  const listBox = $('#home-events-list');
+  if (!listBox) return;
+
+  const listToRender = showAllFutureEventsOnHome ? activeEvents : dueWithin1Day;
+
+  if (listToRender.length === 0) {
+    listBox.innerHTML = `
+      <div class="center sub" style="padding:10px 4px">
+        ${futureEvents.length > 0
+          ? `Không có sự kiện nào diễn ra trong ngày mai hoặc hôm nay.<br><span class="link" style="display:inline-block;margin-top:6px" onclick="showAllFutureEventsOnHome=true;renderHomeEvents()">📅 Xem ${futureEvents.length} sự kiện sắp tới (> 1 ngày)</span>`
+          : `Chưa có sự kiện/công việc nào sắp diễn ra.<br><span class="link" style="display:inline-block;margin-top:4px" onclick="openEventModal()">＋ Tạo sự kiện mới (sẽ tự hiện ở đây trước 1 ngày)</span>`
+        }
+      </div>
+    `;
+    return;
+  }
+
+  listBox.innerHTML = listToRender.map(ev => {
+    const whoLabel = ev.who === 'him' ? DB.users.him.name : ev.who === 'her' ? DB.users.her.name : 'Cả hai';
+    return `
+      <div class="row" style="padding:9px 0">
+        <div class="ic" style="width:36px;height:36px;font-size:19px">${ev.icon || '📅'}</div>
+        <div class="grow" onclick="openEventModal(${ev.id})" style="cursor:pointer">
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+            <b style="font-size:13.5px">${ev.title}</b>
+            ${getEventCountdownBadge(ev.daysUntil)}
+          </div>
+          <div class="sub" style="margin-top:2px">
+            📅 ${formatVNDate(ev.date)} · 👤 ${whoLabel}
+            ${ev.amount > 0 ? ` · 💰 ${formatShort(ev.amount)}` : ''}
+          </div>
+        </div>
+        <button class="btn sm alt" style="padding:5px 9px;font-size:11.5px" onclick="toggleEventDone(${ev.id})">✓ Xong</button>
+      </div>
+    `;
+  }).join('') + (futureEvents.length > 0 ? `
+    <div class="center" style="margin-top:8px">
+      <span class="link" style="font-size:12px" onclick="showAllFutureEventsOnHome=!showAllFutureEventsOnHome;renderHomeEvents()">
+        ${showAllFutureEventsOnHome ? '⌃ Chỉ hiện sự kiện trước 1 ngày' : `📅 Xem thêm ${futureEvents.length} sự kiện xa hơn (> 1 ngày)`}
+      </span>
+    </div>
+  ` : '');
+}
+
+function openEventModal(editId = null) {
+  closeNumberPad();
+  resetEventForm();
+  if (editId) {
+    editFamilyEvent(editId);
+  }
+  renderEventModalList();
+  $('#event-modal').classList.add('on');
+}
+
+function closeEventModal() {
+  ['#ev-title-input', '#ev-amt-input', '#ev-icon-input'].forEach(sel => {
+    if ($(sel)) {
+      $(sel).blur();
+      $(sel).readOnly = true;
+    }
+  });
+  $('#event-modal').classList.remove('on');
+}
+
+function renderEventEmojiRow(selected) {
+  const cur = selected || ($('#ev-icon-input') && $('#ev-icon-input').value) || '📅';
+  if (!$('#ev-emoji-row')) return;
+  $('#ev-emoji-row').innerHTML = EVENT_EMOJIS.map(em => `
+    <div class="emoji-cell ${em === cur ? 'on' : ''}" style="width:36px;height:36px;flex:none" onclick="$('#ev-icon-input').value='${em}';renderEventEmojiRow('${em}')">${em}</div>
+  `).join('');
+}
+
+function setQuickEventDate(offsetDays) {
+  if ($('#ev-date-input')) {
+    $('#ev-date-input').value = getTodayDateString(offsetDays);
+  }
+}
+
+function resetEventForm() {
+  editingEventId = null;
+  if ($('#ev-icon-input')) {
+    $('#ev-icon-input').value = '📅';
+    $('#ev-icon-input').readOnly = true;
+  }
+  if ($('#ev-title-input')) {
+    $('#ev-title-input').value = '';
+    $('#ev-title-input').readOnly = true;
+  }
+  if ($('#ev-date-input')) {
+    // Default to tomorrow (1 day ahead) so the user immediately sees how it appears on Home!
+    $('#ev-date-input').value = getTodayDateString(1);
+  }
+  if ($('#ev-amt-input')) {
+    $('#ev-amt-input').value = '';
+    $('#ev-amt-input').readOnly = true;
+  }
+  if ($('#ev-who-input')) $('#ev-who-input').value = 'both';
+  if ($('#ev-repeat-input')) $('#ev-repeat-input').value = 'none';
+  if ($('#ev-form-title')) $('#ev-form-title').textContent = '＋ Thêm sự kiện / công việc sắp tới';
+  if ($('#ev-save-btn')) $('#ev-save-btn').textContent = '💾 Lưu lịch sự kiện';
+  if ($('#ev-form-cancel')) $('#ev-form-cancel').style.display = 'none';
+  renderEventEmojiRow('📅');
+}
+
+function editFamilyEvent(id) {
+  const ev = (DB.events || []).find(x => x.id === id);
+  if (!ev) return;
+  editingEventId = ev.id;
+  if ($('#ev-icon-input')) $('#ev-icon-input').value = ev.icon || '📅';
+  if ($('#ev-title-input')) $('#ev-title-input').value = ev.title || '';
+  if ($('#ev-date-input')) $('#ev-date-input').value = ev.date || getTodayDateString(1);
+  if ($('#ev-amt-input')) $('#ev-amt-input').value = ev.amount ? String(ev.amount) : '';
+  if ($('#ev-who-input')) $('#ev-who-input').value = ev.who || 'both';
+  if ($('#ev-repeat-input')) $('#ev-repeat-input').value = ev.repeat || 'none';
+  if ($('#ev-form-title')) $('#ev-form-title').textContent = `✏️ Sửa sự kiện: ${ev.title}`;
+  if ($('#ev-save-btn')) $('#ev-save-btn').textContent = '💾 Cập nhật sự kiện';
+  if ($('#ev-form-cancel')) $('#ev-form-cancel').style.display = 'inline';
+  renderEventEmojiRow(ev.icon || '📅');
+}
+
+function saveFamilyEvent() {
+  const icon = (($('#ev-icon-input') && $('#ev-icon-input').value) || '📅').trim();
+  const title = (($('#ev-title-input') && $('#ev-title-input').value) || '').trim();
+  const date = (($('#ev-date-input') && $('#ev-date-input').value) || getTodayDateString(1)).trim();
+  const rawAmt = (($('#ev-amt-input') && $('#ev-amt-input').value) || '').replace(/[^0-9]/g, '');
+  const amount = parseInt(rawAmt, 10) || 0;
+  const who = ($('#ev-who-input') && $('#ev-who-input').value) || 'both';
+  const repeat = ($('#ev-repeat-input') && $('#ev-repeat-input').value) || 'none';
+
+  if (!title) {
+    return toast('Vui lòng chạm vào ô tên để nhập tên sự kiện / công việc!');
+  }
+  if (!Array.isArray(DB.events)) DB.events = [];
+
+  if (editingEventId) {
+    const existing = DB.events.find(x => x.id === editingEventId);
+    if (existing) {
+      Object.assign(existing, { icon, title, date, amount, who, repeat, updatedAt: Date.now() });
+      toast('Đã cập nhật sự kiện gia đình ✅');
+    }
+  } else {
+    DB.events.push({
+      id: Date.now(),
+      icon,
+      title,
+      date,
+      amount,
+      who,
+      repeat,
+      done: false,
+      updatedAt: Date.now()
+    });
+    const days = getEventDaysUntil(date);
+    toast(days <= 1
+      ? 'Đã lưu & ghim sự kiện lên màn hình Tổng quan! ⏰'
+      : `Đã lưu lịch! Sự kiện sẽ tự hiện ở Tổng quan trước 1 ngày (${formatVNDate(date)}) 📅`);
+  }
+
+  saveData();
+  resetEventForm();
+  renderEventModalList();
+  renderApp();
+}
+
+function toggleEventDone(id) {
+  const ev = (DB.events || []).find(x => x.id === id);
+  if (!ev) return;
+  if (!ev.done && ev.repeat && ev.repeat !== 'none') {
+    // Advance date to next month or next year automatically
+    const parts = ev.date.split('-').map(Number);
+    const d = new Date(parts[0], parts[1] - 1, parts[2]);
+    if (ev.repeat === 'monthly') d.setMonth(d.getMonth() + 1);
+    else if (ev.repeat === 'yearly') d.setFullYear(d.getFullYear() + 1);
+    ev.date = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    toast(`Đã hoàn thành kỳ này! Tự động đặt lịch kỳ tiếp theo: ${formatVNDate(ev.date)} 🔁`);
+  } else {
+    ev.done = !ev.done;
+    toast(ev.done ? `Đã hoàn thành "${ev.title}" 🎉` : `Đã mở lại "${ev.title}"`);
+  }
+  ev.updatedAt = Date.now();
+  saveData();
+  renderEventModalList();
+  renderApp();
+}
+
+function deleteFamilyEvent(id) {
+  DB.events = (DB.events || []).filter(x => x.id !== id);
+  saveData();
+  renderEventModalList();
+  renderApp();
+  toast('Đã xóa sự kiện khỏi lịch');
+}
+
+function renderEventModalList() {
+  const box = $('#ev-modal-list');
+  if (!box) return;
+  const list = (DB.events || []).slice().sort((a, b) => {
+    if (a.done !== b.done) return a.done ? 1 : -1;
+    return getEventDaysUntil(a.date) - getEventDaysUntil(b.date);
+  });
+  if (!list.length) {
+    box.innerHTML = '<div class="sub center" style="padding:18px 0">Chưa có sự kiện nào. Hãy tạo lịch nhắc việc ở khung bên trên!</div>';
+    return;
+  }
+  box.innerHTML = list.map(ev => {
+    const days = getEventDaysUntil(ev.date);
+    return `
+      <div class="row" style="padding:8px 4px;${ev.done ? 'opacity:0.55' : ''}">
+        <div class="ic" style="width:34px;height:34px;font-size:18px">${ev.icon || '📅'}</div>
+        <div class="grow">
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+            <b style="font-size:13px;${ev.done ? 'text-decoration:line-through' : ''}">${ev.title}</b>
+            ${!ev.done ? getEventCountdownBadge(days) : '<span class="sub">✓ Đã xong</span>'}
+          </div>
+          <div class="sub" style="font-size:11px">
+            📅 ${formatVNDate(ev.date)} ${ev.amount > 0 ? `· 💰 ${formatVND(ev.amount)} ₫` : ''}
+          </div>
+        </div>
+        <button class="btn sm alt" style="padding:5px 8px;font-size:11px" onclick="toggleEventDone(${ev.id})">${ev.done ? 'Mở lại' : '✓'}</button>
+        <button class="btn sm alt" style="padding:5px 8px;font-size:11px" onclick="editFamilyEvent(${ev.id})">✏️</button>
+        <span class="ic clickable" style="width:30px;height:30px;color:var(--exp);background:rgba(239,68,68,0.1)" onclick="deleteFamilyEvent(${ev.id})">🗑</span>
+      </div>
+    `;
+  }).join('');
 }
 
 /* ==========================================================================
@@ -3912,6 +4590,7 @@ function confirmResetData() {
       });
       DB.transactions = [];
       DB.goals = [];
+      DB.events = [];
       DB.wallets.forEach(w => w.balance = 0);
       DB.settled = true;
       saveData();
@@ -4004,6 +4683,7 @@ function buildCompactPayload() {
     incomeCategories: DB.incomeCategories,
     wallets: DB.wallets,
     goals: DB.goals,
+    events: (DB.events || []).slice(0, 100),
     deletedTxIds: (DB.deletedTxIds || []).slice(-300),
     transactions: (DB.transactions || []).slice(0, 150)
   };
@@ -4198,6 +4878,21 @@ function mergeCloudPayload(remote, silent = false) {
     }
     if (Array.isArray(remote.goals)) DB.goals = remote.goals;
     if (Array.isArray(remote.wallets)) DB.wallets = remote.wallets;
+    if (Array.isArray(remote.events)) {
+      const localEventsMap = new Map((DB.events || []).map(e => [e.id, e]));
+      for (const rEv of remote.events) {
+        if (!rEv || !rEv.id) continue;
+        const lEv = localEventsMap.get(rEv.id);
+        if (!lEv) {
+          localEventsMap.set(rEv.id, rEv);
+          changed = true;
+        } else if ((rEv.updatedAt || 0) > (lEv.updatedAt || 0)) {
+          Object.assign(lEv, rEv);
+          changed = true;
+        }
+      }
+      DB.events = Array.from(localEventsMap.values()).sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+    }
     DB.updatedAt = remote.ts;
   }
 

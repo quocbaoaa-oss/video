@@ -1,4 +1,4 @@
-const CACHE_NAME = 'vidoi-pwa-v8-custom-categories';
+const CACHE_NAME = 'vidoi-pwa-v9-exec-overview-events';
 const ASSETS = [
   './',
   './index.html',
