@@ -39,6 +39,7 @@ Dự án hiện được xây dựng song song trên 2 nền tảng mạnh mẽ:
 | 7 | **Trải nghiệm iOS & Haptic Feedback** | Tích hợp phản hồi rung xúc giác `navigator.vibrate` chân thật khi gõ bàn phím số, chuyển tab, chọn chip tiền, mở khóa PIN; bổ sung CSS `overscroll-behavior-y: contain` chống giật nảy màn hình trên Safari iOS. | **Đã hoàn thành** |
 | 8 | **Xuất lịch Apple / Google Calendar (`.ics`)** | Nút `📲` bên cạnh mỗi sự kiện gia đình tạo và tải file `.ics` tiêu chuẩn iCalendar, tích hợp chuông nhắc nhở trước 1 ngày (`TRIGGER:-P1D`), đồng bộ 1 chạm vào Apple Calendar hoặc Google Calendar. | **Đã hoàn thành** |
 | 9 | **Hộp lời nhắn yêu thương (Love Note)** | Thẻ lời nhắn ngọt ngào của Bảo & Oanh hiển thị trang trọng trên trang Tổng quan; hỗ trợ chạm để gửi lời nhắn mới và **tự động mã hóa E2EE đồng bộ tức thì sang máy đối phương**. | **Đã hoàn thành** |
+| 10 | **Chọn Tài khoản Thu / Chi khi ghi nhận** | Bổ sung khung chọn chuyên biệt **Tài khoản Chi tiền** (trừ tiền) khi Chi tiêu và **Tài khoản Nhận tiền** (cộng tiền) khi Thu nhập; danh sách tài khoản ngân hàng / tiền mặt hiển thị dạng thẻ ngang vuốt chạm mượt mà + dropdown chọn nhanh + nút thêm tài khoản trực tiếp; tự động trừ/cộng số dư chuẩn xác 100%; hiển thị nhãn tài khoản rõ nét trên từng dòng giao dịch và chi tiết. | **Đã hoàn thành (v12)** |
 
 ### 2.2. Các tính năng cốt lõi trước đó của bản PWA
 | # | Hạng mục công việc | File triển khai | Trạng thái |

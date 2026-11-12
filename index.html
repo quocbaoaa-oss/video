@@ -1357,6 +1357,43 @@
       background: var(--fill);
       border-color: transparent;
     }
+    .wallet-pill-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 12px;
+      background: var(--card-bg);
+      border: 1.5px solid var(--card-border);
+      border-radius: 12px;
+      cursor: pointer;
+      white-space: nowrap;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--txt);
+      transition: all 0.18s ease;
+      flex-shrink: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .wallet-pill-btn:active { transform: scale(0.96); }
+    .wallet-pill-btn.on {
+      background: rgba(76, 141, 255, 0.12);
+      border-color: var(--tint);
+      color: var(--tint);
+      box-shadow: 0 0 0 2px rgba(76, 141, 255, 0.22);
+    }
+    body.role-her .wallet-pill-btn.on {
+      background: rgba(255, 126, 182, 0.15);
+      border-color: var(--coral);
+      color: var(--coral);
+      box-shadow: 0 0 0 2px rgba(255, 126, 182, 0.25);
+    }
+    .wallet-pill-btn .w-bal-tag {
+      font-size: 10px;
+      opacity: 0.78;
+      font-weight: 500;
+      margin-left: 2px;
+    }
   </style>
 </head>
 <body>
@@ -2032,6 +2069,27 @@
         <div class="q-btn" onclick="addAmountFast(200000)">+200k</div>
         <div class="q-btn" onclick="addAmountFast(500000)">+500k</div>
         <div class="q-btn" onclick="addAmountFast(1000000)">+1tr</div>
+      </div>
+
+      <!-- Single Wallet Box (For Chi tiêu & Thu nhập: Nguồn tiền / Nơi nhận tiền) -->
+      <div id="single-wallet-box" style="background:var(--fill);padding:13px 14px;border-radius:18px;margin-bottom:12px;border:1.5px solid var(--card-border)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <div style="display:flex;align-items:center;gap:6px">
+            <span id="single-wallet-icon" style="font-size:16px">💳</span>
+            <b style="font-size:13px" id="single-wallet-title">Tài khoản Chi tiền</b>
+          </div>
+          <span class="link" style="font-size:11.5px" onclick="promptAddWalletFromSheet()">＋ Thêm tài khoản</span>
+        </div>
+
+        <!-- Quick Select Dropdown for direct selection -->
+        <select class="input" id="single-wallet-select" style="margin:0 0 8px 0;font-size:13px;padding:8px 10px;font-weight:600" onchange="onSingleWalletSelectChange(this.value)"></select>
+
+        <!-- Horizontal Scrollable Wallet Cards/Pills -->
+        <div id="single-wallet-pills" style="display:flex;gap:7px;overflow-x:auto;padding:2px 0 6px;scrollbar-width:none;-webkit-overflow-scrolling:touch"></div>
+
+        <div class="sub" style="font-size:11px;margin-top:4px" id="single-wallet-note">
+          Số dư tài khoản này sẽ tự động được trừ đi khi bạn lưu chi tiêu.
+        </div>
       </div>
 
       <!-- Transfer Wallets Box (Only visible when Kind === 't') -->
@@ -3309,6 +3367,11 @@ function renderTxRowHTML(t) {
     const fromW = DB.wallets.find(x => x.id === t.wallet);
     const toW = DB.wallets.find(x => x.id === t.toWallet);
     subInfo = `🔄 ${fromW ? fromW.name : 'Ví'} ➔ ${toW ? toW.name : 'Ví'} · ${formatDayLabel(t.day)}`;
+  } else {
+    const w = DB.wallets.find(x => x.id === t.wallet);
+    if (w && !masked) {
+      subInfo = `${t.shared ? '👥 Chung' : '🔒 Riêng'} · ${w.icon} ${w.name} · ${formatDayLabel(t.day)}`;
+    }
   }
   const amtClass = t.kind === 'i' ? 'pos' : t.kind === 't' ? 'transfer' : 'neg';
   const amtPrefix = t.kind === 'i' ? '+' : t.kind === 't' ? '🔄 ' : '-';
@@ -3730,11 +3793,11 @@ function renderFamilyAndBalance() {
 
   // Wallets List
   $('#family-wallets-list').innerHTML = DB.wallets.map(w => `
-    <div class="row">
+    <div class="row" onclick="promptManageWallet('${w.id}')" style="cursor:pointer" title="Chạm để quản lý tài khoản">
       <div class="ic">${w.icon}</div>
       <div class="grow">
         <div class="tt">${w.name}</div>
-        <div class="sub">${w.owner === 'S' ? '👥 Ví chung' : w.owner === 'him' ? '🔒 Ví của ' + u.him.name : '🔒 Ví của ' + u.her.name}</div>
+        <div class="sub">${w.owner === 'S' ? '👥 Ví chung' : w.owner === 'him' ? '🔒 Ví của ' + u.him.name : '🔒 Ví của ' + u.her.name} · Chạm để sửa</div>
       </div>
       <div class="amt ${w.balance < 0 ? 'neg' : ''}">${formatVND(w.balance)} ₫</div>
     </div>
@@ -3833,6 +3896,50 @@ function promptAddWallet() {
   saveData();
   renderApp();
   toast('Đã thêm ví mới & đồng bộ đám mây ✅');
+}
+
+function promptManageWallet(walletId) {
+  const w = DB.wallets.find(x => x.id === walletId);
+  if (!w) return;
+  const action = prompt(
+    `Quản lý tài khoản: ${w.icon} ${w.name}\nSố dư hiện tại: ${formatVND(w.balance)} ₫\n\nNhập số tương ứng:\n1: Sửa tên tài khoản\n2: Cập nhật số dư thực tế\n3: Đổi biểu tượng icon\n4: Xóa tài khoản này`,
+    '2'
+  );
+  if (!action) return;
+  if (action === '1') {
+    const newName = prompt('Nhập tên tài khoản mới:', w.name);
+    if (newName && newName.trim()) {
+      w.name = newName.trim();
+      saveData();
+      renderApp();
+      toast(`Đã đổi tên thành: ${w.name}`);
+    }
+  } else if (action === '2') {
+    promptEditWalletBalance(walletId);
+  } else if (action === '3') {
+    const newIcon = prompt('Nhập biểu tượng Emoji cho tài khoản (ví dụ: 🏦, 💵, 📱, 💳):', w.icon);
+    if (newIcon && newIcon.trim()) {
+      w.icon = newIcon.trim();
+      saveData();
+      renderApp();
+      toast(`Đã đổi biểu tượng: ${w.icon}`);
+    }
+  } else if (action === '4') {
+    if (DB.wallets.length <= 1) return toast('Cần giữ lại ít nhất 1 tài khoản!');
+    confirmDlg(
+      `Xóa tài khoản "${w.name}"?`,
+      'Các giao dịch cũ trong lịch sử vẫn được giữ nguyên.',
+      'Xóa',
+      () => {
+        const idx = DB.wallets.findIndex(x => x.id === walletId);
+        if (idx >= 0) DB.wallets.splice(idx, 1);
+        if (STATE.addWalletId === walletId) STATE.addWalletId = DB.wallets[0].id;
+        saveData();
+        renderApp();
+        toast(`Đã xóa tài khoản ${w.name}`);
+      }
+    );
+  }
 }
 
 function promptAddGoal() {
@@ -4012,11 +4119,16 @@ function openAddSheet(editTx = null) {
   $$('#add-kind-seg div').forEach((d, i) => d.classList.toggle('on', kindIdx === i));
   $('#add-amt-display').style.color = STATE.addKind === 'i' ? 'var(--inc)' : STATE.addKind === 't' ? '#818cf8' : 'var(--txt)';
   if ($('#transfer-wallets-box')) $('#transfer-wallets-box').style.display = isTransfer ? 'block' : 'none';
+  if ($('#single-wallet-box')) $('#single-wallet-box').style.display = isTransfer ? 'none' : 'block';
   if ($('.cat-header-bar')) $('.cat-header-bar').style.display = isTransfer ? 'none' : 'flex';
   if ($('#add-cats-grid')) $('#add-cats-grid').style.display = isTransfer ? 'none' : 'grid';
 
-  if (isTransfer) renderTransferWallets();
-  else renderAddCats();
+  if (isTransfer) {
+    renderTransferWallets();
+  } else {
+    renderSingleWalletPicker();
+    renderAddCats();
+  }
 
   renderAddChips();
   updateAddAmountDisplay();
@@ -4051,6 +4163,87 @@ function swapTransferWallets() {
   renderTransferWallets();
   renderAddChips();
   haptic('light');
+}
+
+function renderSingleWalletPicker() {
+  const isInc = STATE.addKind === 'i';
+  const isTransfer = STATE.addKind === 't';
+  const box = $('#single-wallet-box');
+  if (!box) return;
+
+  if (isTransfer) {
+    box.style.display = 'none';
+    return;
+  }
+  box.style.display = 'block';
+
+  const titleEl = $('#single-wallet-title');
+  const iconEl = $('#single-wallet-icon');
+  const noteEl = $('#single-wallet-note');
+  if (titleEl) titleEl.textContent = isInc ? 'Tài khoản Nhận tiền' : 'Tài khoản Chi tiền';
+  if (iconEl) iconEl.textContent = isInc ? '💰' : '💳';
+  if (noteEl) noteEl.innerHTML = isInc 
+    ? 'Tiền thu nhập sẽ được <b>cộng vào</b> số dư tài khoản này.' 
+    : 'Tiền chi tiêu sẽ được <b>trừ từ</b> số dư tài khoản này.';
+
+  if (!DB.wallets.some(w => w.id === STATE.addWalletId)) {
+    STATE.addWalletId = (DB.wallets.find(w => w.owner === STATE.addWho) || DB.wallets[0] || { id: 'cash' }).id;
+  }
+
+  const sel = $('#single-wallet-select');
+  if (sel) {
+    sel.innerHTML = DB.wallets.map(w => `
+      <option value="${w.id}" ${w.id === STATE.addWalletId ? 'selected' : ''}>
+        ${w.icon} ${w.name} (${formatShort(w.balance)}) · ${w.owner === 'S' ? 'Chung' : w.owner === 'him' ? DB.users.him.name : DB.users.her.name}
+      </option>
+    `).join('');
+  }
+
+  const pillsWrap = $('#single-wallet-pills');
+  if (pillsWrap) {
+    pillsWrap.innerHTML = DB.wallets.map(w => {
+      const isSelected = w.id === STATE.addWalletId;
+      return `
+        <div class="wallet-pill-btn ${isSelected ? 'on' : ''}" onclick="selectAddWallet('${w.id}')">
+          <span>${w.icon}</span>
+          <span>${w.name}</span>
+          <span class="w-bal-tag">(${formatShort(w.balance)})</span>
+          ${isSelected ? '<span style="font-size:11px;margin-left:2px">✓</span>' : ''}
+        </div>
+      `;
+    }).join('') + `
+      <div class="wallet-pill-btn" onclick="promptAddWalletFromSheet()" style="border-style:dashed;color:var(--mut)">
+        <span>➕</span>
+        <span>Thêm ví</span>
+      </div>
+    `;
+  }
+}
+
+function selectAddWallet(walletId) {
+  STATE.addWalletId = walletId;
+  haptic('light');
+  renderSingleWalletPicker();
+  renderAddChips();
+}
+
+function onSingleWalletSelectChange(val) {
+  STATE.addWalletId = val;
+  haptic('light');
+  renderSingleWalletPicker();
+  renderAddChips();
+}
+
+function promptAddWalletFromSheet() {
+  closeNumberPad();
+  promptAddWallet();
+  const newest = DB.wallets[DB.wallets.length - 1];
+  if (newest) {
+    STATE.addWalletId = newest.id;
+  }
+  renderSingleWalletPicker();
+  renderTransferWallets();
+  renderAddChips();
 }
 
 function closeAddSheet() {
@@ -4291,8 +4484,8 @@ function renderAddChips() {
     return;
   }
   $('#add-chips-bar').innerHTML = `
-    <div class="chip" onclick="closeNumberPad();cycleAddWallet()">${w.icon} ${w.name}</div>
-    <div class="chip" onclick="closeNumberPad();cycleAddWho()"><span class="av s" style="background:${u.color}">${u.name[0]}</span> ${u.name} chi</div>
+    <div class="chip on" onclick="closeNumberPad();cycleAddWallet()">${w.icon} ${w.name} (${formatShort(w.balance)})</div>
+    <div class="chip" onclick="closeNumberPad();cycleAddWho()"><span class="av s" style="background:${u.color}">${u.name[0]}</span> ${u.name} ${STATE.addKind === 'i' ? 'nhận' : 'chi'}</div>
     <div class="chip" onclick="closeNumberPad();cycleAddDay()">📅 Ngày ${STATE.addDay}</div>
     <div class="chip ${STATE.addReceipt ? 'on' : ''}" onclick="closeNumberPad();$('#receipt-file-input').click()">
       📷 ${STATE.addReceipt ? 'Đã đính kèm ảnh' : 'Chụp / Ảnh hóa đơn'}
@@ -4304,12 +4497,16 @@ function cycleAddWallet() {
   const ids = DB.wallets.map(w => w.id);
   const next = ids[(ids.indexOf(STATE.addWalletId) + 1) % ids.length];
   STATE.addWalletId = next;
+  renderSingleWalletPicker();
   renderAddChips();
+  haptic('light');
 }
 
 function cycleAddWho() {
   STATE.addWho = STATE.addWho === 'him' ? 'her' : 'him';
+  renderSingleWalletPicker();
   renderAddChips();
+  haptic('light');
 }
 
 function cycleAddDay() {
@@ -4618,6 +4815,9 @@ function quickAddTransaction(idx) {
     ['🚌', 'Gửi xe', 10000, 'Đi lại']
   ][idx];
 
+  const myRole = getMyRole();
+  const w = DB.wallets.find(x => x.owner === myRole) || DB.wallets[0] || { id: 'cash', name: 'Tiền mặt' };
+
   const newTx = {
     id: Date.now(),
     day: new Date().getDate(),
@@ -4625,9 +4825,9 @@ function quickAddTransaction(idx) {
     title: q[1],
     category: q[3],
     amount: q[2],
-    who: getMyRole(),
+    who: myRole,
     shared: true,
-    wallet: 'cash',
+    wallet: w.id,
     kind: 'e',
     note: 'Ghi nhanh',
     receipt: null,
@@ -4636,13 +4836,12 @@ function quickAddTransaction(idx) {
   };
 
   DB.transactions.unshift(newTx);
-  const w = DB.wallets.find(x => x.id === 'cash');
-  if (w) w.balance -= q[2];
+  if (w.balance !== undefined) w.balance -= q[2];
   DB.settled = false;
   saveData();
   renderApp();
 
-  toast(`Đã ghi nhanh ${q[1]} ${formatShort(q[2])}`, 'Hoàn tác', () => {
+  toast(`Đã ghi nhanh ${q[1]} ${formatShort(q[2])} (${w.name})`, 'Hoàn tác', () => {
     deleteTransaction(newTx.id, false);
   });
 }
@@ -4732,7 +4931,7 @@ function openTxDetail(id) {
         <div class="row"><span class="sub grow">Từ ví nguồn</span><b>${w.icon} ${w.name}</b></div>
         <div class="row"><span class="sub grow">Đến ví đích</span><b>${toW ? toW.icon + ' ' + toW.name : 'Ví đích'}</b></div>
       ` : `
-        <div class="row"><span class="sub grow">Ví tài khoản</span><b>${masked ? '🔒 Ẩn' : w.icon + ' ' + w.name}</b></div>
+        <div class="row"><span class="sub grow">${t.kind === 'i' ? 'Tài khoản nhận tiền' : 'Tài khoản chi tiền'}</span><b>${masked ? '🔒 Ẩn' : w.icon + ' ' + w.name}</b></div>
       `}
       <div class="row"><span class="sub grow">Phân loại</span><b>${t.shared ? '👥 Khoản Chung' : '🔒 Khoản Riêng'}</b></div>
       ${t.note && !masked ? `<div class="row"><span class="sub grow">Ghi chú</span><b>${t.note}</b></div>` : ''}
@@ -5983,10 +6182,15 @@ function setupSegmentedControls() {
       $('#add-amt-display').style.color = i === 1 ? 'var(--inc)' : i === 2 ? '#818cf8' : 'var(--txt)';
       const isTransfer = i === 2;
       if ($('#transfer-wallets-box')) $('#transfer-wallets-box').style.display = isTransfer ? 'block' : 'none';
+      if ($('#single-wallet-box')) $('#single-wallet-box').style.display = isTransfer ? 'none' : 'block';
       if ($('.cat-header-bar')) $('.cat-header-bar').style.display = isTransfer ? 'none' : 'flex';
       if ($('#add-cats-grid')) $('#add-cats-grid').style.display = isTransfer ? 'none' : 'grid';
-      if (isTransfer) renderTransferWallets();
-      else renderAddCats();
+      if (isTransfer) {
+        renderTransferWallets();
+      } else {
+        renderSingleWalletPicker();
+        renderAddCats();
+      }
       renderAddChips();
     };
   });

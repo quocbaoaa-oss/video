@@ -1,4 +1,4 @@
-const CACHE_NAME = 'vidoi-pwa-v11-transfers-haptics-calendar-love';
+const CACHE_NAME = 'vidoi-pwa-v12-account-selection-thu-chi';
 const ASSETS = [
   './',
   './index.html',
