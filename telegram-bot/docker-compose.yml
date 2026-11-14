@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  vidoi-telegram-bot:
+    build: .
+    container_name: vidoi-telegram-bot
+    restart: always
+    environment:
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - FAMILY_CODE=${FAMILY_CODE:-BO8686}
+      - FAMILY_PIN=${FAMILY_PIN:-2611}
+      - DATA_DIR=/app/data
+    volumes:
+      - ./data:/app/data

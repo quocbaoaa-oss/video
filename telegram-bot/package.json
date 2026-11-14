@@ -1,0 +1,12 @@
+{
+  "name": "vidoi-telegram-bot",
+  "version": "1.0.0",
+  "description": "Telegram Bot ghi chép chi tiêu nhanh cho hai vợ chồng Bảo & Oanh — Đồng bộ thời gian thực với Ví Đôi PWA",
+  "main": "bot.js",
+  "scripts": {
+    "start": "node bot.js"
+  },
+  "keywords": ["telegram", "bot", "finance", "expense-tracker", "pwa"],
+  "author": "Bảo & Oanh",
+  "license": "MIT"
+}

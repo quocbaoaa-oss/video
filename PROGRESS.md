@@ -40,6 +40,7 @@ Dự án hiện được xây dựng song song trên 2 nền tảng mạnh mẽ:
 | 8 | **Xuất lịch Apple / Google Calendar (`.ics`)** | Nút `📲` bên cạnh mỗi sự kiện gia đình tạo và tải file `.ics` tiêu chuẩn iCalendar, tích hợp chuông nhắc nhở trước 1 ngày (`TRIGGER:-P1D`), đồng bộ 1 chạm vào Apple Calendar hoặc Google Calendar. | **Đã hoàn thành** |
 | 9 | **Hộp lời nhắn yêu thương (Love Note)** | Thẻ lời nhắn ngọt ngào của Bảo & Oanh hiển thị trang trọng trên trang Tổng quan; hỗ trợ chạm để gửi lời nhắn mới và **tự động mã hóa E2EE đồng bộ tức thì sang máy đối phương**. | **Đã hoàn thành** |
 | 10 | **Chọn Tài khoản Thu / Chi khi ghi nhận** | Bổ sung khung chọn chuyên biệt **Tài khoản Chi tiền** (trừ tiền) khi Chi tiêu và **Tài khoản Nhận tiền** (cộng tiền) khi Thu nhập; danh sách tài khoản ngân hàng / tiền mặt hiển thị dạng thẻ ngang vuốt chạm mượt mà + dropdown chọn nhanh + nút thêm tài khoản trực tiếp; tự động trừ/cộng số dư chuẩn xác 100%; hiển thị nhãn tài khoản rõ nét trên từng dòng giao dịch và chi tiết. | **Đã hoàn thành (v12)** |
+| 11 | **Trợ lý Telegram Bot Ghi Chép Siêu Tốc** | Xây dựng Bot Telegram độc lập (`telegram-bot/`) chạy trên máy chủ Cloud (VPS); tự động nhận diện ngôn ngữ tự nhiên Tiếng Việt (số tiền, danh mục, ví nguồn/đích, phân vai Chồng/Vợ); tích hợp nút bấm tương tác (xóa, đổi chung/riêng, xem số dư); **đồng bộ thời gian thực tức thì sang ứng dụng Ví Đôi PWA**; đóng gói sẵn Docker & Docker Compose chạy 1 lệnh. | **Đã hoàn thành** |
 
 ### 2.2. Các tính năng cốt lõi trước đó của bản PWA
 | # | Hạng mục công việc | File triển khai | Trạng thái |
@@ -132,6 +133,12 @@ App chi tieu gia dinh/
 ├── manifest.json                    # Cấu hình PWA Manifest phụ
 ├── sw.js                            # Service Worker quản lý bộ nhớ đệm Offline (v11)
 ├── icons/                           # Bộ icon chuẩn PWA cho iOS & Android (192, 512, apple-touch, favicon)
+├── telegram-bot/                    # Trợ lý Bot Telegram ghi chép siêu tốc trên Cloud Server
+│   ├── bot.js                       # Xử lý NLP tiếng Việt, đồng bộ PWA, giao tiếp Bot API
+│   ├── Dockerfile                   # Đóng gói container Node 18
+│   ├── docker-compose.yml           # Triển khai 1 lệnh trên Cloud VPS
+│   ├── .env.example                 # File mẫu cấu hình Token, mã gia đình, PIN
+│   └── README.md                    # Hướng dẫn chi tiết từ tạo bot đến vận hành
 ├── Logo/                            # Bộ logo thiết kế đồ họa nhận diện thương hiệu
 ├── mockup.html, prototype_v2.html   # Các bản prototype tham khảo trước đây
 └── ViDoi/                           # Bản iOS SwiftUI Native (dành cho Xcode)
