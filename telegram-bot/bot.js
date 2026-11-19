@@ -287,6 +287,29 @@ async function sendMessage(chatId, text, extra = {}) {
   });
 }
 
+// Gửi file tài liệu (sao lưu backup JSON) trực tiếp qua Telegram
+async function sendTelegramDocument(chatId, fileName, fileBuffer, caption = '') {
+  try {
+    const form = new FormData();
+    form.append('chat_id', chatId);
+    if (caption) form.append('caption', caption);
+    form.append('parse_mode', 'HTML');
+    form.append('document', new Blob([fileBuffer], { type: 'application/json' }), fileName);
+
+    const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendDocument`, {
+      method: 'POST',
+      body: form
+    });
+    return await res.json();
+  } catch (e) {
+    console.error('Lỗi sendTelegramDocument:', e.message);
+    return null;
+  }
+}
+
+// Bộ nhớ tạm lưu trữ các hóa đơn đang chờ người dùng kiểm tra & xác nhận
+const PENDING_BILLS = new Map();
+
 function formatVND(amt) {
   return Number(amt || 0).toLocaleString('vi-VN');
 }
@@ -301,6 +324,50 @@ function formatRole(role) {
   return role === 'her' ? `👩 ${u.name} (Vợ)` : `👨 ${u.name} (Chồng)`;
 }
 
+// Hàm hiển thị Thẻ Xem lại & Tự động điền hóa đơn AI
+async function renderBillPreviewCard(chatId, messageId, bill) {
+  let itemsListStr = '';
+  if (Array.isArray(bill.items) && bill.items.length > 0) {
+    itemsListStr = '\n<b>📋 Các món bóc tách được:</b>\n' + bill.items.slice(0, 5).map(it => ` • ${it.name}${it.price ? `: <code>${formatVND(it.price)} ₫</code>` : ''}`).join('\n');
+    if (bill.items.length > 5) itemsListStr += `\n • <i>và ${bill.items.length - 5} món khác...</i>`;
+  }
+
+  const cardText = `🧾 <b>KẾT QUẢ TỰ ĐỘNG ĐỌC HÓA ĐƠN (AI)</b>\n\n` +
+    `🏪 <b>Nơi bán:</b> ${bill.merchant || 'Cửa hàng'}\n` +
+    `📅 <b>Ngày:</b> ${bill.date || 'Hôm nay'}\n` +
+    `💰 <b>Tổng tiền:</b> <code>-${formatVND(bill.amount)} ₫</code>\n` +
+    `📁 <b>Danh mục:</b> ${bill.icon} ${bill.category}\n` +
+    `💳 <b>Tài khoản:</b> ${getWalletName(bill.wallet)}\n` +
+    `👤 <b>Người chi:</b> ${formatRole(bill.who)}\n` +
+    itemsListStr +
+    `\n\n💡 <i>Vui lòng bấm Xác nhận để lưu vào sổ Ví Đôi và đồng bộ PWA:</i>`;
+
+  const keyboard = {
+    inline_keyboard: [
+      [
+        { text: '✅ Xác nhận lưu vào Ví Đôi', callback_data: `confirm_bill_${bill.id}` },
+        { text: '🗑 Hủy bỏ', callback_data: `cancel_bill_${bill.id}` }
+      ],
+      [
+        { text: '📁 Đổi danh mục', callback_data: `change_cat_${bill.id}` },
+        { text: '💳 Đổi tài khoản', callback_data: `change_wal_${bill.id}` }
+      ]
+    ]
+  };
+
+  if (messageId) {
+    return sendTelegram('editMessageText', {
+      chat_id: chatId,
+      message_id: messageId,
+      text: cardText,
+      parse_mode: 'HTML',
+      reply_markup: keyboard
+    });
+  } else {
+    return sendMessage(chatId, cardText, { reply_markup: keyboard });
+  }
+}
+
 // 7. Xử lý Lệnh & Tin nhắn người dùng
 async function handleUpdate(update) {
   // A. Xử lý Callback Button (Inline keyboard)
@@ -309,6 +376,170 @@ async function handleUpdate(update) {
     const data = cq.data || '';
     const chatId = cq.message.chat.id;
     const msgId = cq.message.message_id;
+
+    // Xác nhận lưu hóa đơn AI đã tự điền
+    if (data.startsWith('confirm_bill_')) {
+      const billId = data.replace('confirm_bill_', '');
+      const bill = PENDING_BILLS.get(billId);
+      if (!bill) {
+        await sendTelegram('answerCallbackQuery', { callback_query_id: cq.id, text: 'Hóa đơn đã xử lý hoặc hết hạn.' });
+        return;
+      }
+      PENDING_BILLS.delete(billId);
+
+      const curTxId = Date.now();
+      const newTx = {
+        id: curTxId,
+        day: new Date().getDate(),
+        icon: bill.icon || '🧾',
+        title: bill.merchant || bill.category,
+        category: bill.category,
+        amount: bill.amount,
+        who: bill.who,
+        shared: true,
+        wallet: bill.wallet,
+        kind: 'e',
+        note: `Hóa đơn AI: ${bill.merchant || ''}`,
+        receipt: null,
+        comments: [],
+        updatedAt: curTxId
+      };
+
+      const w = DB.wallets.find(x => x.id === bill.wallet);
+      if (w) w.balance -= bill.amount;
+
+      DB.transactions.unshift(newTx);
+      saveDB();
+      await broadcastToPWA();
+
+      await sendTelegram('answerCallbackQuery', { callback_query_id: cq.id, text: 'Đã lưu hóa đơn thành công!' });
+      await sendTelegram('editMessageText', {
+        chat_id: chatId,
+        message_id: msgId,
+        text: `✅ <b>ĐÃ LƯU THÀNH CÔNG VÀO VÍ ĐÔI!</b>\n\n` +
+          `🏪 <b>${bill.merchant}</b>: <code>-${formatVND(bill.amount)} ₫</code>\n` +
+          `• <b>Danh mục:</b> ${bill.icon} ${bill.category}\n` +
+          `• <b>Tài khoản:</b> ${getWalletName(bill.wallet)}\n` +
+          `• <b>Người chi:</b> ${formatRole(bill.who)}\n\n` +
+          `⚡ <i>Đã đồng bộ tức thì sang Ví Đôi PWA của cả hai vợ chồng!</i>`,
+        parse_mode: 'HTML',
+        reply_markup: {
+          inline_keyboard: [
+            [
+              { text: '🗑 Hủy / Xóa', callback_data: `del_tx_${curTxId}` },
+              { text: '📊 Xem số dư ví', callback_data: 'view_wallets' }
+            ]
+          ]
+        }
+      });
+      return;
+    }
+
+    // Hủy bỏ hóa đơn AI
+    if (data.startsWith('cancel_bill_')) {
+      const billId = data.replace('cancel_bill_', '');
+      PENDING_BILLS.delete(billId);
+      await sendTelegram('answerCallbackQuery', { callback_query_id: cq.id, text: 'Đã hủy bỏ hóa đơn.' });
+      await sendTelegram('editMessageText', {
+        chat_id: chatId,
+        message_id: msgId,
+        text: `🗑 <i>Đã hủy bỏ thông tin hóa đơn này. Không lưu vào sổ chi tiêu.</i>`,
+        parse_mode: 'HTML'
+      });
+      return;
+    }
+
+    // Đổi danh mục cho hóa đơn
+    if (data.startsWith('change_cat_')) {
+      const billId = data.replace('change_cat_', '');
+      const bill = PENDING_BILLS.get(billId);
+      if (!bill) {
+        await sendTelegram('answerCallbackQuery', { callback_query_id: cq.id, text: 'Hóa đơn đã hết hạn.' });
+        return;
+      }
+      const catButtons = [];
+      for (let i = 0; i < CATEGORY_MAP.length; i += 2) {
+        const row = [
+          { text: `${CATEGORY_MAP[i].icon} ${CATEGORY_MAP[i].cat}`, callback_data: `set_cat_${billId}_${i}` }
+        ];
+        if (CATEGORY_MAP[i + 1]) {
+          row.push({ text: `${CATEGORY_MAP[i + 1].icon} ${CATEGORY_MAP[i + 1].cat}`, callback_data: `set_cat_${billId}_${i + 1}` });
+        }
+        catButtons.push(row);
+      }
+      catButtons.push([{ text: '‹ Quay lại hóa đơn', callback_data: `back_bill_${billId}` }]);
+
+      await sendTelegram('answerCallbackQuery', { callback_query_id: cq.id });
+      await sendTelegram('editMessageText', {
+        chat_id: chatId,
+        message_id: msgId,
+        text: `📁 <b>Chọn danh mục chi tiêu mới cho hóa đơn "${bill.merchant}":</b>`,
+        parse_mode: 'HTML',
+        reply_markup: { inline_keyboard: catButtons }
+      });
+      return;
+    }
+
+    if (data.startsWith('set_cat_')) {
+      const parts = data.replace('set_cat_', '').split('_');
+      const billId = parts[0];
+      const catIdx = parseInt(parts[1], 10);
+      const bill = PENDING_BILLS.get(billId);
+      if (bill && CATEGORY_MAP[catIdx]) {
+        bill.category = CATEGORY_MAP[catIdx].cat;
+        bill.icon = CATEGORY_MAP[catIdx].icon;
+        await sendTelegram('answerCallbackQuery', { callback_query_id: cq.id, text: `Đã đổi danh mục sang: ${bill.category}` });
+        await renderBillPreviewCard(chatId, msgId, bill);
+      }
+      return;
+    }
+
+    // Đổi tài khoản cho hóa đơn
+    if (data.startsWith('change_wal_')) {
+      const billId = data.replace('change_wal_', '');
+      const bill = PENDING_BILLS.get(billId);
+      if (!bill) {
+        await sendTelegram('answerCallbackQuery', { callback_query_id: cq.id, text: 'Hóa đơn đã hết hạn.' });
+        return;
+      }
+      const walButtons = DB.wallets.map(w => [
+        { text: `${w.icon} ${w.name} (${formatVND(w.balance)} ₫)`, callback_data: `set_wal_${billId}_${w.id}` }
+      ]);
+      walButtons.push([{ text: '‹ Quay lại hóa đơn', callback_data: `back_bill_${billId}` }]);
+
+      await sendTelegram('answerCallbackQuery', { callback_query_id: cq.id });
+      await sendTelegram('editMessageText', {
+        chat_id: chatId,
+        message_id: msgId,
+        text: `💳 <b>Chọn tài khoản thanh toán cho hóa đơn "${bill.merchant}":</b>`,
+        parse_mode: 'HTML',
+        reply_markup: { inline_keyboard: walButtons }
+      });
+      return;
+    }
+
+    if (data.startsWith('set_wal_')) {
+      const parts = data.replace('set_wal_', '').split('_');
+      const billId = parts[0];
+      const walId = parts[1];
+      const bill = PENDING_BILLS.get(billId);
+      if (bill) {
+        bill.wallet = walId;
+        await sendTelegram('answerCallbackQuery', { callback_query_id: cq.id, text: `Đã đổi tài khoản: ${getWalletName(walId)}` });
+        await renderBillPreviewCard(chatId, msgId, bill);
+      }
+      return;
+    }
+
+    if (data.startsWith('back_bill_')) {
+      const billId = data.replace('back_bill_', '');
+      const bill = PENDING_BILLS.get(billId);
+      if (bill) {
+        await sendTelegram('answerCallbackQuery', { callback_query_id: cq.id });
+        await renderBillPreviewCard(chatId, msgId, bill);
+      }
+      return;
+    }
 
     if (data.startsWith('set_role_')) {
       const role = data.replace('set_role_', '');
@@ -400,13 +631,18 @@ async function handleUpdate(update) {
       const buffer = await imgRes.arrayBuffer();
       const base64Data = Buffer.from(buffer).toString('base64');
 
-      // 3. Gọi Google Gemini Vision 1.5 Flash
-      const promptText = `Bạn là trợ lý tài chính thông minh cho gia đình Bảo & Oanh. Hãy đọc kỹ ảnh hóa đơn này và trích xuất thông tin.
+      // 3. Gọi Google Gemini Vision 1.5 Flash bóc tách chi tiết từng mặt hàng & tổng tiền
+      const promptText = `Bạn là chuyên gia phân tích hóa đơn tài chính cho gia đình Bảo & Oanh.
+Hãy đọc thật kỹ ảnh hóa đơn này và trích xuất thông tin.
 Trả về CHỈ DUY NHẤT một chuỗi JSON hợp lệ (không kèm markdown):
 {
-  "amount": <tổng số tiền thanh toán cuối cùng bằng số nguyên VND, ví dụ 150000>,
-  "merchant": "<tên cửa hàng, siêu thị, nhà hàng hoặc người bán ngắn gọn, ví dụ WinMart, Highlands Coffee, Circle K>",
-  "category": "<một trong các danh mục sau: Ăn uống | Chợ & Siêu thị | Nhà cửa | Hóa đơn | Đi lại | Con cái | Mua sắm | Giải trí | Sức khỏe | Khác>"
+  "amount": <tổng số tiền thanh toán cuối cùng bằng số nguyên VND, ví dụ 345000>,
+  "merchant": "<tên cửa hàng, siêu thị, nhà hàng hoặc bên bán ngắn gọn, ví dụ WinMart, Highlands Coffee, Circle K>",
+  "category": "<một trong các danh mục sau: Ăn uống | Chợ & Siêu thị | Nhà cửa | Hóa đơn | Đi lại | Con cái | Mua sắm | Giải trí | Sức khỏe | Khác>",
+  "date": "<ngày tháng nếu thấy trên bill dạng DD/MM/YYYY hoặc null>",
+  "items": [
+    { "name": "<tên món hoặc mặt hàng ngắn gọn>", "price": <giá tiền số nguyên VND nếu thấy hoặc null> }
+  ]
 }`;
 
       const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(GEMINI_API_KEY)}`, {
@@ -437,53 +673,29 @@ Trả về CHỈ DUY NHẤT một chuỗi JSON hợp lệ (không kèm markdown)
       if (!parsed || !parsed.amount) throw new Error('Không tìm thấy tổng số tiền trên hóa đơn');
 
       const amt = parseInt(parsed.amount, 10);
-      const curTxId = Date.now();
       const day = new Date().getDate();
       const walletId = myRole === 'her' ? 'momo' : 'cash';
-
       const catItem = CATEGORY_MAP.find(c => c.cat === parsed.category) || { cat: parsed.category || 'Ăn uống', icon: '🧾' };
 
-      const newTx = {
-        id: curTxId,
-        day: day,
-        icon: catItem.icon,
-        title: parsed.merchant || catItem.cat,
-        category: catItem.cat,
+      const billId = 'b_' + Date.now();
+      const billDraft = {
+        id: billId,
         amount: amt,
-        who: myRole,
-        shared: true,
+        merchant: parsed.merchant || catItem.cat,
+        category: catItem.cat,
+        icon: catItem.icon,
+        items: Array.isArray(parsed.items) ? parsed.items.slice(0, 8) : [],
+        date: parsed.date || `${day}/${new Date().getMonth() + 1}`,
         wallet: walletId,
-        kind: 'e',
-        note: `Hóa đơn AI: ${parsed.merchant || ''}`,
-        receipt: null,
-        comments: [],
-        updatedAt: curTxId
+        who: myRole,
+        chatId: chatId,
+        createdAt: Date.now()
       };
 
-      const w = DB.wallets.find(x => x.id === walletId);
-      if (w) w.balance -= amt;
+      PENDING_BILLS.set(billId, billDraft);
 
-      DB.transactions.unshift(newTx);
-      saveDB();
-      broadcastToPWA();
-
-      const reply = `✨ <b>AI đã đọc hóa đơn thành công!</b>\n\n` +
-        `🏪 <b>${parsed.merchant || 'Hóa đơn'}</b>: <code>-${formatVND(amt)} ₫</code>\n` +
-        `• <b>Danh mục:</b> ${catItem.icon} ${catItem.cat}\n` +
-        `• <b>Tài khoản:</b> ${getWalletName(walletId)}\n` +
-        `• <b>Người chi:</b> ${formatRole(myRole)}\n\n` +
-        `⚡ <i>Đã tự động lưu & đồng bộ tức thì sang Ví Đôi PWA!</i>`;
-
-      return sendMessage(chatId, reply, {
-        reply_markup: {
-          inline_keyboard: [
-            [
-              { text: '🗑 Hủy / Xóa', callback_data: `del_tx_${curTxId}` },
-              { text: '📊 Xem số dư ví', callback_data: 'view_wallets' }
-            ]
-          ]
-        }
-      });
+      // Gửi thẻ xem lại thông tin tự động điền để người dùng duyệt trước khi lưu
+      return renderBillPreviewCard(chatId, null, billDraft);
     } catch (err) {
       console.error('Lỗi quét hóa đơn Telegram:', err);
       return sendMessage(chatId, `⚠️ <b>Không thể đọc hóa đơn bằng AI:</b> ${err.message || 'Lỗi xử lý ảnh.'}\n\nBạn có thể gõ tay nhanh, ví dụ: <code>đi chợ 250k vcb</code> ✨`);
@@ -555,24 +767,46 @@ Trả về CHỈ DUY NHẤT một chuỗi JSON hợp lệ (không kèm markdown)
     );
   }
 
+  // Lệnh /backup hoặc /saoluu: Đóng gói và gửi file sao lưu database về Telegram
+  if (text === '/backup' || text === '/saoluu') {
+    const backupJson = JSON.stringify(DB, null, 2);
+    const now = new Date();
+    const pad = n => String(n).padStart(2, '0');
+    const nowStr = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+    const fileName = `vidoi_backup_${nowStr}.json`;
+    const caption = `💾 <b>BẢO MẬT & SAO LƯU MÁY CHỦ THÀNH CÔNG!</b>\n\n` +
+      `• <b>Thời gian:</b> ${now.toLocaleString('vi-VN')}\n` +
+      `• <b>Tổng số giao dịch:</b> ${DB.transactions.length}\n` +
+      `• <b>Tài khoản / Ví:</b> ${DB.wallets.length} tài khoản\n` +
+      `• <b>Kích thước file:</b> ${(Buffer.byteLength(backupJson, 'utf8') / 1024).toFixed(1)} KB\n` +
+      `• <b>Mã gia đình:</b> <code>${FAMILY_CODE}</code>\n\n` +
+      `<i>Bạn có thể nạp file JSON này vào ứng dụng Ví Đôi PWA mục Khôi phục từ file JSON bất cứ lúc nào!</i>`;
+
+    await sendMessage(chatId, `⏳ <i>Đang đóng gói dữ liệu máy chủ và gửi file sao lưu qua Telegram...</i>`);
+    await sendTelegramDocument(chatId, fileName, Buffer.from(backupJson, 'utf8'), caption);
+    return;
+  }
+
   // Lệnh /help
   if (text === '/help') {
-    return sendMessage(chatId, `📖 <b>Hướng dẫn ghi chép siêu tốc qua Telegram:</b>\n\n` +
-      `• <b>Chi tiêu ăn uống, mua sắm:</b>\n` +
+    return sendMessage(chatId, `📖 <b>Hướng dẫn sử dụng Bot Ví Đôi — Bảo & Oanh:</b>\n\n` +
+      `• <b>Ghi chép chi tiêu siêu tốc:</b>\n` +
       `  <code>cf 45k</code>\n` +
       `  <code>ăn sáng 65k tiền mặt</code>\n` +
       `  <code>đi chợ 250k vcb</code>\n` +
       `  <code>xăng xe 120k</code>\n` +
       `  <code>mua đồ shopee 350k tín dụng</code>\n\n` +
-      `• <b>Thu nhập / Tiền về:</b>\n` +
+      `• <b>Ghi nhận thu nhập / Tiền về:</b>\n` +
       `  <code>lương 25tr vcb</code>\n` +
       `  <code>thu 5tr bán hàng</code>\n\n` +
       `• <b>Chuyển tiền giữa các ví / Tiết kiệm:</b>\n` +
       `  <code>chuyển 5tr vcb sang tiết kiệm</code>\n` +
       `  <code>chuyển 1tr vcb qua tiền mặt</code>\n\n` +
+      `• <b>Quét hóa đơn bằng AI:</b> Gửi trực tiếp ảnh chụp hóa đơn vào chat, bot sẽ tự động đọc tên cửa hàng, các món, tổng tiền và tạo thẻ xác nhận lưu vào Ví Đôi!\n\n` +
       `• <b>Xem số dư ví:</b> gõ <code>/vi</code>\n` +
       `• <b>Báo cáo tháng:</b> gõ <code>/baocao</code>\n` +
-      `• <b>Đổi vai trò:</b> gõ <code>/role him</code> hoặc <code>/role her</code>`
+      `• <b>Sao lưu máy chủ:</b> gõ <code>/backup</code> (gửi file sao lưu JSON an toàn)\n` +
+      `• <b>Đổi vai trò:</b> gõ <code>/role him</code> (Bảo) hoặc <code>/role her</code> (Oanh)`
     );
   }
 
@@ -723,6 +957,35 @@ async function startBot() {
   }
   console.log(`✅ Kết nối thành công tới Bot: @${me.result.username} (${me.result.first_name})`);
   console.log('🚀 Đang lắng nghe tin nhắn ghi chép từ hai vợ chồng...');
+
+  // Tiến trình tự động gửi bản sao lưu máy chủ mỗi đêm lúc 02:00 AM
+  let lastBackupDay = -1;
+  setInterval(async () => {
+    const now = new Date();
+    if (now.getHours() === 2 && now.getDate() !== lastBackupDay) {
+      lastBackupDay = now.getDate();
+      console.log('⏰ [Cronjob] Bắt đầu tiến trình tự động sao lưu đêm 02:00 AM...');
+      const userIds = Object.keys(DB.telegramUsers || {});
+      if (userIds.length > 0) {
+        const backupJson = JSON.stringify(DB, null, 2);
+        const pad = n => String(n).padStart(2, '0');
+        const nowStr = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}_020000`;
+        const fileName = `vidoi_nightly_backup_${nowStr}.json`;
+        const caption = `🌙 <b>BẢN SAO LƯU ĐỊNH KỲ TỰ ĐỘNG (02:00 AM)</b>\n\n` +
+          `• <b>Ngày:</b> ${now.toLocaleDateString('vi-VN')}\n` +
+          `• <b>Tổng số giao dịch:</b> ${DB.transactions.length}\n` +
+          `• <b>Trạng thái:</b> Dữ liệu máy chủ an toàn 100% ✅`;
+
+        for (const uid of userIds) {
+          try {
+            await sendTelegramDocument(uid, fileName, Buffer.from(backupJson, 'utf8'), caption);
+          } catch (e) {
+            console.warn(`Lỗi gửi backup đêm tới user ${uid}:`, e.message);
+          }
+        }
+      }
+    }
+  }, 60 * 1000);
 
   while (true) {
     await pollUpdates();
