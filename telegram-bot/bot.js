@@ -7,6 +7,32 @@
 const fs = require('fs');
 const path = require('path');
 
+// Tự động đọc cấu hình từ file .env (không cần thư viện ngoài)
+const envPath = path.join(__dirname, '.env');
+if (fs.existsSync(envPath)) {
+  try {
+    const envContent = fs.readFileSync(envPath, 'utf8');
+    envContent.split(/\r?\n/).forEach(line => {
+      const trimmed = line.trim();
+      if (trimmed && !trimmed.startsWith('#')) {
+        const eqIdx = trimmed.indexOf('=');
+        if (eqIdx > 0) {
+          const key = trimmed.slice(0, eqIdx).trim();
+          let val = trimmed.slice(eqIdx + 1).trim();
+          if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+            val = val.slice(1, -1);
+          }
+          if (!process.env[key]) {
+            process.env[key] = val;
+          }
+        }
+      }
+    });
+  } catch (err) {
+    console.warn('⚠️ Không thể đọc file .env:', err.message);
+  }
+}
+
 // 1. Cấu hình Môi trường
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
 const FAMILY_CODE = (process.env.FAMILY_CODE || 'BO8686').toUpperCase();
@@ -711,8 +737,8 @@ Trả về CHỈ DUY NHẤT một chuỗi JSON hợp lệ (không kèm markdown)
   const tgUserId = String(msg.from.id);
   const myRole = DB.telegramUsers[tgUserId] || 'him';
 
-  // Lệnh /start
-  if (text === '/start') {
+  // Lệnh /start (hoặc /star do gõ thiếu chữ t)
+  if (text === '/start' || text === '/star') {
     return sendMessage(chatId, `💑 <b>Chào mừng bạn đến với Bot Ghi Chép Nhanh — Ví Đôi (Bảo & Oanh)!</b>\n\nĐể bot nhận diện đúng người ghi, vui lòng chọn bạn là ai:`, {
       reply_markup: {
         inline_keyboard: [
