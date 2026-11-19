@@ -1990,6 +1990,17 @@
         <div class="btn alt sm" style="margin:4px 0;width:100%" onclick="restoreSampleData()">↺ Nạp lại dữ liệu mẫu (Demo)</div>
       </div>
     </div>
+
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <h2>✨ Trí tuệ Nhân tạo (Gemini AI Vision)</h2>
+        <span class="event-pill-badge" id="gemini-status-badge" style="background:rgba(124,92,255,0.18);color:#a78bfa;border:1px solid rgba(124,92,255,0.3)">AI Vision</span>
+      </div>
+      <div class="sub" style="margin-bottom:10px">Tự động đọc hóa đơn mua sắm bằng AI: bóc tách số tiền, tên cửa hàng, ngày và gợi ý danh mục phù hợp.</div>
+      <div class="btn sm" style="width:100%;background:linear-gradient(135deg, #7C5CFF, #EC4899);color:#fff;border:none" onclick="promptConfigureGeminiKey()">
+        🔑 Cấu hình Gemini API Key
+      </div>
+    </div>
   </div>
 
   <!-- ==================== 6. SUBVIEW: DETAIL GIAO DỊCH ==================== -->
@@ -2132,7 +2143,12 @@
       <!-- Photo Receipt Upload & Preview -->
       <input type="file" id="receipt-file-input" accept="image/*" capture="environment" style="display:none" onchange="onReceiptFileSelected(event)">
       <img id="receipt-preview-img" class="receipt-preview" onclick="viewPhotoZoom(this.src)">
-      <div id="receipt-remove-btn" class="sub link" style="display:none;margin-bottom:8px" onclick="clearReceipt()">✕ Bỏ ảnh hóa đơn</div>
+      <div id="receipt-actions-bar" style="display:none;justify-content:space-between;align-items:center;margin:6px 0 10px">
+        <button type="button" class="btn sm" id="ai-scan-btn" onclick="scanReceiptWithAI()" style="background:linear-gradient(135deg, #7C5CFF, #EC4899);color:#fff;border:none;box-shadow:0 3px 12px rgba(124,92,255,0.3)">
+          ✨ Quét hóa đơn bằng AI
+        </button>
+        <div id="receipt-remove-btn" class="sub link" onclick="clearReceipt()">✕ Bỏ ảnh hóa đơn</div>
+      </div>
 
       <!-- Shared & Recurring Toggles -->
       <div class="card" style="padding:4px 14px" onclick="closeNumberPad()">
@@ -3618,19 +3634,49 @@ function renderReportPanes() {
     </div>
   `).join('');
 
-  // 6 months trend (actual current month spend, 0 for prior empty months)
+  // 6 months trend (actual calculation based on all transactions)
   const bTrend = calculateBalance();
-  const mockTrend = [
-    [0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [bTrend.paidHim / 1e6, bTrend.paidHer / 1e6]
-  ];
-  const maxBar = Math.max(1, ...mockTrend.flat());
-  $('#rep-cols').innerHTML = mockTrend.map((m, i) => `
-    <div onclick="toast('Tháng ${i + 6}: ${DB.users.him.name} ${(m[0]).toFixed(1)}tr · ${DB.users.her.name} ${(m[1]).toFixed(1)}tr')">
+  const now = new Date();
+  const monthsData = [];
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const m = d.getMonth();
+    const y = d.getFullYear();
+    const label = `T${m + 1}`;
+    let paidHim = 0;
+    let paidHer = 0;
+
+    (DB.transactions || []).forEach(t => {
+      if (t.kind !== 'e') return;
+      const txDate = t.updatedAt ? new Date(t.updatedAt) : new Date();
+      if (txDate.getMonth() === m && txDate.getFullYear() === y) {
+        if (t.who === 'him') paidHim += t.amount;
+        else if (t.who === 'her') paidHer += t.amount;
+      }
+    });
+
+    if (i === 0 && paidHim === 0 && paidHer === 0) {
+      paidHim = bTrend.paidHim;
+      paidHer = bTrend.paidHer;
+    }
+
+    monthsData.push({
+      label,
+      month: m + 1,
+      year: y,
+      himTr: paidHim / 1e6,
+      herTr: paidHer / 1e6
+    });
+  }
+
+  const maxBar = Math.max(0.5, ...monthsData.flatMap(m => [m.himTr, m.herTr]));
+  $('#rep-cols').innerHTML = monthsData.map(m => `
+    <div onclick="toast('Tháng ${m.month}/${m.year}: ${DB.users.him.name} ${(m.himTr).toFixed(1)}tr · ${DB.users.her.name} ${(m.herTr).toFixed(1)}tr')">
       <span>
-        <i style="height:${Math.max(2, (m[0] / maxBar) * 80)}px;background:var(--him)"></i>
-        <i style="height:${Math.max(2, (m[1] / maxBar) * 80)}px;background:var(--her)"></i>
+        <i style="height:${Math.max(2, (m.himTr / maxBar) * 80)}px;background:var(--him)"></i>
+        <i style="height:${Math.max(2, (m.herTr / maxBar) * 80)}px;background:var(--her)"></i>
       </span>
-      T${i + 6}
+      ${m.label}
     </div>
   `).join('');
   $('#rep-col-him').textContent = DB.users.him.name;
@@ -4097,18 +4143,18 @@ function openAddSheet(editTx = null) {
         if (imgData) {
           $('#receipt-preview-img').src = imgData;
           $('#receipt-preview-img').style.display = 'block';
-          $('#receipt-remove-btn').style.display = 'block';
+          if ($('#receipt-actions-bar')) $('#receipt-actions-bar').style.display = 'flex';
           STATE.addReceipt = imgData;
         }
       });
     } else {
       $('#receipt-preview-img').src = STATE.addReceipt;
       $('#receipt-preview-img').style.display = 'block';
-      $('#receipt-remove-btn').style.display = 'block';
+      if ($('#receipt-actions-bar')) $('#receipt-actions-bar').style.display = 'flex';
     }
   } else {
     $('#receipt-preview-img').style.display = 'none';
-    $('#receipt-remove-btn').style.display = 'none';
+    if ($('#receipt-actions-bar')) $('#receipt-actions-bar').style.display = 'none';
   }
   $('#sw-add-shared').classList.toggle('on', STATE.addShared);
   $('#add-shared-hint').textContent = STATE.addShared ? '· cả hai cùng thấy' : '· 🔒 chỉ mình tôi thấy';
@@ -4607,7 +4653,7 @@ function onReceiptFileSelected(e) {
       const img = $('#receipt-preview-img');
       img.src = STATE.addReceipt;
       img.style.display = 'block';
-      $('#receipt-remove-btn').style.display = 'block';
+      if ($('#receipt-actions-bar')) $('#receipt-actions-bar').style.display = 'flex';
       renderAddChips();
     };
     rawImg.src = ev.target.result;
@@ -4619,8 +4665,157 @@ function clearReceipt() {
   STATE.addReceipt = null;
   $('#receipt-file-input').value = '';
   $('#receipt-preview-img').style.display = 'none';
-  $('#receipt-remove-btn').style.display = 'none';
+  if ($('#receipt-actions-bar')) $('#receipt-actions-bar').style.display = 'none';
   renderAddChips();
+}
+
+function promptConfigureGeminiKey() {
+  const current = localStorage.getItem('vidoi_gemini_api_key') || '';
+  const key = prompt('Nhập Google Gemini API Key của bạn (miễn phí tại aistudio.google.com):', current);
+  if (key === null) return;
+  const clean = key.trim();
+  if (clean) {
+    localStorage.setItem('vidoi_gemini_api_key', clean);
+    toast('Đã lưu Gemini API Key thành công ✨');
+  } else {
+    localStorage.removeItem('vidoi_gemini_api_key');
+    toast('Đã xóa Gemini API Key');
+  }
+}
+
+async function scanReceiptWithAI() {
+  if (!STATE.addReceipt) {
+    return toast('Vui lòng chụp hoặc đính kèm ảnh hóa đơn trước!');
+  }
+
+  let apiKey = localStorage.getItem('vidoi_gemini_api_key');
+  if (!apiKey) {
+    const entered = prompt('Nhập Google Gemini API Key để quét hóa đơn bằng AI (Lấy miễn phí tại aistudio.google.com):');
+    if (!entered || !entered.trim()) return;
+    apiKey = entered.trim();
+    localStorage.setItem('vidoi_gemini_api_key', apiKey);
+  }
+
+  const btn = $('#ai-scan-btn');
+  const originalText = btn ? btn.innerHTML : '';
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '✨ Đang phân tích bằng AI...';
+    btn.style.opacity = '0.7';
+  }
+
+  haptic('light');
+
+  try {
+    let base64Data = '';
+    if (typeof STATE.addReceipt === 'string') {
+      if (STATE.addReceipt.startsWith('data:image')) {
+        base64Data = STATE.addReceipt.split(',')[1];
+      } else if (STATE.addReceipt.startsWith('rcpt_')) {
+        const stored = await ReceiptDB.getReceipt(STATE.addReceipt);
+        if (stored) base64Data = stored.split(',')[1];
+      }
+    }
+
+    if (!base64Data) {
+      throw new Error('Không đọc được dữ liệu ảnh.');
+    }
+
+    const promptText = `Bạn là trợ lý tài chính thông minh cho gia đình Bảo & Oanh. Hãy đọc kỹ ảnh hóa đơn/bill mua sắm này và trích xuất thông tin.
+Trả về CHỈ DUY NHẤT một chuỗi JSON hợp lệ (không kèm markdown, không giải thích thêm) với định dạng:
+{
+  "amount": <tổng số tiền thanh toán cuối cùng bằng số nguyên VND, ví dụ 150000>,
+  "merchant": "<tên cửa hàng, siêu thị, nhà hàng hoặc bên bán ngắn gọn, ví dụ WinMart, Highlands Coffee, Circle K>",
+  "category": "<một trong các danh mục sau: Ăn uống | Chợ & Siêu thị | Nhà cửa | Hóa đơn | Đi lại | Con cái | Mua sắm | Giải trí | Sức khỏe | Khác>",
+  "day": <ngày trong tháng từ 1 đến 31 nếu thấy trên hóa đơn, hoặc null>
+}`;
+
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(apiKey)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{
+          parts: [
+            { text: promptText },
+            {
+              inline_data: {
+                mime_type: 'image/jpeg',
+                data: base64Data
+              }
+            }
+          ]
+        }],
+        generationConfig: {
+          temperature: 0.1,
+          response_mime_type: 'application/json'
+        }
+      })
+    });
+
+    if (!res.ok) {
+      const errBody = await res.text();
+      console.warn('Gemini API Error:', errBody);
+      throw new Error('API Key không hợp lệ hoặc đã hết hạn mức.');
+    }
+
+    const data = await res.json();
+    const candidate = data.candidates && data.candidates[0];
+    const textOut = candidate && candidate.content && candidate.content.parts && candidate.content.parts[0] && candidate.content.parts[0].text;
+    if (!textOut) throw new Error('AI không nhận diện được nội dung hóa đơn.');
+
+    let parsed = null;
+    try {
+      const jsonMatch = textOut.match(/\{[\s\S]*\}/);
+      if (jsonMatch) parsed = JSON.parse(jsonMatch[0]);
+    } catch (e) {
+      console.warn('JSON parse error:', e);
+    }
+
+    if (!parsed || !parsed.amount) {
+      throw new Error('Không tìm thấy tổng số tiền trên hóa đơn.');
+    }
+
+    const amt = parseInt(parsed.amount, 10);
+    if (amt > 0) {
+      STATE.addExp = String(amt);
+      updateAddAmountDisplay();
+    }
+
+    if (parsed.merchant && $('#add-note-input')) {
+      $('#add-note-input').value = parsed.merchant;
+    }
+
+    if (parsed.category) {
+      const activeCats = getActiveCategories(STATE.addKind);
+      const catIdx = activeCats.findIndex(c => c[1].toLowerCase() === parsed.category.toLowerCase() || parsed.category.toLowerCase().includes(c[1].toLowerCase()));
+      if (catIdx >= 0) {
+        selectAddCat(catIdx);
+      }
+    }
+
+    if (parsed.day && Number(parsed.day) >= 1 && Number(parsed.day) <= 31) {
+      STATE.addDay = Number(parsed.day);
+      renderAddChips();
+    }
+
+    haptic('medium');
+    toast(`✨ AI đã đọc: ${parsed.merchant || 'Hóa đơn'} — ${formatVND(amt)} ₫ ✅`);
+  } catch (err) {
+    haptic('heavy');
+    console.error('Scan receipt error:', err);
+    confirmDlg(
+      'Lỗi quét hóa đơn AI',
+      `${err.message || 'Không thể đọc ảnh hóa đơn.'}\nBạn có muốn nhập lại Gemini API Key không?`,
+      'Nhập Key',
+      () => promptConfigureGeminiKey()
+    );
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = originalText || '✨ Quét hóa đơn bằng AI';
+      btn.style.opacity = '1';
+    }
+  }
 }
 
 function viewPhotoZoom(src) {

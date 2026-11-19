@@ -11,6 +11,7 @@ const path = require('path');
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '';
 const FAMILY_CODE = (process.env.FAMILY_CODE || 'BO8686').toUpperCase();
 const FAMILY_PIN = process.env.FAMILY_PIN || '2611';
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
 
 if (!BOT_TOKEN) {
@@ -371,7 +372,125 @@ async function handleUpdate(update) {
     }
   }
 
-  // B. Xử lý Tin nhắn văn bản
+  // B. Xử lý Ảnh Hóa đơn gửi trực tiếp qua Telegram (Quét bằng Gemini AI Vision)
+  if (update.message && Array.isArray(update.message.photo) && update.message.photo.length > 0) {
+    const msg = update.message;
+    const chatId = msg.chat.id;
+    const tgUserId = String(msg.from.id);
+    const myRole = DB.telegramUsers[tgUserId] || 'him';
+
+    if (!GEMINI_API_KEY) {
+      return sendMessage(chatId, `📷 <b>Đã nhận ảnh hóa đơn!</b>\n\nĐể bot tự động đọc số tiền bằng AI, bạn chỉ cần thêm <code>GEMINI_API_KEY="AIzaSy..."</code> vào file <code>.env</code> trên máy chủ Cloud nhé! ✨\n\n<i>(Lấy key miễn phí tại <a href="https://aistudio.google.com/">aistudio.google.com</a>)</i>`);
+    }
+
+    const photos = msg.photo;
+    const bestPhoto = photos[photos.length - 1]; // Ảnh chất lượng cao nhất
+    await sendMessage(chatId, `🔍 <i>Đang dùng Gemini AI quét hóa đơn, vui lòng đợi giây lát...</i>`);
+
+    try {
+      // 1. Lấy link file từ Telegram Bot API
+      const getFileRes = await sendTelegram('getFile', { file_id: bestPhoto.file_id });
+      if (!getFileRes || !getFileRes.ok) throw new Error('Không lấy được thông tin ảnh từ Telegram');
+      const filePath = getFileRes.result.file_path;
+
+      // 2. Tải buffer ảnh
+      const fileUrl = `https://api.telegram.org/file/bot${BOT_TOKEN}/${filePath}`;
+      const imgRes = await fetch(fileUrl);
+      if (!imgRes.ok) throw new Error('Không thể tải file ảnh từ Telegram server');
+      const buffer = await imgRes.arrayBuffer();
+      const base64Data = Buffer.from(buffer).toString('base64');
+
+      // 3. Gọi Google Gemini Vision 1.5 Flash
+      const promptText = `Bạn là trợ lý tài chính thông minh cho gia đình Bảo & Oanh. Hãy đọc kỹ ảnh hóa đơn này và trích xuất thông tin.
+Trả về CHỈ DUY NHẤT một chuỗi JSON hợp lệ (không kèm markdown):
+{
+  "amount": <tổng số tiền thanh toán cuối cùng bằng số nguyên VND, ví dụ 150000>,
+  "merchant": "<tên cửa hàng, siêu thị, nhà hàng hoặc người bán ngắn gọn, ví dụ WinMart, Highlands Coffee, Circle K>",
+  "category": "<một trong các danh mục sau: Ăn uống | Chợ & Siêu thị | Nhà cửa | Hóa đơn | Đi lại | Con cái | Mua sắm | Giải trí | Sức khỏe | Khác>"
+}`;
+
+      const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(GEMINI_API_KEY)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{
+            parts: [
+              { text: promptText },
+              { inline_data: { mime_type: 'image/jpeg', data: base64Data } }
+            ]
+          }],
+          generationConfig: {
+            temperature: 0.1,
+            response_mime_type: 'application/json'
+          }
+        })
+      });
+
+      if (!geminiRes.ok) throw new Error('API Key không hợp lệ hoặc hết hạn mức Gemini');
+      const geminiData = await geminiRes.json();
+      const textOut = geminiData.candidates && geminiData.candidates[0] && geminiData.candidates[0].content && geminiData.candidates[0].content.parts && geminiData.candidates[0].content.parts[0] && geminiData.candidates[0].content.parts[0].text;
+      if (!textOut) throw new Error('AI không nhận diện được hóa đơn');
+
+      const jsonMatch = textOut.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) throw new Error('Không phân tích được kết quả JSON từ AI');
+      const parsed = JSON.parse(jsonMatch[0]);
+      if (!parsed || !parsed.amount) throw new Error('Không tìm thấy tổng số tiền trên hóa đơn');
+
+      const amt = parseInt(parsed.amount, 10);
+      const curTxId = Date.now();
+      const day = new Date().getDate();
+      const walletId = myRole === 'her' ? 'momo' : 'cash';
+
+      const catItem = CATEGORY_MAP.find(c => c.cat === parsed.category) || { cat: parsed.category || 'Ăn uống', icon: '🧾' };
+
+      const newTx = {
+        id: curTxId,
+        day: day,
+        icon: catItem.icon,
+        title: parsed.merchant || catItem.cat,
+        category: catItem.cat,
+        amount: amt,
+        who: myRole,
+        shared: true,
+        wallet: walletId,
+        kind: 'e',
+        note: `Hóa đơn AI: ${parsed.merchant || ''}`,
+        receipt: null,
+        comments: [],
+        updatedAt: curTxId
+      };
+
+      const w = DB.wallets.find(x => x.id === walletId);
+      if (w) w.balance -= amt;
+
+      DB.transactions.unshift(newTx);
+      saveDB();
+      broadcastToPWA();
+
+      const reply = `✨ <b>AI đã đọc hóa đơn thành công!</b>\n\n` +
+        `🏪 <b>${parsed.merchant || 'Hóa đơn'}</b>: <code>-${formatVND(amt)} ₫</code>\n` +
+        `• <b>Danh mục:</b> ${catItem.icon} ${catItem.cat}\n` +
+        `• <b>Tài khoản:</b> ${getWalletName(walletId)}\n` +
+        `• <b>Người chi:</b> ${formatRole(myRole)}\n\n` +
+        `⚡ <i>Đã tự động lưu & đồng bộ tức thì sang Ví Đôi PWA!</i>`;
+
+      return sendMessage(chatId, reply, {
+        reply_markup: {
+          inline_keyboard: [
+            [
+              { text: '🗑 Hủy / Xóa', callback_data: `del_tx_${curTxId}` },
+              { text: '📊 Xem số dư ví', callback_data: 'view_wallets' }
+            ]
+          ]
+        }
+      });
+    } catch (err) {
+      console.error('Lỗi quét hóa đơn Telegram:', err);
+      return sendMessage(chatId, `⚠️ <b>Không thể đọc hóa đơn bằng AI:</b> ${err.message || 'Lỗi xử lý ảnh.'}\n\nBạn có thể gõ tay nhanh, ví dụ: <code>đi chợ 250k vcb</code> ✨`);
+    }
+  }
+
+  // C. Xử lý Tin nhắn văn bản
   if (!update.message || !update.message.text) return;
 
   const msg = update.message;

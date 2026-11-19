@@ -9,6 +9,7 @@ services:
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
       - FAMILY_CODE=${FAMILY_CODE:-BO8686}
       - FAMILY_PIN=${FAMILY_PIN:-2611}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
       - DATA_DIR=/app/data
     volumes:
       - ./data:/app/data

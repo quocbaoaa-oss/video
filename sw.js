@@ -1,4 +1,4 @@
-const CACHE_NAME = 'vidoi-pwa-v12-account-selection-thu-chi';
+const CACHE_NAME = 'vidoi-pwa-v13-gemini-ai-vision-trends';
 const ASSETS = [
   './',
   './index.html',
