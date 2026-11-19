@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+# ==============================================================================
+# Script Cài Đặt Tự Động 1 Chạm Cho Máy Chủ Ví Đôi (Bảo & Oanh)
+# ==============================================================================
+
+set -e
+
+echo "=========================================================="
+echo "🚀 ĐANG TỰ ĐỘNG CÀI ĐẶT MÔI TRƯỜNG MÁY CHỦ VÍ ĐÔI..."
+echo "=========================================================="
+
+export DEBIAN_FRONTEND=noninteractive
+apt update -y
+apt install -y git curl nano ca-certificates gnupg
+
+if ! command -v node >/dev/null 2>&1 || [ "$(node -v | cut -d'.' -f1 | tr -d 'v')" -lt 18 ]; then
+    echo "📦 Đang cài đặt Node.js 20 LTS..."
+    mkdir -p /etc/apt/keyrings
+    curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg --yes
+    echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_20.x nodistro main" > /etc/apt/sources.list.d/nodesource.list
+    apt update -y
+    apt install -y nodejs
+fi
+
+echo "✅ Node.js: $(node -v) | NPM: $(npm -v)"
+
+if ! command -v pm2 >/dev/null 2>&1; then
+    echo "📦 Đang cài đặt PM2..."
+    npm install -g pm2
+fi
+
+TARGET_DIR="$HOME/video"
+if [ -d "$TARGET_DIR" ]; then
+    echo "🔄 Đang cập nhật mã nguồn mới nhất từ GitHub..."
+    cd "$TARGET_DIR"
+    git pull origin main || true
+else
+    echo "📥 Đang tải mã nguồn từ GitHub..."
+    git clone https://github.com/quocbaoaa-oss/video.git "$TARGET_DIR"
+    cd "$TARGET_DIR"
+fi
+
+cd "$TARGET_DIR/telegram-bot"
+chmod +x backup.sh
+
+if [ ! -f .env ]; then
+    cp .env.example .env
+fi
+
+echo ""
+echo "=========================================================="
+echo "🎉 CÀI ĐẶT MÔI TRƯỜNG THÀNH CÔNG 100%!"
+echo "=========================================================="
+echo "👉 Thư mục bot đã sẵn sàng tại: $TARGET_DIR/telegram-bot"
+echo ""
+echo "Các bước tiếp theo rất đơn giản:"
+echo "1) Gõ lệnh: nano .env (để điền TELEGRAM_BOT_TOKEN)"
+echo "2) Gõ lệnh: pm2 start bot.js --name vidoi-bot && pm2 save"
+echo "=========================================================="
