@@ -1509,6 +1509,7 @@
       <span class="month-btn" onclick="changeMonth(-1)">‹</span>
       <b style="font-size:15px" id="cur-month-text">Tháng 11/2026</b>
       <span class="month-btn" onclick="changeMonth(1)">›</span>
+      <span class="chip" id="home-month-reset" style="display:none;padding:3px 10px;font-size:11px;margin-left:4px" onclick="resetToCurrentMonth()">↺ Tháng này</span>
     </div>
 
     <!-- Scope Filter -->
@@ -1636,6 +1637,12 @@
       <h1 style="margin:0">Sổ giao dịch</h1>
       <div class="chip" id="search-toggle-btn" onclick="openSearchBar()">🔍 Tìm kiếm</div>
     </div>
+    <div class="month-bar" style="margin-bottom:8px">
+      <span class="month-btn" onclick="changeMonth(-1)">‹</span>
+      <b style="font-size:15px" id="tx-month-text">Tháng 11/2026</b>
+      <span class="month-btn" onclick="changeMonth(1)">›</span>
+      <span class="chip" id="tx-month-reset" style="display:none;padding:3px 10px;font-size:11px;margin-left:4px" onclick="resetToCurrentMonth()">↺ Tháng này</span>
+    </div>
     <div id="search-bar-wrap" style="display:none;align-items:center;gap:8px;margin-bottom:8px">
       <input class="input" id="search-input" enterkeyhint="search" placeholder="🔍 Gõ tên giao dịch, danh mục, ghi chú…" style="margin:0;flex:1" oninput="onSearch(this.value)" onkeydown="if(event.key==='Enter')this.blur()">
       <span class="link" style="white-space:nowrap;padding:6px 4px" onclick="closeSearchBar()">Đóng</span>
@@ -1647,6 +1654,12 @@
   <!-- ==================== 3. TAB BUDGET & REPORT (NGÂN SÁCH & BÁO CÁO) ==================== -->
   <div class="scr" id="tab-bud">
     <h1>Ngân sách & Báo cáo</h1>
+    <div class="month-bar" style="margin-bottom:8px">
+      <span class="month-btn" onclick="changeMonth(-1)">‹</span>
+      <b style="font-size:15px" id="bud-month-text">Tháng 11/2026</b>
+      <span class="month-btn" onclick="changeMonth(1)">›</span>
+      <span class="chip" id="bud-month-reset" style="display:none;padding:3px 10px;font-size:11px;margin-left:4px" onclick="resetToCurrentMonth()">↺ Tháng này</span>
+    </div>
     <div class="seg" id="bud-rep-seg">
       <div class="on">Ngân sách</div>
       <div>Báo cáo</div>
@@ -2507,6 +2520,26 @@ function ensureDBFields(obj) {
   if (!obj.privateBudgets) obj.privateBudgets = def.privateBudgets;
   if (!Array.isArray(obj.events)) obj.events = [];
   if (!obj.loveNote) obj.loveNote = def.loveNote;
+  if (Array.isArray(obj.transactions)) {
+    const now = new Date();
+    const curM = now.getMonth() + 1;
+    const curY = now.getFullYear();
+    obj.transactions.forEach(t => {
+      if (!t) return;
+      if (typeof t.month !== 'number' || typeof t.year !== 'number') {
+        const ts = (typeof t.id === 'number' && t.id > 1000000000000) ? t.id :
+                   (typeof t.updatedAt === 'number' && t.updatedAt > 1000000000000) ? t.updatedAt : null;
+        if (ts) {
+          const d = new Date(ts);
+          t.month = d.getMonth() + 1;
+          t.year = d.getFullYear();
+        } else {
+          t.month = curM;
+          t.year = curY;
+        }
+      }
+    });
+  }
   return obj;
 }
 
@@ -2590,31 +2623,77 @@ function goBack() {
 }
 
 /* ==========================================================================
-   DATE & MONTH HELPERS
+   DATE & MONTH HELPERS (ISOLATED BY MONTH & YEAR)
    ========================================================================== */
 function getCurrentMonthInfo() {
   const d = new Date();
+  d.setDate(1);
   d.setMonth(d.getMonth() + STATE.monthOffset);
   const m = d.getMonth() + 1;
   const y = d.getFullYear();
   return { month: m, year: y, label: `Tháng ${m}/${y}` };
 }
 
+function getTxMonthYear(t) {
+  if (t && typeof t.month === 'number' && typeof t.year === 'number') {
+    return { month: t.month, year: t.year };
+  }
+  const ts = (t && typeof t.id === 'number' && t.id > 1000000000000) ? t.id :
+             (t && typeof t.updatedAt === 'number' && t.updatedAt > 1000000000000) ? t.updatedAt : Date.now();
+  const d = new Date(ts);
+  return { month: d.getMonth() + 1, year: d.getFullYear() };
+}
+
+function isTxInCurrentMonth(t) {
+  const cur = getCurrentMonthInfo();
+  const my = getTxMonthYear(t);
+  return my.month === cur.month && my.year === cur.year;
+}
+
+function updateMonthBarsUI() {
+  const info = getCurrentMonthInfo();
+  ['#cur-month-text', '#tx-month-text', '#bud-month-text'].forEach(sel => {
+    const el = $(sel);
+    if (el) el.textContent = info.label;
+  });
+  const isNotCurrent = STATE.monthOffset !== 0;
+  ['#home-month-reset', '#tx-month-reset', '#bud-month-reset'].forEach(sel => {
+    const el = $(sel);
+    if (el) el.style.display = isNotCurrent ? 'inline-block' : 'none';
+  });
+}
+
 function changeMonth(delta) {
+  haptic('light');
   STATE.monthOffset += delta;
   renderApp();
   toast(getCurrentMonthInfo().label);
 }
 
-function formatDayLabel(day) {
-  const today = new Date().getDate();
-  if (day === today && STATE.monthOffset === 0) return 'Hôm nay';
-  if (day === today - 1 && STATE.monthOffset === 0) return 'Hôm qua';
-  return `Ngày ${day}`;
+function resetToCurrentMonth() {
+  haptic('light');
+  STATE.monthOffset = 0;
+  renderApp();
+  toast('Đã về ' + getCurrentMonthInfo().label);
+}
+
+function formatDayLabel(day, month, year) {
+  const now = new Date();
+  const today = now.getDate();
+  const curM = now.getMonth() + 1;
+  const curY = now.getFullYear();
+  const sel = getCurrentMonthInfo();
+  const m = month || sel.month;
+  const y = year || sel.year;
+  const padD = String(day).padStart(2, '0');
+  const padM = String(m).padStart(2, '0');
+  if (day === today && m === curM && y === curY) return `Hôm nay (${padD}/${padM})`;
+  if (day === today - 1 && m === curM && y === curY) return `Hôm qua (${padD}/${padM})`;
+  return `Ngày ${padD}/${padM}${y !== curY ? '/' + y : ''}`;
 }
 
 /* ==========================================================================
-   CORE BUSINESS CALCULATIONS (ROLE-AWARE FOR 2 PHONES)
+   CORE BUSINESS CALCULATIONS (ROLE-AWARE & MONTH-ISOLATED FOR 2 PHONES)
    ========================================================================== */
 function isTxVisible(tx) {
   if (tx.shared) return true;
@@ -2628,12 +2707,12 @@ function isTxMasked(tx) {
   return !tx.shared && tx.who !== me && DB.privacy === 1;
 }
 
-function getFilteredTransactions() {
-  return DB.transactions.filter(t => isTxVisible(t));
+function getFilteredTransactions(allMonths = false) {
+  return (DB.transactions || []).filter(t => isTxVisible(t) && (allMonths || isTxInCurrentMonth(t)));
 }
 
 function calculateTotals(scope = 0) {
-  const txs = getFilteredTransactions();
+  const txs = getFilteredTransactions(false);
   let spend = 0, income = 0, expCount = 0, incCount = 0;
   txs.forEach(t => {
     const matchScope = scope === 0 || (scope === 1 && t.who === 'him') || (scope === 2 && t.who === 'her');
@@ -2650,7 +2729,7 @@ function calculateTotals(scope = 0) {
 }
 
 function calculateBalance() {
-  const shared = DB.transactions.filter(t => t.shared && t.kind === 'e');
+  const shared = (DB.transactions || []).filter(t => t.shared && t.kind === 'e' && isTxInCurrentMonth(t));
   const paidHim = shared.filter(t => t.who === 'him').reduce((s, t) => s + t.amount, 0);
   const paidHer = shared.filter(t => t.who === 'her').reduce((s, t) => s + t.amount, 0);
   const total = paidHim + paidHer;
@@ -2668,6 +2747,7 @@ let showAllHomeCats = false;
 let showAllFutureEventsOnHome = false;
 
 function renderApp() {
+  updateMonthBarsUI();
   renderHome();
   renderTransactions();
   renderBudgetAndReports();
@@ -3377,16 +3457,19 @@ function renderTxRowHTML(t) {
   const title = masked ? 'Chi riêng' : t.title;
   const isMine = t.who === getMyRole();
   const canDelete = (isMine || t.shared) && !masked;
+  const my = getTxMonthYear(t);
+  const dayLbl = formatDayLabel(t.day, my.month, my.year);
+  const hasReceipt = !!(t.receipt || t.receiptThumb);
 
-  let subInfo = `${t.shared ? '👥 Chung' : '🔒 Riêng'} · ${formatDayLabel(t.day)}`;
+  let subInfo = `${t.shared ? '👥 Chung' : '🔒 Riêng'} · ${dayLbl}`;
   if (t.kind === 't') {
     const fromW = DB.wallets.find(x => x.id === t.wallet);
     const toW = DB.wallets.find(x => x.id === t.toWallet);
-    subInfo = `🔄 ${fromW ? fromW.name : 'Ví'} ➔ ${toW ? toW.name : 'Ví'} · ${formatDayLabel(t.day)}`;
+    subInfo = `🔄 ${fromW ? fromW.name : 'Ví'} ➔ ${toW ? toW.name : 'Ví'} · ${dayLbl}`;
   } else {
     const w = DB.wallets.find(x => x.id === t.wallet);
     if (w && !masked) {
-      subInfo = `${t.shared ? '👥 Chung' : '🔒 Riêng'} · ${w.icon} ${w.name} · ${formatDayLabel(t.day)}`;
+      subInfo = `${t.shared ? '👥 Chung' : '🔒 Riêng'} · ${w.icon} ${w.name} · ${dayLbl}`;
     }
   }
   const amtClass = t.kind === 'i' ? 'pos' : t.kind === 't' ? 'transfer' : 'neg';
@@ -3402,7 +3485,7 @@ function renderTxRowHTML(t) {
           <div class="sub">
             <span class="av s" style="background:${u.color}">${u.name[0]}</span> ${u.name} · 
             ${subInfo}
-            ${t.receipt ? ' · 📎' : ''}
+            ${hasReceipt ? ' · 📎' : ''}
             ${t.comments && t.comments.length ? ` · 💬${t.comments.length}` : ''}
           </div>
         </div>
@@ -3421,7 +3504,8 @@ function renderTransactions() {
     '👥 Chung',
     '🔒 Riêng',
     u.him.name,
-    u.her.name
+    u.her.name,
+    '📅 Mọi tháng'
   ];
   $('#tx-filter-chips').innerHTML = chips.map((c, i) => `
     <div class="chip ${STATE.txFilter === i ? 'on' : ''}" onclick="setTxFilter(${i})">${c}</div>
@@ -3429,7 +3513,8 @@ function renderTransactions() {
     <div class="chip on" onclick="clearCatFilter()">${getCatIcon(STATE.txCatFilter)} ${STATE.txCatFilter} ✕</div>
   ` : '');
 
-  let list = getFilteredTransactions();
+  const showAllMonths = STATE.txFilter === 5;
+  let list = getFilteredTransactions(showAllMonths);
 
   // Apply chip filter
   if (STATE.txFilter === 1) list = list.filter(t => t.shared);
@@ -3447,37 +3532,53 @@ function renderTransactions() {
     const q = STATE.txSearchQuery.trim().toLowerCase();
     list = list.filter(t => {
       if (isTxMasked(t)) return false;
-      return t.title.toLowerCase().includes(q) ||
-             t.category.toLowerCase().includes(q) ||
-             t.note.toLowerCase().includes(q);
+      return (t.title || '').toLowerCase().includes(q) ||
+             (t.category || '').toLowerCase().includes(q) ||
+             (t.note || '').toLowerCase().includes(q);
     });
   }
 
-  list.sort((a, b) => b.day - a.day || b.id - a.id);
-  const days = [...new Set(list.map(t => t.day))];
+  list.sort((a, b) => {
+    const myA = getTxMonthYear(a);
+    const myB = getTxMonthYear(b);
+    return (myB.year - myA.year) || (myB.month - myA.month) || (b.day - a.day) || (b.id - a.id);
+  });
+
+  const dayGroups = [];
+  const groupMap = new Map();
+  list.forEach(t => {
+    const my = getTxMonthYear(t);
+    const key = `${my.year}-${my.month}-${t.day}`;
+    if (!groupMap.has(key)) {
+      const grp = { key, day: t.day, month: my.month, year: my.year, txs: [] };
+      groupMap.set(key, grp);
+      dayGroups.push(grp);
+    }
+    groupMap.get(key).txs.push(t);
+  });
 
   if (list.length === 0) {
+    const curLabel = getCurrentMonthInfo().label;
     $('#tx-list').innerHTML = `
       <div class="center" style="padding:40px 10px;color:var(--mut)">
-        <div style="font-size:48px;margin-bottom:8px">🔍</div>
-        <b>Không tìm thấy giao dịch nào</b>
-        <div class="sub" style="margin-top:4px">Thử tìm từ khóa khác hoặc bấm nút bên dưới để ghi mới</div>
+        <div style="font-size:48px;margin-bottom:8px">📅</div>
+        <b>Chưa có giao dịch trong ${curLabel}</b>
+        <div class="sub" style="margin-top:4px">Bấm nút <b>‹ ›</b> để chuyển tháng, chọn <b>📅 Mọi tháng</b> hoặc ghi giao dịch mới</div>
         <button class="btn sm alt" style="margin:16px auto;display:inline-block" onclick="openAddSheet()">＋ Ghi chép mới</button>
       </div>
     `;
     return;
   }
 
-  $('#tx-list').innerHTML = days.map(d => {
-    const dayTxs = list.filter(t => t.day === d);
-    const dayTotal = dayTxs.filter(t => t.kind === 'e').reduce((s, t) => s + t.amount, 0);
+  $('#tx-list').innerHTML = dayGroups.map(g => {
+    const dayTotal = g.txs.filter(t => t.kind === 'e').reduce((s, t) => s + t.amount, 0);
     return `
       <div style="display:flex;justify-content:space-between;align-items:center;margin:8px 4px 4px">
-        <span class="sub" style="font-weight:700">${formatDayLabel(d)}</span>
+        <span class="sub" style="font-weight:700">${formatDayLabel(g.day, g.month, g.year)}</span>
         <span class="sub">${dayTotal ? '-' + formatVND(dayTotal) + ' ₫' : ''}</span>
       </div>
       <div class="card" style="padding:0 14px">
-        ${dayTxs.map(t => renderTxRowHTML(t)).join('')}
+        ${g.txs.map(t => renderTxRowHTML(t)).join('')}
       </div>
     `;
   }).join('');
@@ -3634,36 +3735,33 @@ function renderReportPanes() {
     </div>
   `).join('');
 
-  // 6 months trend (actual calculation based on all transactions)
-  const bTrend = calculateBalance();
+  // 6 months trend (actual calculation based on all transactions using t.month & t.year)
   const now = new Date();
+  const curSel = getCurrentMonthInfo();
   const monthsData = [];
   for (let i = 5; i >= 0; i--) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const m = d.getMonth();
+    const m = d.getMonth() + 1;
     const y = d.getFullYear();
-    const label = `T${m + 1}`;
+    const label = `T${m}`;
     let paidHim = 0;
     let paidHer = 0;
 
     (DB.transactions || []).forEach(t => {
-      if (t.kind !== 'e') return;
-      const txDate = t.updatedAt ? new Date(t.updatedAt) : new Date();
-      if (txDate.getMonth() === m && txDate.getFullYear() === y) {
+      if (t.kind !== 'e' || !isTxVisible(t)) return;
+      const my = getTxMonthYear(t);
+      if (my.month === m && my.year === y) {
         if (t.who === 'him') paidHim += t.amount;
         else if (t.who === 'her') paidHer += t.amount;
       }
     });
 
-    if (i === 0 && paidHim === 0 && paidHer === 0) {
-      paidHim = bTrend.paidHim;
-      paidHer = bTrend.paidHer;
-    }
-
     monthsData.push({
       label,
-      month: m + 1,
+      offset: -i,
+      month: m,
       year: y,
+      isCurrentSel: (curSel.month === m && curSel.year === y),
       himTr: paidHim / 1e6,
       herTr: paidHer / 1e6
     });
@@ -3671,7 +3769,7 @@ function renderReportPanes() {
 
   const maxBar = Math.max(0.5, ...monthsData.flatMap(m => [m.himTr, m.herTr]));
   $('#rep-cols').innerHTML = monthsData.map(m => `
-    <div onclick="toast('Tháng ${m.month}/${m.year}: ${DB.users.him.name} ${(m.himTr).toFixed(1)}tr · ${DB.users.her.name} ${(m.herTr).toFixed(1)}tr')">
+    <div style="cursor:pointer;${m.isCurrentSel ? 'font-weight:700;color:var(--coral)' : ''}" onclick="STATE.monthOffset=${m.offset};renderApp();toast('Tháng ${m.month}/${m.year}: ${DB.users.him.name} ${(m.himTr).toFixed(1)}tr · ${DB.users.her.name} ${(m.herTr).toFixed(1)}tr')">
       <span>
         <i style="height:${Math.max(2, (m.himTr / maxBar) * 80)}px;background:var(--him)"></i>
         <i style="height:${Math.max(2, (m.herTr / maxBar) * 80)}px;background:var(--her)"></i>
@@ -4129,7 +4227,8 @@ function openAddSheet(editTx = null) {
   STATE.addWalletId = editTx ? editTx.wallet : defaultWallet;
   STATE.addTransferToWalletId = editTx && editTx.toWallet ? editTx.toWallet : (DB.wallets.find(w => w.id !== STATE.addWalletId) || DB.wallets[0]).id;
   STATE.addDay = editTx ? editTx.day : new Date().getDate();
-  STATE.addReceipt = editTx ? editTx.receipt : null;
+  STATE.addReceipt = editTx ? (editTx.receipt || editTx.receiptThumb || null) : null;
+  STATE.addReceiptThumb = editTx ? (editTx.receiptThumb || null) : null;
   const noteInp = $('#add-note-input');
   if (noteInp) {
     noteInp.value = editTx ? (editTx.note || '') : '';
@@ -4139,12 +4238,19 @@ function openAddSheet(editTx = null) {
   closeNumberPad();
   if (STATE.addReceipt) {
     if (typeof STATE.addReceipt === 'string' && STATE.addReceipt.startsWith('rcpt_')) {
+      const fallbackThumb = STATE.addReceiptThumb;
+      if (fallbackThumb) {
+        $('#receipt-preview-img').src = fallbackThumb;
+        $('#receipt-preview-img').style.display = 'block';
+        if ($('#receipt-actions-bar')) $('#receipt-actions-bar').style.display = 'flex';
+      }
       ReceiptDB.getReceipt(STATE.addReceipt).then(imgData => {
-        if (imgData) {
-          $('#receipt-preview-img').src = imgData;
+        const finalImg = imgData || fallbackThumb;
+        if (finalImg) {
+          $('#receipt-preview-img').src = finalImg;
           $('#receipt-preview-img').style.display = 'block';
           if ($('#receipt-actions-bar')) $('#receipt-actions-bar').style.display = 'flex';
-          STATE.addReceipt = imgData;
+          STATE.addReceipt = finalImg;
         }
       });
     } else {
@@ -4631,7 +4737,7 @@ function onKeypadPress(k) {
   updateAddAmountDisplay();
 }
 
-// Photo attachment with camera or library (auto-compressed for fast cloud sync & stored in IndexedDB)
+// Photo attachment with camera or library (dual-layer: 800px high-res in IndexedDB/Cloud + 420px instant sync preview)
 function onReceiptFileSelected(e) {
   const file = e.target.files[0];
   if (!file) return;
@@ -4639,6 +4745,7 @@ function onReceiptFileSelected(e) {
   reader.onload = ev => {
     const rawImg = new Image();
     rawImg.onload = () => {
+      // 1. High-resolution receipt (800px) for local IndexedDB, AI OCR & E2EE Cloud Receipt Channel
       const canvas = document.createElement('canvas');
       const maxDim = 800;
       let w = rawImg.width, h = rawImg.height;
@@ -4649,7 +4756,21 @@ function onReceiptFileSelected(e) {
       canvas.width = w;
       canvas.height = h;
       canvas.getContext('2d').drawImage(rawImg, 0, 0, w, h);
-      STATE.addReceipt = canvas.toDataURL('image/jpeg', 0.70);
+      STATE.addReceipt = canvas.toDataURL('image/jpeg', 0.72);
+
+      // 2. Smart compressed sync preview (420px) for instant partner phone display
+      const thumbCanvas = document.createElement('canvas');
+      const thumbMax = 420;
+      let tw = rawImg.width, th = rawImg.height;
+      if (tw > thumbMax || th > thumbMax) {
+        if (tw > th) { th = Math.round(th * thumbMax / tw); tw = thumbMax; }
+        else { tw = Math.round(tw * thumbMax / th); th = thumbMax; }
+      }
+      thumbCanvas.width = tw;
+      thumbCanvas.height = th;
+      thumbCanvas.getContext('2d').drawImage(rawImg, 0, 0, tw, th);
+      STATE.addReceiptThumb = thumbCanvas.toDataURL('image/jpeg', 0.52);
+
       const img = $('#receipt-preview-img');
       img.src = STATE.addReceipt;
       img.style.display = 'block';
@@ -4663,6 +4784,7 @@ function onReceiptFileSelected(e) {
 
 function clearReceipt() {
   STATE.addReceipt = null;
+  STATE.addReceiptThumb = null;
   $('#receipt-file-input').value = '';
   $('#receipt-preview-img').style.display = 'none';
   if ($('#receipt-actions-bar')) $('#receipt-actions-bar').style.display = 'none';
@@ -4835,10 +4957,17 @@ function saveTransaction() {
   }
 
   const curTxId = STATE.editingTxId || Date.now();
+  const selMonth = getCurrentMonthInfo();
   let receiptRef = STATE.addReceipt;
+  let receiptThumbRef = STATE.addReceiptThumb || null;
+
   if (STATE.addReceipt && typeof STATE.addReceipt === 'string' && STATE.addReceipt.startsWith('data:image')) {
     const rcptId = 'rcpt_' + curTxId;
     ReceiptDB.saveReceipt(rcptId, STATE.addReceipt);
+    if (!receiptThumbRef) receiptThumbRef = STATE.addReceipt;
+    if (typeof pushReceiptToCloud === 'function') {
+      pushReceiptToCloud(rcptId, STATE.addReceipt);
+    }
     receiptRef = rcptId;
   }
 
@@ -4868,6 +4997,8 @@ function saveTransaction() {
         }
 
         existing.day = STATE.addDay;
+        if (!existing.month) existing.month = selMonth.month;
+        if (!existing.year) existing.year = selMonth.year;
         existing.icon = '🔄';
         existing.title = title;
         existing.category = 'Chuyển tiền & Tiết kiệm';
@@ -4879,6 +5010,7 @@ function saveTransaction() {
         existing.kind = 't';
         existing.note = note;
         existing.receipt = receiptRef;
+        existing.receiptThumb = receiptThumbRef || existing.receiptThumb || null;
         existing.updatedAt = Date.now();
 
         fromW.balance -= amount;
@@ -4895,6 +5027,8 @@ function saveTransaction() {
     const newTx = {
       id: curTxId,
       day: STATE.addDay,
+      month: selMonth.month,
+      year: selMonth.year,
       icon: '🔄',
       title: title,
       category: 'Chuyển tiền & Tiết kiệm',
@@ -4906,6 +5040,7 @@ function saveTransaction() {
       kind: 't',
       note: note,
       receipt: receiptRef,
+      receiptThumb: receiptThumbRef,
       comments: [],
       updatedAt: Date.now()
     };
@@ -4940,6 +5075,8 @@ function saveTransaction() {
       }
 
       existing.day = STATE.addDay;
+      if (!existing.month) existing.month = selMonth.month;
+      if (!existing.year) existing.year = selMonth.year;
       existing.icon = cat[0];
       existing.title = note || cat[1];
       existing.category = cat[1];
@@ -4951,6 +5088,7 @@ function saveTransaction() {
       existing.kind = STATE.addKind;
       existing.note = note;
       existing.receipt = receiptRef;
+      existing.receiptThumb = receiptThumbRef || existing.receiptThumb || null;
       existing.updatedAt = Date.now();
 
       const newW = DB.wallets.find(x => x.id === STATE.addWalletId);
@@ -4971,6 +5109,8 @@ function saveTransaction() {
   const newTx = {
     id: curTxId,
     day: STATE.addDay,
+    month: selMonth.month,
+    year: selMonth.year,
     icon: cat[0],
     title: note || cat[1],
     category: cat[1],
@@ -4981,6 +5121,7 @@ function saveTransaction() {
     kind: STATE.addKind,
     note: note,
     receipt: receiptRef,
+    receiptThumb: receiptThumbRef,
     comments: [],
     updatedAt: Date.now()
   };
@@ -5013,10 +5154,14 @@ function quickAddTransaction(idx) {
 
   const myRole = getMyRole();
   const w = DB.wallets.find(x => x.owner === myRole) || DB.wallets[0] || { id: 'cash', name: 'Tiền mặt' };
+  const now = new Date();
+  STATE.monthOffset = 0;
 
   const newTx = {
     id: Date.now(),
-    day: new Date().getDate(),
+    day: now.getDate(),
+    month: now.getMonth() + 1,
+    year: now.getFullYear(),
     icon: q[0],
     title: q[1],
     category: q[3],
@@ -5027,6 +5172,7 @@ function quickAddTransaction(idx) {
     kind: 'e',
     note: 'Ghi nhanh',
     receipt: null,
+    receiptThumb: null,
     comments: [],
     updatedAt: Date.now()
   };
@@ -5104,6 +5250,9 @@ function openTxDetail(id) {
   const isTransfer = t.kind === 't';
   const amtClass = t.kind === 'i' ? 'pos' : isTransfer ? 'transfer' : '';
   const amtPrefix = t.kind === 'i' ? '+' : isTransfer ? '🔄 ' : '-';
+  const my = getTxMonthYear(t);
+  const hasAnyReceipt = !!(t.receipt || t.receiptThumb);
+  const initialReceiptSrc = (t.receipt && !t.receipt.startsWith('rcpt_')) ? t.receipt : (t.receiptThumb || '');
 
   $('#detail-head-actions').innerHTML = !masked ? `
     <span class="link" style="margin-right:12px" onclick="editCurrentTx()">✏️ Sửa</span>
@@ -5122,7 +5271,7 @@ function openTxDetail(id) {
     <div class="card">
       <div class="row"><span class="sub grow">Danh mục</span><b>${masked ? '🔒 Ẩn' : t.category}</b></div>
       <div class="row"><span class="sub grow">Người thực hiện</span><b><span class="av s" style="background:${u.color}">${u.name[0]}</span> ${u.name}</b></div>
-      <div class="row"><span class="sub grow">Ngày giao dịch</span><b>${formatDayLabel(t.day)}</b></div>
+      <div class="row"><span class="sub grow">Ngày giao dịch</span><b>${formatDayLabel(t.day, my.month, my.year)}</b></div>
       ${isTransfer ? `
         <div class="row"><span class="sub grow">Từ ví nguồn</span><b>${w.icon} ${w.name}</b></div>
         <div class="row"><span class="sub grow">Đến ví đích</span><b>${toW ? toW.icon + ' ' + toW.name : 'Ví đích'}</b></div>
@@ -5133,10 +5282,13 @@ function openTxDetail(id) {
       ${t.note && !masked ? `<div class="row"><span class="sub grow">Ghi chú</span><b>${t.note}</b></div>` : ''}
     </div>
 
-    ${t.receipt ? `
+    ${hasAnyReceipt && !masked ? `
       <div class="card">
-        <b>📎 Hóa đơn đính kèm</b>
-        <img id="detail-receipt-img" src="${t.receipt.startsWith('rcpt_') ? '' : t.receipt}" style="${t.receipt.startsWith('rcpt_') ? 'display:none;' : ''}width:100%;max-height:220px;object-fit:cover;border-radius:12px;margin-top:8px;cursor:pointer" onclick="viewPhotoZoom(this.src)">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <b>📎 Hóa đơn đính kèm</b>
+          <span class="sub" id="detail-receipt-status" style="font-size:11px">${initialReceiptSrc ? 'Chạm vào ảnh để phóng to 🔍' : '⏳ Đang tải ảnh từ đám mây...'}</span>
+        </div>
+        <img id="detail-receipt-img" src="${initialReceiptSrc}" style="${initialReceiptSrc ? 'display:block;' : 'display:none;'}width:100%;max-height:260px;object-fit:contain;background:rgba(0,0,0,0.04);border-radius:12px;margin-top:8px;cursor:pointer" onclick="viewPhotoZoom(this.src)">
       </div>
     ` : ''}
 
@@ -5161,12 +5313,24 @@ function openTxDetail(id) {
     </div>
   `;
 
-  if (t.receipt && t.receipt.startsWith('rcpt_')) {
-    ReceiptDB.getReceipt(t.receipt).then(imgData => {
+  const rcptKey = (t.receipt && t.receipt.startsWith('rcpt_')) ? t.receipt : ('rcpt_' + t.id);
+  if (hasAnyReceipt && !masked) {
+    ReceiptDB.getReceipt(rcptKey).then(async imgData => {
       const rcptImg = $('#detail-receipt-img');
+      const statusEl = $('#detail-receipt-status');
       if (rcptImg && imgData) {
         rcptImg.src = imgData;
         rcptImg.style.display = 'block';
+        if (statusEl) statusEl.textContent = 'Ảnh độ phân giải cao · Chạm để phóng to 🔍';
+      } else if (typeof fetchCloudReceipt === 'function') {
+        const cloudImg = await fetchCloudReceipt(rcptKey);
+        if (cloudImg && rcptImg) {
+          rcptImg.src = cloudImg;
+          rcptImg.style.display = 'block';
+          if (statusEl) statusEl.textContent = 'Đã đồng bộ ảnh HD từ đám mây · Chạm để phóng to 🔍';
+        } else if (t.receiptThumb) {
+          ReceiptDB.saveReceipt(rcptKey, t.receiptThumb);
+        }
       }
     });
   }
@@ -5445,7 +5609,9 @@ function exportCSV() {
   let csv = 'ID,Ngay,Loai,Danh muc,Tieu de,So tien,Nguoi chi,Chung/Rieng,Vi,Ghi chu\n';
   DB.transactions.forEach(t => {
     const u = DB.users[t.who] || DB.users.him;
-    csv += `"${t.id}","${t.day}","${t.kind === 'i' ? 'Thu' : 'Chi'}","${t.category}","${t.title}","${t.amount}","${u.name}","${t.shared ? 'Chung' : 'Rieng'}","${t.wallet}","${t.note}"\n`;
+    const my = getTxMonthYear(t);
+    const dateStr = `${String(t.day).padStart(2, '0')}/${String(my.month).padStart(2, '0')}/${my.year}`;
+    csv += `"${t.id}","${dateStr}","${t.kind === 'i' ? 'Thu' : t.kind === 't' ? 'Chuyen vi' : 'Chi'}","${t.category}","${t.title}","${t.amount}","${u.name}","${t.shared ? 'Chung' : 'Rieng'}","${t.wallet}","${t.note}"\n`;
   });
   const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csv], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
@@ -5841,6 +6007,19 @@ function scheduleCloudPush() {
 }
 
 function buildCompactPayload() {
+  let thumbQuota = 15; // Include instant receiptThumb on the 15 most recent receipt transactions
+  const compactTxs = (DB.transactions || []).slice(0, 150).map(t => {
+    const copy = { ...t };
+    if (copy.receiptThumb) {
+      if (thumbQuota > 0) {
+        thumbQuota--;
+      } else {
+        delete copy.receiptThumb;
+      }
+    }
+    return copy;
+  });
+
   return {
     _v: 2,
     deviceId: CLOUD.deviceId,
@@ -5861,8 +6040,62 @@ function buildCompactPayload() {
     loveNote: DB.loveNote,
     events: (DB.events || []).slice(0, 100),
     deletedTxIds: (DB.deletedTxIds || []).slice(-300),
-    transactions: (DB.transactions || []).slice(0, 150)
+    transactions: compactTxs
   };
+}
+
+// Đồng bộ ảnh hóa đơn độ phân giải cao (E2EE) qua kênh đám mây chuyên biệt
+async function pushReceiptToCloud(rcptId, dataUrl) {
+  if (!rcptId || !dataUrl || !navigator.onLine) return false;
+  try {
+    const topic = getCloudTopic() + '_rcpt';
+    const encrypted = await E2EE.encrypt({ _rcpt: true, id: rcptId, data: dataUrl, ts: Date.now() });
+    const res = await fetch(`https://ntfy.sh/${topic}`, {
+      method: 'POST',
+      headers: {
+        'Title': rcptId,
+        'Priority': 'low'
+      },
+      body: JSON.stringify(encrypted)
+    });
+    return res.ok;
+  } catch (e) {
+    console.warn('Lỗi đồng bộ ảnh hóa đơn lên mây:', e);
+    return false;
+  }
+}
+
+async function fetchCloudReceipt(rcptId) {
+  if (!rcptId || !navigator.onLine) return null;
+  try {
+    const topic = getCloudTopic() + '_rcpt';
+    const res = await fetch(`https://ntfy.sh/${topic}/json?poll=1&since=48h`);
+    if (!res.ok) return null;
+    const text = await res.text();
+    const lines = text.trim().split('\n').filter(Boolean).reverse();
+    for (const line of lines) {
+      try {
+        const ev = JSON.parse(line);
+        if (!ev || ev.event !== 'message') continue;
+        if (ev.title && ev.title !== rcptId) continue;
+        let rawMsg = ev.message;
+        if (ev.attachment && ev.attachment.url) {
+          const attRes = await fetch(ev.attachment.url);
+          if (attRes.ok) rawMsg = await attRes.text();
+        }
+        if (!rawMsg) continue;
+        let payload = JSON.parse(rawMsg);
+        if (payload && payload._e2ee) payload = await E2EE.decrypt(payload);
+        if (payload && payload.id === rcptId && payload.data) {
+          await ReceiptDB.saveReceipt(rcptId, payload.data);
+          return payload.data;
+        }
+      } catch (e) {}
+    }
+  } catch (e) {
+    console.warn('Lỗi tải ảnh hóa đơn từ đám mây:', e);
+  }
+  return null;
 }
 
 async function pushCloudSnapshot(manual = false) {
@@ -5948,7 +6181,7 @@ async function syncCloudNow(manual = false) {
       }
     }
 
-    // 2. Pull cached messages from instant cloud relay
+    // 2. Pull cached messages from instant cloud relay (handles both inline & >4KB attachment payloads)
     const res = await fetch(`https://ntfy.sh/${topic}/json?poll=1&since=48h`);
     if (res.ok) {
       const text = await res.text();
@@ -5956,10 +6189,17 @@ async function syncCloudNow(manual = false) {
       for (const line of lines) {
         try {
           const ev = JSON.parse(line);
-          if (ev && ev.event === 'message' && ev.message) {
-            let remote = JSON.parse(ev.message);
-            if (remote && remote._e2ee) remote = await E2EE.decrypt(remote);
-            if (remote && mergeCloudPayload(remote, true)) mergedAny = true;
+          if (ev && ev.event === 'message') {
+            let rawMsg = ev.message;
+            if (ev.attachment && ev.attachment.url) {
+              const attRes = await fetch(ev.attachment.url);
+              if (attRes.ok) rawMsg = await attRes.text();
+            }
+            if (rawMsg) {
+              let remote = JSON.parse(rawMsg);
+              if (remote && remote._e2ee) remote = await E2EE.decrypt(remote);
+              if (remote && mergeCloudPayload(remote, true)) mergedAny = true;
+            }
           }
         } catch (e) {}
       }
@@ -5996,14 +6236,23 @@ function mergeCloudPayload(remote, silent = false) {
   DB.transactions = DB.transactions.filter(t => !delSet.has(t.id));
   if (DB.transactions.length !== beforeLen) changed = true;
 
-  // Merge transactions by ID (newest updatedAt wins, comments merged)
+  // Merge transactions by ID (newest updatedAt wins, comments & receiptThumb merged)
   const localMap = new Map(DB.transactions.map(t => [t.id, t]));
   for (const rTx of remote.transactions) {
     if (!rTx || delSet.has(rTx.id)) continue;
+    const rMy = getTxMonthYear(rTx);
+    if (!rTx.month) rTx.month = rMy.month;
+    if (!rTx.year) rTx.year = rMy.year;
+
     const lTx = localMap.get(rTx.id);
     if (!lTx) {
       DB.transactions.push(rTx);
       localMap.set(rTx.id, rTx);
+      if (rTx.receiptThumb && rTx.receipt && rTx.receipt.startsWith('rcpt_')) {
+        ReceiptDB.getReceipt(rTx.receipt).then(ex => {
+          if (!ex) ReceiptDB.saveReceipt(rTx.receipt, rTx.receiptThumb);
+        });
+      }
       changed = true;
     } else {
       const rUpd = rTx.updatedAt || rTx.id || 0;
@@ -6014,16 +6263,26 @@ function mergeCloudPayload(remote, silent = false) {
         lTx.comments = rComments;
         changed = true;
       }
+      if (rTx.receiptThumb && !lTx.receiptThumb) {
+        lTx.receiptThumb = rTx.receiptThumb;
+        changed = true;
+      }
       if (rUpd > lUpd) {
+        const savedThumb = lTx.receiptThumb;
         Object.assign(lTx, rTx);
+        if (!lTx.receiptThumb && savedThumb) lTx.receiptThumb = savedThumb;
         if (lComments.length > rComments.length) lTx.comments = lComments;
         changed = true;
       }
     }
   }
 
-  // Sort transactions newest first (by day desc, then id desc)
-  DB.transactions.sort((a, b) => (b.day - a.day) || (b.id - a.id));
+  // Sort transactions newest first (by year desc, month desc, day desc, then id desc)
+  DB.transactions.sort((a, b) => {
+    const myA = getTxMonthYear(a);
+    const myB = getTxMonthYear(b);
+    return (myB.year - myA.year) || (myB.month - myA.month) || (b.day - a.day) || (b.id - a.id);
+  });
 
   // If remote snapshot is newer, sync shared metadata
   const localTs = DB.updatedAt || 0;
@@ -6117,8 +6376,13 @@ function startCloudListener() {
     sse.onmessage = async ev => {
       try {
         const data = JSON.parse(ev.data);
-        if (data && data.message) {
-          let remote = JSON.parse(data.message);
+        let rawMsg = data && data.message;
+        if (data && data.attachment && data.attachment.url) {
+          const attRes = await fetch(data.attachment.url);
+          if (attRes.ok) rawMsg = await attRes.text();
+        }
+        if (rawMsg) {
+          let remote = JSON.parse(rawMsg);
           if (remote && remote._e2ee) remote = await E2EE.decrypt(remote);
           if (remote && remote.deviceId !== CLOUD.deviceId) {
             mergeCloudPayload(remote, false);

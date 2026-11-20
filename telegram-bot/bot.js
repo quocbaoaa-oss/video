@@ -105,6 +105,16 @@ function saveDB() {
 // 4. Đồng bộ Realtime sang PWA Ví Đôi qua ntfy.sh
 async function broadcastToPWA(payload) {
   try {
+    let thumbQuota = 15;
+    const compactTxs = (DB.transactions || []).slice(0, 100).map(t => {
+      const copy = { ...t };
+      if (copy.receiptThumb) {
+        if (thumbQuota > 0) thumbQuota--;
+        else delete copy.receiptThumb;
+      }
+      return copy;
+    });
+
     const compactPayload = {
       _v: 2,
       deviceId: 'telegram_bot_' + Date.now().toString(36),
@@ -114,7 +124,7 @@ async function broadcastToPWA(payload) {
       users: DB.users,
       wallets: DB.wallets,
       deletedTxIds: (DB.deletedTxIds || []).slice(-200),
-      transactions: (DB.transactions || []).slice(0, 100),
+      transactions: compactTxs,
       ...payload
     };
 
@@ -130,6 +140,27 @@ async function broadcastToPWA(payload) {
     return res.ok;
   } catch (err) {
     console.warn('⚠️ Lỗi gửi đồng bộ ntfy:', err.message);
+    return false;
+  }
+}
+
+// Đồng bộ ảnh hóa đơn độ phân giải cao từ Telegram Bot lên kênh đám mây cho 2 điện thoại
+async function pushReceiptToCloudFromBot(rcptId, dataUrl) {
+  if (!rcptId || !dataUrl) return false;
+  try {
+    const topic = `${CLOUD_TOPIC}_rcpt`;
+    const bodyObj = { _rcpt: true, id: rcptId, data: dataUrl, ts: Date.now() };
+    const res = await fetch(`https://ntfy.sh/${topic}`, {
+      method: 'POST',
+      headers: {
+        'Title': rcptId,
+        'Priority': 'low'
+      },
+      body: JSON.stringify(bodyObj)
+    });
+    return res.ok;
+  } catch (err) {
+    console.warn('⚠️ Lỗi đồng bộ ảnh hóa đơn từ Bot:', err.message);
     return false;
   }
 }
@@ -480,9 +511,13 @@ async function handleUpdate(update) {
       PENDING_BILLS.delete(billId);
 
       const curTxId = Date.now();
+      const nowD = new Date();
+      const rcptId = (bill.receiptThumb || bill.receiptFull) ? ('rcpt_' + curTxId) : null;
       const newTx = {
         id: curTxId,
-        day: new Date().getDate(),
+        day: nowD.getDate(),
+        month: nowD.getMonth() + 1,
+        year: nowD.getFullYear(),
         icon: bill.icon || '🧾',
         title: bill.merchant || bill.category,
         category: bill.category,
@@ -492,7 +527,8 @@ async function handleUpdate(update) {
         wallet: bill.wallet,
         kind: 'e',
         note: `Hóa đơn AI: ${bill.merchant || ''}`,
-        receipt: null,
+        receipt: rcptId,
+        receiptThumb: bill.receiptThumb || bill.receiptFull || null,
         comments: [],
         updatedAt: curTxId
       };
@@ -502,9 +538,12 @@ async function handleUpdate(update) {
 
       DB.transactions.unshift(newTx);
       saveDB();
+      if (rcptId && (bill.receiptFull || bill.receiptThumb)) {
+        pushReceiptToCloudFromBot(rcptId, bill.receiptFull || bill.receiptThumb);
+      }
       await broadcastToPWA();
 
-      await sendTelegram('answerCallbackQuery', { callback_query_id: cq.id, text: 'Đã lưu hóa đơn thành công!' });
+      await sendTelegram('answerCallbackQuery', { callback_query_id: cq.id, text: 'Đã lưu hóa đơn & đồng bộ ảnh thành công!' });
       await sendTelegram('editMessageText', {
         chat_id: chatId,
         message_id: msgId,
@@ -512,7 +551,8 @@ async function handleUpdate(update) {
           `🏪 <b>${bill.merchant}</b>: <code>-${formatVND(bill.amount)} ₫</code>\n` +
           `• <b>Danh mục:</b> ${bill.icon} ${bill.category}\n` +
           `• <b>Tài khoản:</b> ${getWalletName(bill.wallet)}\n` +
-          `• <b>Người chi:</b> ${formatRole(bill.who)}\n\n` +
+          `• <b>Người chi:</b> ${formatRole(bill.who)}\n` +
+          `• <b>Đính kèm:</b> 📎 Đã đồng bộ ảnh hóa đơn sang 2 điện thoại\n\n` +
           `⚡ <i>Đã đồng bộ tức thì sang Ví Đôi PWA của cả hai vợ chồng!</i>`,
         parse_mode: 'HTML',
         reply_markup: {
@@ -707,7 +747,8 @@ async function handleUpdate(update) {
     }
 
     const photos = msg.photo;
-    const bestPhoto = photos[photos.length - 1]; // Ảnh chất lượng cao nhất
+    const bestPhoto = photos[photos.length - 1]; // Ảnh chất lượng cao nhất để AI đọc & lưu HD
+    const thumbPhoto = photos[Math.min(1, photos.length - 1)]; // Ảnh nén nhẹ (~12-18KB) để đồng bộ tức thì sang 2 máy
     await sendMessage(chatId, `🔍 <i>Đang dùng Gemini AI quét hóa đơn, vui lòng đợi giây lát...</i>`);
 
     try {
@@ -716,12 +757,28 @@ async function handleUpdate(update) {
       if (!getFileRes || !getFileRes.ok) throw new Error('Không lấy được thông tin ảnh từ Telegram');
       const filePath = getFileRes.result.file_path;
 
-      // 2. Tải buffer ảnh
+      // 2. Tải buffer ảnh chất lượng cao
       const fileUrl = `https://api.telegram.org/file/bot${BOT_TOKEN}/${filePath}`;
       const imgRes = await fetch(fileUrl);
       if (!imgRes.ok) throw new Error('Không thể tải file ảnh từ Telegram server');
       const buffer = await imgRes.arrayBuffer();
       const base64Data = Buffer.from(buffer).toString('base64');
+      const fullDataUrl = `data:image/jpeg;base64,${base64Data}`;
+
+      // 2b. Tải buffer ảnh thumbnail nhẹ để nhúng đồng bộ tức thì sang 2 điện thoại
+      let thumbDataUrl = fullDataUrl;
+      if (thumbPhoto && thumbPhoto.file_id !== bestPhoto.file_id) {
+        try {
+          const tfRes = await sendTelegram('getFile', { file_id: thumbPhoto.file_id });
+          if (tfRes && tfRes.ok && tfRes.result && tfRes.result.file_path) {
+            const tImgRes = await fetch(`https://api.telegram.org/file/bot${BOT_TOKEN}/${tfRes.result.file_path}`);
+            if (tImgRes.ok) {
+              const tBuf = await tImgRes.arrayBuffer();
+              thumbDataUrl = `data:image/jpeg;base64,${Buffer.from(tBuf).toString('base64')}`;
+            }
+          }
+        } catch (e) {}
+      }
 
       // 3. Gọi Google Gemini Vision 1.5 Flash bóc tách chi tiết từng mặt hàng & tổng tiền
       const promptText = `Bạn là chuyên gia phân tích hóa đơn tài chính cho gia đình Bảo & Oanh.
@@ -785,6 +842,8 @@ Trả về CHỈ DUY NHẤT một chuỗi JSON hợp lệ (không kèm markdown)
         date: parsed.date || `${day}/${new Date().getMonth() + 1}`,
         wallet: walletId,
         who: myRole,
+        receiptThumb: thumbDataUrl,
+        receiptFull: fullDataUrl,
         chatId: chatId,
         createdAt: Date.now()
       };
@@ -843,20 +902,23 @@ Trả về CHỈ DUY NHẤT một chuỗi JSON hợp lệ (không kèm markdown)
     return sendWalletsOverview(chatId);
   }
 
-  // Lệnh /baocao hoặc /thongke
+  // Lệnh /baocao hoặc /thongke (Lọc chính xác theo Tháng & Năm hiện tại)
   if (text === '/baocao' || text === '/thongke') {
     const now = new Date();
-    const curMonth = now.getMonth();
+    const curMonth = now.getMonth() + 1;
     const curYear = now.getFullYear();
 
     let totalExp = 0;
     let totalInc = 0;
     for (const t of DB.transactions) {
+      const txM = t.month || (t.id > 1000000000000 ? (new Date(t.id).getMonth() + 1) : curMonth);
+      const txY = t.year || (t.id > 1000000000000 ? new Date(t.id).getFullYear() : curYear);
+      if (txM !== curMonth || txY !== curYear) continue;
       if (t.kind === 'e') totalExp += t.amount;
       else if (t.kind === 'i') totalInc += t.amount;
     }
 
-    return sendMessage(chatId, `📊 <b>Báo cáo Chi tiêu Tháng ${curMonth + 1}/${curYear}:</b>\n\n` +
+    return sendMessage(chatId, `📊 <b>Báo cáo Chi tiêu Tháng ${curMonth}/${curYear}:</b>\n\n` +
       `💰 <b>Tổng thu nhập:</b> +${formatVND(totalInc)} ₫\n` +
       `💸 <b>Tổng chi tiêu:</b> -${formatVND(totalExp)} ₫\n` +
       `⚖️ <b>Số dư ròng:</b> ${formatVND(totalInc - totalExp)} ₫\n\n` +
@@ -918,13 +980,16 @@ Trả về CHỈ DUY NHẤT một chuỗi JSON hợp lệ (không kèm markdown)
     return sendMessage(chatId, `🤔 Chưa nhận diện được số tiền trong tin nhắn của bạn.\n\nVí dụ mẫu:\n• <code>cf 45k</code>\n• <code>ăn trưa 80k vcb</code>\n• <code>lương 25tr</code>\n\n<i>Gõ <b>/help</b> để xem hướng dẫn đầy đủ.</i>`);
   }
 
-  // Tạo ID giao dịch
+  // Tạo ID giao dịch kèm Ngày / Tháng / Năm chuẩn xác
   const curTxId = Date.now();
-  const day = new Date().getDate();
+  const nowD = new Date();
+  const day = nowD.getDate();
 
   const newTx = {
     id: curTxId,
     day: day,
+    month: nowD.getMonth() + 1,
+    year: nowD.getFullYear(),
     icon: parsed.icon,
     title: parsed.title,
     category: parsed.category,
@@ -935,6 +1000,7 @@ Trả về CHỈ DUY NHẤT một chuỗi JSON hợp lệ (không kèm markdown)
     kind: parsed.kind,
     note: parsed.note,
     receipt: null,
+    receiptThumb: null,
     comments: [],
     updatedAt: curTxId
   };

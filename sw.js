@@ -1,4 +1,4 @@
-const CACHE_NAME = 'vidoi-pwa-v14-gemini-35-flash-lite';
+const CACHE_NAME = 'vidoi-pwa-v15-month-isolation-receipt-sync';
 const ASSETS = [
   './',
   './index.html',
