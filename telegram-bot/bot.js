@@ -70,30 +70,51 @@ function hashSecretTopic(code, pin) {
 
 const CLOUD_TOPIC = 'vidoi_bo_priv_' + hashSecretTopic(FAMILY_CODE, FAMILY_PIN);
 
-// 3. Cơ sở dữ liệu Cục bộ
+// 3. Cơ sở dữ liệu Cục bộ (Hỗ trợ Đa tài khoản: Tiền mặt, ACB, MB, VIB, Thẻ tín dụng...)
+function ensureBotWallets(db) {
+  const defaultWallets = [
+    { id: 'cash', name: 'Tiền mặt', icon: '💵', balance: 0, owner: 'him', color: '#22C55E,#4ade80', match: 'tiền mặt' },
+    { id: 'acb', name: 'Ngân hàng ACB', icon: '🏦', balance: 0, owner: 'S', color: '#0066FF,#38bdf8', match: 'acb' },
+    { id: 'mb', name: 'Ngân hàng MB', icon: '🏦', balance: 0, owner: 'him', color: '#4F46E5,#818cf8', match: 'mb' },
+    { id: 'vib', name: 'Ngân hàng VIB', icon: '🏦', balance: 0, owner: 'him', color: '#F97316,#fb923c', match: 'vib' },
+    { id: 'tcb', name: 'Thẻ tín dụng', icon: '💳', balance: 0, owner: 'him', color: '#EF4444,#fb7185', match: 'tín dụng' },
+    { id: 'momo', name: 'Ví riêng (Oanh)', icon: '📱', balance: 0, owner: 'her', color: '#EC4899,#f9a8d4', match: 'oanh' }
+  ];
+  if (!Array.isArray(db.wallets) || db.wallets.length === 0) {
+    db.wallets = defaultWallets.map(({ match, ...rest }) => rest);
+  } else {
+    const cashW = db.wallets.find(w => w.id === 'cash');
+    if (cashW && cashW.name === 'Tiền mặt (Bảo)') cashW.name = 'Tiền mặt';
+    defaultWallets.forEach(dw => {
+      const exists = db.wallets.some(w => w.id === dw.id || (w.name && w.name.toLowerCase().includes(dw.match)));
+      if (!exists) {
+        const { match, ...cleanW } = dw;
+        db.wallets.push(cleanW);
+      }
+    });
+  }
+  return db;
+}
+
 function loadDB() {
   if (fs.existsSync(DB_FILE)) {
     try {
-      return JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
+      const loaded = JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
+      return ensureBotWallets(loaded);
     } catch (e) {
       console.warn('⚠️ Không thể đọc database.json, khởi tạo lại');
     }
   }
-  return {
+  return ensureBotWallets({
     users: {
       him: { name: 'Bảo', color: '#4C8DFF', role: 'Chồng' },
       her: { name: 'Oanh', color: '#FF7EB6', role: 'Vợ' }
     },
     telegramUsers: {}, // { "12345678": "him", "87654321": "her" }
-    wallets: [
-      { id: 'vcb', name: 'Ví chung VCB', icon: '🏦', balance: 0, owner: 'S', color: '#7C5CFF,#a78bfa' },
-      { id: 'cash', name: 'Tiền mặt (Bảo)', icon: '💵', balance: 0, owner: 'him', color: '#22C55E,#4ade80' },
-      { id: 'momo', name: 'Ví riêng (Oanh)', icon: '📱', balance: 0, owner: 'her', color: '#EC4899,#f9a8d4' },
-      { id: 'tcb', name: 'Thẻ tín dụng', icon: '💳', balance: 0, owner: 'him', color: '#EF4444,#fb7185' }
-    ],
+    wallets: [],
     deletedTxIds: [],
     transactions: []
-  };
+  });
 }
 
 const DB = loadDB();
@@ -229,12 +250,49 @@ function matchKeyword(text, keyword) {
   return regex.test(text);
 }
 
+function findWalletByIdOrKeyword(kw) {
+  if (!kw) return null;
+  const exact = DB.wallets.find(w => w.id.toLowerCase() === kw);
+  if (exact) return exact.id;
+  const byName = DB.wallets.find(w => w.name && w.name.toLowerCase().includes(kw));
+  if (byName) return byName.id;
+  return null;
+}
+
 function parseWallet(text) {
-  const t = text.toLowerCase();
-  if (t.includes('vcb') || t.includes('vietcombank') || t.includes('ví chung') || t.includes('vi chung')) return 'vcb';
-  if (t.includes('momo') || t.includes('ví riêng') || t.includes('vi rieng')) return 'momo';
-  if (t.includes('tcb') || t.includes('techcombank') || t.includes('tin dung') || t.includes('tín dụng') || t.includes('the') || t.includes('thẻ')) return 'tcb';
-  if (t.includes('tien mat') || t.includes('tiền mặt') || t.includes('mat') || t.includes('mặt') || t.includes('cash')) return 'cash';
+  const t = ' ' + text.toLowerCase() + ' ';
+  // 1. Kiểm tra các ngân hàng cụ thể: ACB, MB, VIB, VCB, TCB, BIDV, Vietin, VPBank, TPBank, MoMo
+  if (/\bacb\b/.test(t) || t.includes('ngân hàng acb') || t.includes('ngan hang acb')) {
+    return findWalletByIdOrKeyword('acb') || 'acb';
+  }
+  if (/\bmb\b/.test(t) || /\bmbbank\b/.test(t) || t.includes('ngân hàng mb') || t.includes('ngan hang mb')) {
+    return findWalletByIdOrKeyword('mb') || 'mb';
+  }
+  if (/\bvib\b/.test(t) || t.includes('ngân hàng vib') || t.includes('ngan hang vib')) {
+    return findWalletByIdOrKeyword('vib') || 'vib';
+  }
+  if (t.includes('tin dung') || t.includes('tín dụng') || /\bcredit\b/.test(t) || /\bthe\b/.test(t) || /\bthẻ\b/.test(t) || /\btd\b/.test(t)) {
+    return findWalletByIdOrKeyword('tín dụng') || findWalletByIdOrKeyword('credit') || findWalletByIdOrKeyword('tcb') || 'tcb';
+  }
+  if (/\bvcb\b/.test(t) || t.includes('vietcombank') || t.includes('ví chung') || t.includes('vi chung')) {
+    return findWalletByIdOrKeyword('vcb') || findWalletByIdOrKeyword('acb') || DB.wallets[0].id;
+  }
+  if (/\bmomo\b/.test(t) || t.includes('ví riêng') || t.includes('vi rieng')) {
+    return findWalletByIdOrKeyword('momo') || 'momo';
+  }
+  if (/\btcb\b/.test(t) || t.includes('techcombank')) {
+    return findWalletByIdOrKeyword('tech') || findWalletByIdOrKeyword('tcb') || 'tcb';
+  }
+  if (t.includes('tien mat') || t.includes('tiền mặt') || /\btm\b/.test(t) || /\bcash\b/.test(t)) {
+    return findWalletByIdOrKeyword('cash') || findWalletByIdOrKeyword('tiền mặt') || 'cash';
+  }
+  // 2. Quét động theo danh sách DB.wallets mà người dùng đã tạo
+  for (const w of DB.wallets) {
+    const wId = (w.id || '').toLowerCase();
+    const wName = (w.name || '').toLowerCase();
+    if (wId && wId.length >= 2 && new RegExp(`\\b${wId}\\b`, 'i').test(t)) return w.id;
+    if (wName && t.includes(wName)) return w.id;
+  }
   return null;
 }
 
@@ -245,23 +303,26 @@ function parseTextToTransaction(rawText, defaultWho = 'him') {
 
   const lower = text.toLowerCase();
 
-  // 1. Kiểm tra xem có phải Chuyển ví không (Transfer)
-  const isTransfer = lower.startsWith('chuyen ') || lower.startsWith('chuyển ') || lower.includes(' sang ') || lower.includes(' qua ');
+  // 1. Kiểm tra xem có phải Chuyển ví không (Transfer giữa bất kỳ 2 tài khoản nào: ACB, MB, VIB, Tiền mặt, Thẻ tín dụng...)
+  const isTransfer = lower.startsWith('chuyen ') || lower.startsWith('chuyển ') || /\s(sang|qua)\s/.test(lower);
   if (isTransfer) {
-    let fromW = 'vcb';
-    let toW = 'cash';
-    if (lower.includes('vcb sang tiet kiem') || lower.includes('vcb sang tiết kiệm') || lower.includes('sang tiet kiem')) {
-      fromW = 'vcb'; toW = 'tcb';
-    } else if (lower.includes('vcb sang tien mat') || lower.includes('vcb qua tien mat') || lower.includes('vcb sang tiền mặt')) {
-      fromW = 'vcb'; toW = 'cash';
-    } else if (lower.includes('tien mat sang vcb') || lower.includes('tiền mặt sang vcb')) {
-      fromW = 'cash'; toW = 'vcb';
+    let fromW = null;
+    let toW = null;
+    const splitMatch = lower.match(/^(.*?)\s+(?:sang|qua|tới|toi|vào|vao)\s+(.*)$/i);
+    if (splitMatch) {
+      fromW = parseWallet(splitMatch[1]);
+      toW = parseWallet(splitMatch[2]);
+    }
+    if (!fromW) fromW = parseWallet(lower) || (DB.wallets.find(w => w.id === 'acb') ? 'acb' : DB.wallets[0].id);
+    if (!toW || toW === fromW) {
+      const other = DB.wallets.find(w => w.id !== fromW);
+      toW = other ? other.id : 'cash';
     }
 
     return {
       kind: 't',
       amount: amt,
-      title: `Chuyển ví qua Telegram: ${amt.toLocaleString('vi-VN')} ₫`,
+      title: `Chuyển tiền: ${getWalletName(fromW)} ➔ ${getWalletName(toW)}`,
       category: 'Chuyển tiền & Tiết kiệm',
       icon: '🔄',
       wallet: fromW,
@@ -301,10 +362,11 @@ function parseTextToTransaction(rawText, defaultWho = 'him') {
     walletId = defaultWho === 'her' ? 'momo' : 'cash';
   }
 
-  // Tách title
+  // Tách title sạch khỏi tên ngân hàng và số tiền
   let cleanTitle = text
-    .replace(/(?:vcb|momo|tcb|tien mat|tiền mặt|the tin dung|thẻ tín dụng)/gi, '')
+    .replace(/\b(?:ngân hàng|ngan hang|acb|mb|mbbank|vib|vcb|vietcombank|momo|tcb|techcombank|bidv|vpbank|tpbank|tien mat|tiền mặt|tm|the tin dung|thẻ tín dụng|tin dung|tín dụng|td)\b/gi, '')
     .replace(/(?:\d+(?:\.\d+)?\s*(?:tr|k|vnd|đ|₫)?|\b\d{4,10}\b)/gi, '')
+    .replace(/\s+/g, ' ')
     .trim();
 
   if (!cleanTitle) cleanTitle = catName;
@@ -326,8 +388,10 @@ function parseTextToTransaction(rawText, defaultWho = 'him') {
 async function parseExpenseWithAI(rawText, defaultWho = 'him') {
   if (!GEMINI_API_KEY) return null;
   try {
+    const walletsPromptList = DB.wallets.map(w => `${w.id} (${w.name})`).join(' | ');
     const promptText = `Bạn là trợ lý tài chính thông minh cho gia đình Bảo & Oanh.
 Hãy phân tích tin nhắn chi tiêu hoặc thu nhập sau: "${rawText}".
+Danh sách tài khoản hiện có: ${walletsPromptList}.
 Nếu tin nhắn có chứa số tiền giao dịch, hãy trích xuất thông tin.
 Trả về CHỈ DUY NHẤT một chuỗi JSON hợp lệ (không kèm markdown):
 {
@@ -336,7 +400,7 @@ Trả về CHỈ DUY NHẤT một chuỗi JSON hợp lệ (không kèm markdown)
   "title": "<mô tả nội dung ngắn gọn, ví dụ Cà phê, Ăn trưa, Đổ xăng, Mua đồ>",
   "category": "<một trong các danh mục: Ăn uống | Chợ & Siêu thị | Nhà cửa | Hóa đơn | Đi lại | Con cái | Mua sắm | Giải trí | Sức khỏe | Khác>",
   "icon": "<icon emoji phù hợp với danh mục>",
-  "wallet": "<vcb | tcb | cash | momo | credit>",
+  "wallet": "<mã id tài khoản khớp nhất trong danh sách: ${DB.wallets.map(w => w.id).join(' | ')}>",
   "kind": "<e nếu là chi tiêu, i nếu là thu nhập, t nếu là chuyển tiền>"
 }
 Nếu tin nhắn không chứa số tiền hoặc không liên quan tài chính, trả về:
@@ -729,6 +793,65 @@ async function handleUpdate(update) {
       return;
     }
 
+    // Đổi tài khoản / ngân hàng trực tiếp cho giao dịch đã lưu trên Telegram
+    if (data.startsWith('change_tx_wal_')) {
+      const txId = parseInt(data.replace('change_tx_wal_', ''), 10);
+      const tx = DB.transactions.find(t => t.id === txId);
+      if (!tx) {
+        await sendTelegram('answerCallbackQuery', { callback_query_id: cq.id, text: 'Giao dịch không tồn tại hoặc đã xóa.' });
+        return;
+      }
+      const walButtons = [];
+      for (let i = 0; i < DB.wallets.length; i += 2) {
+        const w1 = DB.wallets[i];
+        const row = [
+          { text: `${w1.id === tx.wallet ? '✅ ' : ''}${w1.icon} ${w1.name}`, callback_data: `set_tx_wal_${txId}_${w1.id}` }
+        ];
+        if (DB.wallets[i + 1]) {
+          const w2 = DB.wallets[i + 1];
+          row.push({ text: `${w2.id === tx.wallet ? '✅ ' : ''}${w2.icon} ${w2.name}`, callback_data: `set_tx_wal_${txId}_${w2.id}` });
+        }
+        walButtons.push(row);
+      }
+      await sendTelegram('answerCallbackQuery', { callback_query_id: cq.id });
+      await sendMessage(chatId, `💳 <b>Chọn tài khoản / ngân hàng cho giao dịch "${tx.title}" (${formatVND(tx.amount)} ₫):</b>`, {
+        reply_markup: { inline_keyboard: walButtons }
+      });
+      return;
+    }
+
+    if (data.startsWith('set_tx_wal_')) {
+      const raw = data.replace('set_tx_wal_', '');
+      const firstUnderscore = raw.indexOf('_');
+      const txId = parseInt(raw.slice(0, firstUnderscore), 10);
+      const newWalId = raw.slice(firstUnderscore + 1);
+      const tx = DB.transactions.find(t => t.id === txId);
+      const newW = DB.wallets.find(w => w.id === newWalId);
+      if (!tx || !newW) {
+        await sendTelegram('answerCallbackQuery', { callback_query_id: cq.id, text: 'Không tìm thấy giao dịch hoặc tài khoản.' });
+        return;
+      }
+      if (tx.wallet !== newWalId) {
+        const oldW = DB.wallets.find(w => w.id === tx.wallet);
+        if (oldW) {
+          oldW.balance += (tx.kind === 'i' ? -tx.amount : tx.amount);
+        }
+        newW.balance += (tx.kind === 'i' ? tx.amount : -tx.amount);
+        tx.wallet = newWalId;
+        tx.updatedAt = Date.now();
+        saveDB();
+        await broadcastToPWA();
+      }
+      await sendTelegram('answerCallbackQuery', { callback_query_id: cq.id, text: `Đã chuyển sang: ${newW.name}!` });
+      await sendTelegram('editMessageText', {
+        chat_id: chatId,
+        message_id: msgId,
+        text: `✅ Đã chuyển giao dịch <b>${tx.title} (${formatVND(tx.amount)} ₫)</b> sang tài khoản: <b>${newW.icon} ${newW.name}</b>\n• Số dư hiện tại: <code>${formatVND(newW.balance)} ₫</code>`,
+        parse_mode: 'HTML'
+      });
+      return;
+    }
+
     if (data === 'view_wallets') {
       await sendWalletsOverview(chatId);
       return;
@@ -902,6 +1025,29 @@ Trả về CHỈ DUY NHẤT một chuỗi JSON hợp lệ (không kèm markdown)
     return sendWalletsOverview(chatId);
   }
 
+  // Lệnh /themvi <Tên ngân hàng/tài khoản>
+  if (text.startsWith('/themvi')) {
+    const wName = text.replace(/^\/themvi\s*/i, '').trim();
+    if (!wName) {
+      return sendMessage(chatId, `💡 <b>Cách thêm tài khoản / ngân hàng mới:</b>\nGõ: <code>/themvi Ngân hàng BIDV</code> hoặc mở app Ví Đôi ➔ Quản lý Ví.`);
+    }
+    const cleanId = wName.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 10) || ('w_' + Date.now().toString(36));
+    const finalId = DB.wallets.some(w => w.id === cleanId) ? ('w_' + Date.now().toString(36)) : cleanId;
+    const isCard = wName.toLowerCase().includes('tín dụng') || wName.toLowerCase().includes('thẻ');
+    const newW = {
+      id: finalId,
+      name: wName,
+      icon: isCard ? '💳' : '🏦',
+      balance: 0,
+      owner: myRole,
+      color: '#0066FF,#38bdf8'
+    };
+    DB.wallets.push(newW);
+    saveDB();
+    await broadcastToPWA();
+    return sendMessage(chatId, `✅ Đã thêm tài khoản mới: <b>${newW.icon} ${newW.name}</b> và đồng bộ sang Ví Đôi PWA!`);
+  }
+
   // Lệnh /baocao hoặc /thongke (Lọc chính xác theo Tháng & Năm hiện tại)
   if (text === '/baocao' || text === '/thongke') {
     const now = new Date();
@@ -949,22 +1095,24 @@ Trả về CHỈ DUY NHẤT một chuỗi JSON hợp lệ (không kèm markdown)
   // Lệnh /help
   if (text === '/help') {
     return sendMessage(chatId, `📖 <b>Hướng dẫn sử dụng Bot Ví Đôi — Bảo & Oanh:</b>\n\n` +
-      `• <b>Ghi chép chi tiêu siêu tốc:</b>\n` +
-      `  <code>cf 45k</code>\n` +
-      `  <code>ăn sáng 65k tiền mặt</code>\n` +
-      `  <code>đi chợ 250k vcb</code>\n` +
-      `  <code>xăng xe 120k</code>\n` +
-      `  <code>mua đồ shopee 350k tín dụng</code>\n\n` +
+      `• <b>Ghi chép chi tiêu theo từng Ngân hàng / Ví:</b>\n` +
+      `  <code>cf 45k tiền mặt</code>\n` +
+      `  <code>đi chợ 250k acb</code>\n` +
+      `  <code>ăn tối 320k mb</code>\n` +
+      `  <code>đổ xăng 120k vib</code>\n` +
+      `  <code>mua đồ shopee 350k tín dụng</code>\n` +
+      `  <i>(Hoặc gõ nhanh <code>cf 45k</code> rồi bấm nút <b>💳 Đổi tài khoản</b> ngay dưới tin nhắn!)</i>\n\n` +
       `• <b>Ghi nhận thu nhập / Tiền về:</b>\n` +
-      `  <code>lương 25tr vcb</code>\n` +
-      `  <code>thu 5tr bán hàng</code>\n\n` +
-      `• <b>Chuyển tiền giữa các ví / Tiết kiệm:</b>\n` +
-      `  <code>chuyển 5tr vcb sang tiết kiệm</code>\n` +
-      `  <code>chuyển 1tr vcb qua tiền mặt</code>\n\n` +
-      `• <b>Quét hóa đơn bằng AI:</b> Gửi trực tiếp ảnh chụp hóa đơn vào chat, bot sẽ tự động đọc tên cửa hàng, các món, tổng tiền và tạo thẻ xác nhận lưu vào Ví Đôi!\n\n` +
-      `• <b>Xem số dư ví:</b> gõ <code>/vi</code>\n` +
+      `  <code>lương 25tr acb</code>\n` +
+      `  <code>thu 5tr bán hàng mb</code>\n\n` +
+      `• <b>Chuyển tiền giữa bất kỳ 2 tài khoản nào:</b>\n` +
+      `  <code>chuyển 5tr acb sang vib</code>\n` +
+      `  <code>chuyển 2tr mb qua tiền mặt</code>\n\n` +
+      `• <b>Quét hóa đơn bằng AI:</b> Gửi trực tiếp ảnh chụp hóa đơn vào chat, bot sẽ tự động đọc tên cửa hàng, tổng tiền và đồng bộ cả ảnh hóa đơn sang 2 điện thoại!\n\n` +
+      `• <b>Xem số dư tất cả tài khoản:</b> gõ <code>/vi</code>\n` +
+      `• <b>Thêm tài khoản mới:</b> gõ <code>/themvi Tên_Ngân_Hàng</code>\n` +
       `• <b>Báo cáo tháng:</b> gõ <code>/baocao</code>\n` +
-      `• <b>Sao lưu máy chủ:</b> gõ <code>/backup</code> (gửi file sao lưu JSON an toàn)\n` +
+      `• <b>Sao lưu máy chủ:</b> gõ <code>/backup</code>\n` +
       `• <b>Đổi vai trò:</b> gõ <code>/role him</code> (Bảo) hoặc <code>/role her</code> (Oanh)`
     );
   }
@@ -1051,10 +1199,11 @@ Trả về CHỈ DUY NHẤT một chuỗi JSON hợp lệ (không kèm markdown)
     reply_markup: {
       inline_keyboard: [
         [
-          { text: '🗑 Hủy / Xóa', callback_data: `del_tx_${curTxId}` },
+          { text: '💳 Đổi tài khoản', callback_data: `change_tx_wal_${curTxId}` },
           { text: parsed.shared ? '🔒 Đổi sang Riêng' : '👥 Đổi sang Chung', callback_data: `toggle_shared_${curTxId}` }
         ],
         [
+          { text: '🗑 Hủy / Xóa', callback_data: `del_tx_${curTxId}` },
           { text: '📊 Xem số dư ví', callback_data: 'view_wallets' }
         ]
       ]

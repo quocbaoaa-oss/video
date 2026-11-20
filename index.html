@@ -1575,7 +1575,7 @@
     <!-- 3. SỐ DƯ TÀI KHOẢN, VÍ, CHO VAY, TIẾT KIỆM & ĐẦU TƯ -->
     <div style="display:flex;justify-content:space-between;align-items:center;margin:12px 2px 6px">
       <b>🏦 Tài khoản, Ví, Cho vay & Đầu tư</b>
-      <span class="link" style="font-size:12.5px" onclick="promptAddWallet()">＋ Thêm ví</span>
+      <span class="link" style="font-size:12.5px" onclick="openWalletManager()">⚙️ Quản lý / ＋ Thêm ví</span>
     </div>
     <div class="asset-grid" id="home-asset-grid"></div>
     <div class="hs" id="home-wallets" style="margin-bottom:12px"></div>
@@ -1865,8 +1865,8 @@
     <!-- Wallets & Accounts Management -->
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-        <b>Ví & Tài khoản</b>
-        <span class="link" onclick="promptAddWallet()">＋ Thêm</span>
+        <b>Ví & Tài khoản Ngân hàng</b>
+        <span class="link" onclick="openWalletManager()">⚙️ Quản lý / ＋ Thêm</span>
       </div>
       <div id="family-wallets-list"></div>
     </div>
@@ -2102,7 +2102,7 @@
             <span id="single-wallet-icon" style="font-size:16px">💳</span>
             <b style="font-size:13px" id="single-wallet-title">Tài khoản Chi tiền</b>
           </div>
-          <span class="link" style="font-size:11.5px" onclick="promptAddWalletFromSheet()">＋ Thêm tài khoản</span>
+          <span class="link" style="font-size:11.5px" onclick="openWalletManager()">⚙️ Quản lý / ＋ Thêm ví</span>
         </div>
 
         <!-- Quick Select Dropdown for direct selection -->
@@ -2277,6 +2277,55 @@
     </div>
   </div>
 
+  <!-- Wallet & Bank Accounts Manager Modal (Multi-Account Customizer: Cash, ACB, MB, VIB, Credit Card...) -->
+  <div class="dlg" id="wallet-manager-modal">
+    <div style="width:372px;max-width:95vw;max-height:88vh;display:flex;flex-direction:column;text-align:left;padding:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div>
+          <h2 style="padding:0;font-size:17px">🏦 Quản lý Tài khoản & Ví</h2>
+          <div class="sub" style="font-size:11px">Thêm, sửa số dư, đổi tên Ngân hàng, Tiền mặt, Thẻ tín dụng</div>
+        </div>
+        <span class="ic clickable" style="width:30px;height:30px;font-size:14px" onclick="closeWalletManager()">✕</span>
+      </div>
+
+      <!-- Quick 1-Tap Bank Presets -->
+      <div class="sub" style="font-size:11px;margin-bottom:4px">⚡ Chạm chọn nhanh Ngân hàng / Loại ví phổ biến:</div>
+      <div class="hs" id="wal-preset-chips" style="margin-bottom:8px;gap:6px;padding-bottom:4px"></div>
+
+      <!-- Add / Edit Wallet Form Card -->
+      <div style="background:var(--fill);border-radius:18px;padding:10px 12px;margin-bottom:10px;border:1.5px solid var(--card-border)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <b style="font-size:13px;color:var(--coral)" id="wal-form-title">＋ Thêm tài khoản / ngân hàng mới</b>
+          <span class="sub link" id="wal-form-cancel" style="display:none;font-size:12px" onclick="resetWalletForm()">Hủy sửa</span>
+        </div>
+
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
+          <input class="input" id="wal-edit-icon" readonly onclick="activateTextInput(this)" onblur="this.readOnly=true" maxlength="4" value="🏦" style="width:50px;margin:0;text-align:center;font-size:20px;padding:8px 4px">
+          <input class="input" id="wal-edit-name" enterkeyhint="done" readonly onclick="activateTextInput(this)" onblur="this.readOnly=true" onkeydown="if(event.key==='Enter')this.blur()" placeholder="Tên TK (VD: Ngân hàng ACB, VIB…)" maxlength="28" style="margin:0;flex:1;font-weight:700">
+        </div>
+
+        <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px">
+          <input class="input" id="wal-edit-balance" inputmode="numeric" enterkeyhint="done" readonly onclick="activateTextInput(this)" onblur="this.readOnly=true" onkeydown="if(event.key==='Enter')this.blur()" placeholder="Số dư hiện tại (VND)" value="0" style="margin:0;flex:1;padding:8px 10px;font-size:13px;font-weight:700">
+          <select class="input" id="wal-edit-owner" style="margin:0;width:46%;padding:8px 8px;font-size:12.5px;font-weight:600">
+            <option value="him">👨 Của Bảo</option>
+            <option value="her">👩 Của Oanh</option>
+            <option value="S">👥 Ví Chung</option>
+          </select>
+        </div>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <span class="sub" style="font-size:11px">Màu thẻ:</span>
+          <div id="wal-color-picker" style="display:flex;gap:6px"></div>
+        </div>
+
+        <button class="btn sm" style="width:100%" id="wal-save-btn" onclick="saveWalletFromManager()">💾 Lưu tài khoản</button>
+      </div>
+
+      <div class="sub" style="margin-bottom:4px">Danh sách tài khoản hiện có (Chạm ✏️ để sửa / cập nhật số dư):</div>
+      <div id="wal-mgr-list" style="flex:1;overflow-y:auto;max-height:220px;border-top:1px solid var(--sep)"></div>
+    </div>
+  </div>
+
   <!-- Family Events & Upcoming Tasks Modal (Auto-highlights 1 day before on Home Overview) -->
   <div class="dlg" id="event-modal">
     <div style="width:368px;max-width:94vw;max-height:88vh;display:flex;flex-direction:column;text-align:left;padding:16px">
@@ -2440,10 +2489,12 @@ function getInitialData() {
     expenseCategories: DEFAULT_EXP_CATEGORIES.map(c => [...c]),
     incomeCategories: DEFAULT_INC_CATEGORIES.map(c => [...c]),
     wallets: [
-      { id: 'vcb', name: 'Ví chung VCB', icon: '🏦', balance: 0, owner: 'S', color: '#7C5CFF,#a78bfa' },
-      { id: 'cash', name: 'Tiền mặt (Bảo)', icon: '💵', balance: 0, owner: 'him', color: '#22C55E,#4ade80' },
-      { id: 'momo', name: 'Ví riêng (Oanh)', icon: '📱', balance: 0, owner: 'her', color: '#EC4899,#f9a8d4' },
-      { id: 'tcb', name: 'Thẻ tín dụng', icon: '💳', balance: 0, owner: 'him', color: '#EF4444,#fb7185' }
+      { id: 'cash', name: 'Tiền mặt', icon: '💵', balance: 0, owner: 'him', color: '#22C55E,#4ade80' },
+      { id: 'acb', name: 'Ngân hàng ACB', icon: '🏦', balance: 0, owner: 'S', color: '#0066FF,#38bdf8' },
+      { id: 'mb', name: 'Ngân hàng MB', icon: '🏦', balance: 0, owner: 'him', color: '#4F46E5,#818cf8' },
+      { id: 'vib', name: 'Ngân hàng VIB', icon: '🏦', balance: 0, owner: 'him', color: '#F97316,#fb923c' },
+      { id: 'tcb', name: 'Thẻ tín dụng', icon: '💳', balance: 0, owner: 'him', color: '#EF4444,#fb7185' },
+      { id: 'momo', name: 'Ví riêng (Oanh)', icon: '📱', balance: 0, owner: 'her', color: '#EC4899,#f9a8d4' }
     ],
     budgets: {
       'Ăn uống': 6000000,
@@ -2515,6 +2566,36 @@ function ensureDBFields(obj) {
   }
   if (!Array.isArray(obj.incomeCategories) || !obj.incomeCategories.length) {
     obj.incomeCategories = def.incomeCategories;
+  }
+  if (!Array.isArray(obj.wallets) || !obj.wallets.length) {
+    obj.wallets = def.wallets;
+    obj.multiBankWalletsMigrated = true;
+  } else if (!obj.multiBankWalletsMigrated) {
+    // Tự động bổ sung bộ tài khoản: Tiền mặt, Ngân hàng ACB, Ngân hàng MB, Ngân hàng VIB, Thẻ tín dụng
+    const cashW = obj.wallets.find(w => w.id === 'cash');
+    if (cashW && cashW.name === 'Tiền mặt (Bảo)') cashW.name = 'Tiền mặt';
+
+    const requiredBanks = [
+      { id: 'cash', name: 'Tiền mặt', icon: '💵', balance: 0, owner: 'him', color: '#22C55E,#4ade80', match: 'tiền mặt' },
+      { id: 'acb', name: 'Ngân hàng ACB', icon: '🏦', balance: 0, owner: 'S', color: '#0066FF,#38bdf8', match: 'acb' },
+      { id: 'mb', name: 'Ngân hàng MB', icon: '🏦', balance: 0, owner: 'him', color: '#4F46E5,#818cf8', match: 'mb' },
+      { id: 'vib', name: 'Ngân hàng VIB', icon: '🏦', balance: 0, owner: 'him', color: '#F97316,#fb923c', match: 'vib' },
+      { id: 'tcb', name: 'Thẻ tín dụng', icon: '💳', balance: 0, owner: 'him', color: '#EF4444,#fb7185', match: 'tín dụng' }
+    ];
+    requiredBanks.forEach(rb => {
+      const exists = obj.wallets.some(w => w.id === rb.id || (w.name && w.name.toLowerCase().includes(rb.match)));
+      if (!exists) {
+        obj.wallets.push({
+          id: rb.id,
+          name: rb.name,
+          icon: rb.icon,
+          balance: rb.balance,
+          owner: rb.owner,
+          color: rb.color
+        });
+      }
+    });
+    obj.multiBankWalletsMigrated = true;
   }
   if (!obj.budgets) obj.budgets = def.budgets;
   if (!obj.privateBudgets) obj.privateBudgets = def.privateBudgets;
@@ -4023,67 +4104,245 @@ function updateVietQRModal() {
   $('#vietqr-img').src = `https://img.vietqr.io/image/${bin}-${acc}-compact2.png?amount=${amt}&addInfo=${info}&accountName=${accName}`;
 }
 
-function promptAddWallet() {
-  const name = prompt('Nhập tên ví mới (ví dụ: Techcombank, Ví tiết kiệm):');
-  if (!name || !name.trim()) return;
-  const balStr = prompt('Nhập số dư hiện tại (VND):', '0') || '0';
-  const bal = parseInt(balStr.replace(/[^0-9-]/g, ''), 10) || 0;
-  const isShared = confirm('Đây là Ví Chung của cả hai vợ chồng? (Bấm Hủy nếu là Ví Riêng của bạn)');
-  DB.wallets.push({
-    id: 'w_' + Date.now(),
-    name: name.trim(),
-    icon: isShared ? '🏦' : '👛',
-    balance: bal,
-    owner: isShared ? 'S' : getMyRole(),
-    color: isShared ? '#7C5CFF,#a78bfa' : '#2EC4B6,#5eead4'
-  });
-  saveData();
+const WALLET_PRESETS = [
+  { id: 'cash', name: 'Tiền mặt', icon: '💵', color: '#22C55E,#4ade80', owner: 'him' },
+  { id: 'acb', name: 'Ngân hàng ACB', icon: '🏦', color: '#0066FF,#38bdf8', owner: 'S' },
+  { id: 'mb', name: 'Ngân hàng MB', icon: '🏦', color: '#4F46E5,#818cf8', owner: 'him' },
+  { id: 'vib', name: 'Ngân hàng VIB', icon: '🏦', color: '#F97316,#fb923c', owner: 'him' },
+  { id: 'credit', name: 'Thẻ tín dụng', icon: '💳', color: '#EF4444,#fb7185', owner: 'him' },
+  { id: 'vcb', name: 'Ngân hàng VCB', icon: '🏦', color: '#10B981,#34d399', owner: 'S' },
+  { id: 'tech', name: 'Techcombank', icon: '🏦', color: '#DC2626,#f87171', owner: 'him' },
+  { id: 'bidv', name: 'Ngân hàng BIDV', icon: '🏦', color: '#0284C7,#38bdf8', owner: 'S' },
+  { id: 'vietin', name: 'VietinBank', icon: '🏦', color: '#2563EB,#60a5fa', owner: 'S' },
+  { id: 'vpbank', name: 'VPBank', icon: '🏦', color: '#16A34A,#4ade80', owner: 'him' },
+  { id: 'tpbank', name: 'TPBank', icon: '🏦', color: '#7C3AED,#a78bfa', owner: 'her' },
+  { id: 'momo', name: 'Ví MoMo', icon: '📱', color: '#EC4899,#f9a8d4', owner: 'her' },
+  { id: 'saving', name: 'Sổ tiết kiệm', icon: '💎', color: '#EAB308,#facc15', owner: 'S' }
+];
+
+const WALLET_COLORS = [
+  '#22C55E,#4ade80',
+  '#0066FF,#38bdf8',
+  '#4F46E5,#818cf8',
+  '#F97316,#fb923c',
+  '#EF4444,#fb7185',
+  '#EC4899,#f9a8d4',
+  '#10B981,#34d399',
+  '#7C5CFF,#a78bfa'
+];
+
+let editingWalletId = null;
+let selectedWalletColor = WALLET_COLORS[1];
+
+function openWalletManager(editId = null) {
+  haptic('light');
+  renderWalletPresets();
+  if (editId) {
+    editWalletInManager(editId);
+  } else {
+    resetWalletForm();
+  }
+  renderWalletManagerList();
+  $('#wallet-manager-modal').classList.add('on');
+}
+
+function closeWalletManager() {
+  $('#wallet-manager-modal').classList.remove('on');
   renderApp();
-  toast('Đã thêm ví mới & đồng bộ đám mây ✅');
+  if ($('#add-sheet').classList.contains('on')) {
+    renderSingleWalletPicker();
+    renderTransferWallets();
+    renderAddChips();
+  }
+}
+
+function renderWalletPresets() {
+  const box = $('#wal-preset-chips');
+  if (!box) return;
+  box.innerHTML = WALLET_PRESETS.map((p, idx) => `
+    <span class="chip" style="padding:5px 10px;font-size:11.5px;white-space:nowrap" onclick="applyWalletPreset(${idx})">${p.icon} ${p.name}</span>
+  `).join('');
+}
+
+function renderWalletColorPicker() {
+  const box = $('#wal-color-picker');
+  if (!box) return;
+  box.innerHTML = WALLET_COLORS.map(c => {
+    const isSel = c === selectedWalletColor;
+    const c1 = c.split(',')[0];
+    const c2 = c.split(',')[1];
+    return `<span onclick="selectWalletColor('${c}')" style="width:22px;height:22px;border-radius:50%;background:linear-gradient(135deg,${c1},${c2});cursor:pointer;display:inline-block;border:${isSel ? '2.5px solid #fff' : '1px solid rgba(255,255,255,0.2)'};box-shadow:${isSel ? '0 0 0 2px var(--coral)' : 'none'}"></span>`;
+  }).join('');
+}
+
+function selectWalletColor(col) {
+  selectedWalletColor = col;
+  renderWalletColorPicker();
+}
+
+function applyWalletPreset(idx) {
+  const p = WALLET_PRESETS[idx];
+  if (!p) return;
+  haptic('light');
+  // Check if wallet with same name already exists -> switch to edit it
+  const existing = DB.wallets.find(w => w.name.toLowerCase() === p.name.toLowerCase());
+  if (existing && !editingWalletId) {
+    editWalletInManager(existing.id);
+    return toast(`Đang chọn sửa "${existing.name}"`);
+  }
+  $('#wal-edit-icon').value = p.icon;
+  $('#wal-edit-name').value = p.name;
+  $('#wal-edit-owner').value = p.owner || getMyRole();
+  selectedWalletColor = p.color;
+  renderWalletColorPicker();
+}
+
+function resetWalletForm() {
+  editingWalletId = null;
+  $('#wal-form-title').textContent = '＋ Thêm tài khoản / ngân hàng mới';
+  $('#wal-form-cancel').style.display = 'none';
+  $('#wal-edit-icon').value = '🏦';
+  $('#wal-edit-name').value = '';
+  $('#wal-edit-balance').value = '0';
+  $('#wal-edit-owner').value = getMyRole();
+  $('#wal-save-btn').textContent = '💾 Lưu tài khoản mới';
+  selectedWalletColor = WALLET_COLORS[1];
+  renderWalletColorPicker();
+}
+
+function editWalletInManager(walletId) {
+  const w = DB.wallets.find(x => x.id === walletId);
+  if (!w) return;
+  editingWalletId = w.id;
+  $('#wal-form-title').textContent = `✏️ Đang sửa: ${w.icon} ${w.name}`;
+  $('#wal-form-cancel').style.display = 'inline';
+  $('#wal-edit-icon').value = w.icon || '🏦';
+  $('#wal-edit-name').value = w.name || '';
+  $('#wal-edit-balance').value = String(w.balance || 0);
+  $('#wal-edit-owner').value = w.owner || 'him';
+  $('#wal-save-btn').textContent = '💾 Cập nhật tài khoản';
+  selectedWalletColor = w.color || WALLET_COLORS[1];
+  renderWalletColorPicker();
+  renderWalletManagerList();
+}
+
+function saveWalletFromManager() {
+  const icon = ($('#wal-edit-icon').value || '🏦').trim();
+  const name = ($('#wal-edit-name').value || '').trim();
+  if (!name) return toast('Vui lòng nhập tên tài khoản / ngân hàng!');
+  const rawBal = ($('#wal-edit-balance').value || '0').replace(/[^0-9-]/g, '');
+  const balance = parseInt(rawBal, 10) || 0;
+  const owner = $('#wal-edit-owner').value || 'him';
+
+  if (editingWalletId) {
+    const w = DB.wallets.find(x => x.id === editingWalletId);
+    if (w) {
+      w.icon = icon;
+      w.name = name;
+      w.balance = balance;
+      w.owner = owner;
+      w.color = selectedWalletColor;
+      toast(`Đã cập nhật "${w.icon} ${w.name}" ✅`);
+    }
+  } else {
+    // Generate clean slug id if possible (e.g. acb, mb, vib, vcb)
+    const cleanSlug = name.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 10);
+    const newId = (!cleanSlug || DB.wallets.some(w => w.id === cleanSlug))
+      ? ('w_' + Date.now().toString(36))
+      : cleanSlug;
+    const newW = {
+      id: newId,
+      name: name,
+      icon: icon,
+      balance: balance,
+      owner: owner,
+      color: selectedWalletColor
+    };
+    DB.wallets.push(newW);
+    STATE.addWalletId = newW.id;
+    toast(`Đã thêm "${newW.icon} ${newW.name}" ✅`);
+  }
+
+  haptic('medium');
+  saveData();
+  resetWalletForm();
+  renderWalletManagerList();
+  renderApp();
+}
+
+function moveWalletOrder(idx, dir) {
+  const target = idx + dir;
+  if (target < 0 || target >= DB.wallets.length) return;
+  const tmp = DB.wallets[idx];
+  DB.wallets[idx] = DB.wallets[target];
+  DB.wallets[target] = tmp;
+  haptic('light');
+  saveData();
+  renderWalletManagerList();
+  renderApp();
+}
+
+function deleteWalletFromManager(walletId) {
+  if (DB.wallets.length <= 1) return toast('Cần giữ lại ít nhất 1 tài khoản!');
+  const w = DB.wallets.find(x => x.id === walletId);
+  if (!w) return;
+  confirmDlg(
+    `Xóa tài khoản "${w.name}"?`,
+    'Các giao dịch cũ trong lịch sử vẫn được giữ nguyên an toàn.',
+    'Xóa',
+    () => {
+      const idx = DB.wallets.findIndex(x => x.id === walletId);
+      if (idx >= 0) DB.wallets.splice(idx, 1);
+      if (STATE.addWalletId === walletId) STATE.addWalletId = DB.wallets[0].id;
+      if (editingWalletId === walletId) resetWalletForm();
+      saveData();
+      renderWalletManagerList();
+      renderApp();
+      toast(`Đã xóa tài khoản ${w.name}`);
+    }
+  );
+}
+
+function renderWalletManagerList() {
+  const box = $('#wal-mgr-list');
+  if (!box) return;
+  const u = DB.users;
+  box.innerHTML = DB.wallets.map((w, idx) => {
+    const isEditing = editingWalletId === w.id;
+    const ownerLbl = w.owner === 'S' ? '👥 Chung' : w.owner === 'him' ? `👨 ${u.him.name}` : `👩 ${u.her.name}`;
+    const c1 = (w.color || '#0066FF,#38bdf8').split(',')[0];
+    return `
+      <div class="row" style="padding:8px 6px;${isEditing ? 'background:rgba(124,92,255,0.12);border-radius:12px' : ''}">
+        <div class="ic" style="width:36px;height:36px;font-size:19px;background:${c1}22;border:1px solid ${c1}55">${w.icon}</div>
+        <div class="grow" onclick="editWalletInManager('${w.id}')" style="cursor:pointer">
+          <div style="display:flex;align-items:center;gap:6px">
+            <b style="font-size:13.5px">${w.name}</b>
+            <span class="sub" style="font-size:10.5px;background:var(--fill);padding:1px 6px;border-radius:6px">${ownerLbl}</span>
+          </div>
+          <div style="font-size:12.5px;font-weight:700;color:${w.balance < 0 ? 'var(--exp)' : 'var(--inc)'}">
+            ${formatVND(w.balance)} ₫
+          </div>
+        </div>
+        <button class="btn sm alt" style="padding:4px 7px;font-size:11px" onclick="moveWalletOrder(${idx}, -1)" ${idx === 0 ? 'disabled style="opacity:0.3;padding:4px 7px;font-size:11px"' : ''}>↑</button>
+        <button class="btn sm alt" style="padding:4px 7px;font-size:11px" onclick="moveWalletOrder(${idx}, 1)" ${idx === DB.wallets.length - 1 ? 'disabled style="opacity:0.3;padding:4px 7px;font-size:11px"' : ''}>↓</button>
+        <button class="btn sm alt" style="padding:4px 8px;font-size:11px" onclick="editWalletInManager('${w.id}')">✏️ Sửa</button>
+        <span class="ic clickable" style="width:28px;height:28px;color:var(--exp);background:rgba(239,68,68,0.1)" onclick="deleteWalletFromManager('${w.id}')">🗑</span>
+      </div>
+    `;
+  }).join('');
+}
+
+function promptAddWallet() {
+  openWalletManager(null);
 }
 
 function promptManageWallet(walletId) {
-  const w = DB.wallets.find(x => x.id === walletId);
-  if (!w) return;
-  const action = prompt(
-    `Quản lý tài khoản: ${w.icon} ${w.name}\nSố dư hiện tại: ${formatVND(w.balance)} ₫\n\nNhập số tương ứng:\n1: Sửa tên tài khoản\n2: Cập nhật số dư thực tế\n3: Đổi biểu tượng icon\n4: Xóa tài khoản này`,
-    '2'
-  );
-  if (!action) return;
-  if (action === '1') {
-    const newName = prompt('Nhập tên tài khoản mới:', w.name);
-    if (newName && newName.trim()) {
-      w.name = newName.trim();
-      saveData();
-      renderApp();
-      toast(`Đã đổi tên thành: ${w.name}`);
-    }
-  } else if (action === '2') {
-    promptEditWalletBalance(walletId);
-  } else if (action === '3') {
-    const newIcon = prompt('Nhập biểu tượng Emoji cho tài khoản (ví dụ: 🏦, 💵, 📱, 💳):', w.icon);
-    if (newIcon && newIcon.trim()) {
-      w.icon = newIcon.trim();
-      saveData();
-      renderApp();
-      toast(`Đã đổi biểu tượng: ${w.icon}`);
-    }
-  } else if (action === '4') {
-    if (DB.wallets.length <= 1) return toast('Cần giữ lại ít nhất 1 tài khoản!');
-    confirmDlg(
-      `Xóa tài khoản "${w.name}"?`,
-      'Các giao dịch cũ trong lịch sử vẫn được giữ nguyên.',
-      'Xóa',
-      () => {
-        const idx = DB.wallets.findIndex(x => x.id === walletId);
-        if (idx >= 0) DB.wallets.splice(idx, 1);
-        if (STATE.addWalletId === walletId) STATE.addWalletId = DB.wallets[0].id;
-        saveData();
-        renderApp();
-        toast(`Đã xóa tài khoản ${w.name}`);
-      }
-    );
-  }
+  openWalletManager(walletId);
+}
+
+function promptAddWalletFromSheet() {
+  closeNumberPad();
+  openWalletManager(null);
 }
 
 function promptAddGoal() {
@@ -4383,18 +4642,6 @@ function onSingleWalletSelectChange(val) {
   STATE.addWalletId = val;
   haptic('light');
   renderSingleWalletPicker();
-  renderAddChips();
-}
-
-function promptAddWalletFromSheet() {
-  closeNumberPad();
-  promptAddWallet();
-  const newest = DB.wallets[DB.wallets.length - 1];
-  if (newest) {
-    STATE.addWalletId = newest.id;
-  }
-  renderSingleWalletPicker();
-  renderTransferWallets();
   renderAddChips();
 }
 
