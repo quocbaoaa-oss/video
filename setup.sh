@@ -45,20 +45,14 @@ else
 fi
 
 cd "$TARGET_DIR/telegram-bot"
-chmod +x backup.sh
+chmod +x backup.sh run.sh
 
-# 5. Khởi tạo file .env nếu chưa có
-if [ ! -f .env ]; then
-    cp .env.example .env
-fi
+# 5. Khởi chạy bot tự động 1 chạm với AI
+bash run.sh
 
 echo ""
 echo "=========================================================="
-echo "🎉 CÀI ĐẶT MÔI TRƯỜNG THÀNH CÔNG 100%!"
+echo "🎉 CÀI ĐẶT MÔI TRƯỜNG & KHỞI CHẠY BOT THÀNH CÔNG 100%!"
 echo "=========================================================="
-echo "👉 Thư mục bot đã sẵn sàng tại: $TARGET_DIR/telegram-bot"
-echo ""
-echo "Các bước tiếp theo rất đơn giản:"
-echo "1) Gõ lệnh: nano .env (để điền TELEGRAM_BOT_TOKEN)"
-echo "2) Gõ lệnh: pm2 start bot.js --name vidoi-bot && pm2 save"
+echo "👉 Bot đã sẵn sàng nhận diện chi tiêu & hóa đơn bằng AI!"
 echo "=========================================================="

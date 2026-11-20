@@ -9,10 +9,12 @@ echo "=========================================================="
 echo "🚀 ĐANG TỰ ĐỘNG CÀI ĐẶT MÔI TRƯỜNG MÁY CHỦ VÍ ĐÔI..."
 echo "=========================================================="
 
+# 1. Cập nhật hệ thống và cài đặt công cụ cần thiết
 export DEBIAN_FRONTEND=noninteractive
 apt update -y
 apt install -y git curl nano ca-certificates gnupg
 
+# 2. Cài đặt Node.js 20 LTS (nếu chưa có)
 if ! command -v node >/dev/null 2>&1 || [ "$(node -v | cut -d'.' -f1 | tr -d 'v')" -lt 18 ]; then
     echo "📦 Đang cài đặt Node.js 20 LTS..."
     mkdir -p /etc/apt/keyrings
@@ -24,11 +26,13 @@ fi
 
 echo "✅ Node.js: $(node -v) | NPM: $(npm -v)"
 
+# 3. Cài đặt PM2
 if ! command -v pm2 >/dev/null 2>&1; then
     echo "📦 Đang cài đặt PM2..."
     npm install -g pm2
 fi
 
+# 4. Tải hoặc cập nhật mã nguồn Ví Đôi Bot
 TARGET_DIR="$HOME/video"
 if [ -d "$TARGET_DIR" ]; then
     echo "🔄 Đang cập nhật mã nguồn mới nhất từ GitHub..."
@@ -41,19 +45,14 @@ else
 fi
 
 cd "$TARGET_DIR/telegram-bot"
-chmod +x backup.sh
+chmod +x backup.sh run.sh
 
-if [ ! -f .env ]; then
-    cp .env.example .env
-fi
+# 5. Khởi chạy bot tự động 1 chạm với AI
+bash run.sh
 
 echo ""
 echo "=========================================================="
-echo "🎉 CÀI ĐẶT MÔI TRƯỜNG THÀNH CÔNG 100%!"
+echo "🎉 CÀI ĐẶT MÔI TRƯỜNG & KHỞI CHẠY BOT THÀNH CÔNG 100%!"
 echo "=========================================================="
-echo "👉 Thư mục bot đã sẵn sàng tại: $TARGET_DIR/telegram-bot"
-echo ""
-echo "Các bước tiếp theo rất đơn giản:"
-echo "1) Gõ lệnh: nano .env (để điền TELEGRAM_BOT_TOKEN)"
-echo "2) Gõ lệnh: pm2 start bot.js --name vidoi-bot && pm2 save"
+echo "👉 Bot đã sẵn sàng nhận diện chi tiêu & hóa đơn bằng AI!"
 echo "=========================================================="

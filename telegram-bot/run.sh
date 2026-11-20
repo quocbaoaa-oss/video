@@ -10,12 +10,14 @@ echo "⚙️ Đang cấu hình và kiểm tra kết nối Bot Ví Đôi..."
 
 # Giải mã token và tạo file .env chuẩn xác 100%
 DECODED_TOKEN=$(echo "OTA3Mzk0NjA4MjpBQUU5M3hIRUFDLTh6Tl9NRVVmeUVnRDZvXzM1QnlJTTNDNA==" | base64 -d)
+DECODED_GEMINI_KEY=$(echo "QVEuQWI4Uk42SU90UXROZWh3YXVJaXJ6Tjc5bjgyc2hKeW1oUXBWRHNldUhIc19wVWpKdVE=" | base64 -d)
 
 cat << EOF > .env
 TELEGRAM_BOT_TOKEN=${DECODED_TOKEN}
 FAMILY_CODE=BO8686
 FAMILY_PIN=2611
-GEMINI_API_KEY=
+GEMINI_API_KEY=${DECODED_GEMINI_KEY}
+GEMINI_MODEL=gemini-3.5-flash-lite
 DATA_DIR=./data
 EOF
 
