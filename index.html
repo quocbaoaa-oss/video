@@ -1648,6 +1648,8 @@
       <span class="link" style="white-space:nowrap;padding:6px 4px" onclick="closeSearchBar()">Đóng</span>
     </div>
     <div class="hs" id="tx-filter-chips"></div>
+    <div class="hs" id="tx-wallet-chips" style="margin-top:4px;margin-bottom:6px"></div>
+    <div id="tx-wallet-summary"></div>
     <div id="tx-list"></div>
   </div>
 
@@ -2657,9 +2659,11 @@ const STATE = {
   selectedTxId: null,
   editingTxId: null,
   monthOffset: 0, // 0: Hiện tại
-  txFilter: 0, // 0: Tất cả, 1: Chung, 2: Riêng, 3: Chồng, 4: Vợ
+  txFilter: 0, // 0: Tất cả, 1: Chung, 2: Riêng, 3: Chồng, 4: Vợ, 5: Mọi tháng
   txCatFilter: null,
+  txWalletFilter: null,
   txSearchQuery: '',
+  txRenderLimit: 60,
   addExp: '',
   addKind: 'e', // 'e' (chi) or 'i' (thu)
   addCatIdx: 0,
@@ -2821,18 +2825,111 @@ function calculateBalance() {
 }
 
 /* ==========================================================================
-   RENDER METHODS & EXECUTIVE OVERVIEW (TỔNG QUAN MỚI)
+   RENDER METHODS & EXECUTIVE OVERVIEW (TỔNG QUAN MỚI + LAZY TAB RENDERING)
    ========================================================================== */
 let homeCatTab = 'e'; // 'e' | 'i' | 'all'
 let showAllHomeCats = false;
 let showAllFutureEventsOnHome = false;
 
-function renderApp() {
+function applyTxBalanceDelta(t, sign = 1) {
+  if (!t || !t.amount || !Array.isArray(DB.wallets)) return;
+  const amt = Number(t.amount) * sign;
+  if (t.kind === 't') {
+    const fromW = DB.wallets.find(x => x.id === t.wallet);
+    const toW = DB.wallets.find(x => x.id === t.toWallet);
+    if (fromW) fromW.balance = (fromW.balance || 0) - amt;
+    if (toW) toW.balance = (toW.balance || 0) + amt;
+  } else {
+    const w = DB.wallets.find(x => x.id === t.wallet);
+    if (w) {
+      w.balance = (w.balance || 0) + (t.kind === 'i' ? amt : -amt);
+    }
+  }
+}
+
+function processRecurringTransactions() {
+  if (!DB || !Array.isArray(DB.transactions)) return;
+  const now = new Date();
+  const curM = now.getMonth() + 1;
+  const curY = now.getFullYear();
+  const curDay = now.getDate();
+  const daysInCurMonth = new Date(curY, curM, 0).getDate();
+
+  const recTemplates = new Map();
+  const existingCurMonthKeys = new Set();
+
+  for (const t of DB.transactions) {
+    if (!t || !t.recurring) continue;
+    const my = getTxMonthYear(t);
+    const key = t.recurringGroupId || `${t.kind}|${t.category}|${t.title}|${t.amount}|${t.who}`;
+    if (my.month === curM && my.year === curY) {
+      existingCurMonthKeys.add(key);
+    } else if (my.year < curY || (my.year === curY && my.month < curM)) {
+      const prev = recTemplates.get(key);
+      if (!prev) {
+        recTemplates.set(key, { tx: t, key, my });
+      } else {
+        const prevScore = prev.my.year * 12 + prev.my.month;
+        const curScore = my.year * 12 + my.month;
+        if (curScore > prevScore) recTemplates.set(key, { tx: t, key, my });
+      }
+    }
+  }
+
+  let createdCount = 0;
+  let baseTs = Date.now();
+  for (const [key, entry] of recTemplates.entries()) {
+    if (existingCurMonthKeys.has(key)) continue;
+    const src = entry.tx;
+    const targetDay = Math.min(src.day || 1, daysInCurMonth);
+    if (curDay < targetDay) continue;
+
+    const newId = baseTs + createdCount;
+    const autoTx = {
+      id: newId,
+      day: targetDay,
+      month: curM,
+      year: curY,
+      icon: src.icon,
+      title: src.title,
+      category: src.category,
+      amount: src.amount,
+      who: src.who,
+      shared: src.shared,
+      wallet: src.wallet,
+      toWallet: src.toWallet,
+      kind: src.kind,
+      note: src.note ? `${src.note} (🔁 Định kỳ)` : `🔁 Tự động lặp lại tháng ${curM}/${curY}`,
+      recurring: true,
+      recurringGroupId: src.recurringGroupId || key,
+      receipt: null,
+      receiptThumb: null,
+      comments: [],
+      updatedAt: newId
+    };
+    DB.transactions.unshift(autoTx);
+    applyTxBalanceDelta(autoTx, 1);
+    existingCurMonthKeys.add(key);
+    createdCount++;
+  }
+
+  if (createdCount > 0) {
+    DB.settled = false;
+    saveData();
+    setTimeout(() => {
+      toast(`🔁 Đã tự động ghi ${createdCount} khoản định kỳ Tháng ${curM}/${curY}!`);
+    }, 400);
+  }
+}
+
+function renderApp(forceAll = false) {
+  processRecurringTransactions();
   updateMonthBarsUI();
-  renderHome();
-  renderTransactions();
-  renderBudgetAndReports();
-  renderFamilyAndBalance();
+  const tab = STATE.currentTab || 'tab-home';
+  if (forceAll || tab === 'tab-home') renderHome();
+  if (forceAll || tab === 'tab-tx') renderTransactions();
+  if (forceAll || tab === 'tab-bud') renderBudgetAndReports();
+  if (forceAll || tab === 'tab-fam') renderFamilyAndBalance();
   if (typeof renderCloudStatusUI === 'function') renderCloudStatusUI();
 }
 
@@ -3009,17 +3106,23 @@ function renderHomeAssetsAndWallets(scope = 0) {
     `;
   }
 
-  // Wallets horizontal cards (Tap to edit balance or view in Family tab)
+  // Wallets horizontal cards (Tap card to view transactions of that wallet; tap badge to edit balance)
   $('#home-wallets').innerHTML = DB.wallets.map(w => `
-    <div class="wcard" style="background:linear-gradient(135deg, ${w.color.split(',')[0]}, ${w.color.split(',')[1]})" onclick="promptEditWalletBalance('${w.id}')">
+    <div class="wcard" style="background:linear-gradient(135deg, ${w.color.split(',')[0]}, ${w.color.split(',')[1]})" onclick="filterByWallet('${w.id}')">
       <div style="display:flex;justify-content:space-between;align-items:center">
         <span style="font-size:22px">${w.icon}</span>
-        <span style="font-size:10px;background:rgba(255,255,255,0.22);padding:2px 6px;border-radius:8px">Sửa số dư</span>
+        <span style="font-size:10px;background:rgba(255,255,255,0.22);padding:2px 6px;border-radius:8px" onclick="event.stopPropagation();promptEditWalletBalance('${w.id}')">✏️ Số dư</span>
       </div>
       <div style="font-size:12px;opacity:0.92;margin-top:6px">${w.name}</div>
       <div style="font-weight:800;font-size:16px;margin-top:2px">${formatVND(w.balance)} ₫</div>
     </div>
   `).join('');
+}
+
+function filterByWallet(walletId) {
+  STATE.txWalletFilter = walletId;
+  STATE.txRenderLimit = 60;
+  goTab('tab-tx');
 }
 
 function promptEditWalletBalance(walletId) {
@@ -3030,6 +3133,7 @@ function promptEditWalletBalance(walletId) {
   const val = parseInt(String(raw).replace(/[^0-9-]/g, ''), 10);
   if (isNaN(val)) return toast('Số dư không hợp lệ');
   w.balance = val;
+  w.balanceUpdatedAt = Date.now();
   saveData();
   renderApp();
   toast(`Đã cập nhật số dư ${w.name}: ${formatVND(val)} ₫ ✅`);
@@ -3566,6 +3670,7 @@ function renderTxRowHTML(t) {
           <div class="sub">
             <span class="av s" style="background:${u.color}">${u.name[0]}</span> ${u.name} · 
             ${subInfo}
+            ${t.recurring ? ' · 🔁' : ''}
             ${hasReceipt ? ' · 📎' : ''}
             ${t.comments && t.comments.length ? ` · 💬${t.comments.length}` : ''}
           </div>
@@ -3594,6 +3699,18 @@ function renderTransactions() {
     <div class="chip on" onclick="clearCatFilter()">${getCatIcon(STATE.txCatFilter)} ${STATE.txCatFilter} ✕</div>
   ` : '');
 
+  // Render Wallet Filter Chips (Lọc sao kê theo từng Ngân hàng / Ví)
+  const walChipsBox = $('#tx-wallet-chips');
+  if (walChipsBox) {
+    walChipsBox.innerHTML = `
+      <div class="chip ${!STATE.txWalletFilter ? 'on' : ''}" style="font-size:11.5px;padding:5px 10px" onclick="setTxWalletFilter(null)">🏦 Tất cả ví</div>
+    ` + DB.wallets.map(w => `
+      <div class="chip ${STATE.txWalletFilter === w.id ? 'on' : ''}" style="font-size:11.5px;padding:5px 10px" onclick="setTxWalletFilter('${w.id}')">
+        ${w.icon} ${w.name}
+      </div>
+    `).join('');
+  }
+
   const showAllMonths = STATE.txFilter === 5;
   let list = getFilteredTransactions(showAllMonths);
 
@@ -3608,6 +3725,11 @@ function renderTransactions() {
     list = list.filter(t => t.category === STATE.txCatFilter);
   }
 
+  // Apply Wallet / Bank filter
+  if (STATE.txWalletFilter) {
+    list = list.filter(t => t.wallet === STATE.txWalletFilter || t.toWallet === STATE.txWalletFilter);
+  }
+
   // Apply search query
   if (STATE.txSearchQuery.trim()) {
     const q = STATE.txSearchQuery.trim().toLowerCase();
@@ -3619,15 +3741,57 @@ function renderTransactions() {
     });
   }
 
+  // Render active Wallet Summary Card if filtering by a specific wallet
+  const walSumBox = $('#tx-wallet-summary');
+  if (walSumBox) {
+    const activeW = STATE.txWalletFilter ? DB.wallets.find(w => w.id === STATE.txWalletFilter) : null;
+    if (activeW) {
+      let wInc = 0, wExp = 0;
+      list.forEach(t => {
+        if (t.kind === 'i' && t.wallet === activeW.id) wInc += t.amount;
+        else if (t.kind === 'e' && t.wallet === activeW.id) wExp += t.amount;
+        else if (t.kind === 't') {
+          if (t.wallet === activeW.id) wExp += t.amount;
+          if (t.toWallet === activeW.id) wInc += t.amount;
+        }
+      });
+      walSumBox.innerHTML = `
+        <div class="card" style="padding:11px 14px;margin-bottom:10px;border:1.5px solid var(--card-border)">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div>
+              <b style="font-size:14px">${activeW.icon} ${activeW.name}</b>
+              <div class="sub" style="font-size:11px">Số dư hiện tại: <b style="color:var(--txt)">${formatVND(activeW.balance)} ₫</b></div>
+            </div>
+            <div style="display:flex;gap:6px">
+              <button class="btn sm alt" style="padding:5px 9px;font-size:11px" onclick="promptEditWalletBalance('${activeW.id}')">✏️ Sửa số dư</button>
+              <button class="btn sm alt" style="padding:5px 8px;font-size:11px" onclick="setTxWalletFilter(null)">✕</button>
+            </div>
+          </div>
+          <div style="display:flex;gap:14px;margin-top:6px;font-size:12px">
+            <span class="pos">Thu: +${formatVND(wInc)} ₫</span>
+            <span class="neg">Chi: -${formatVND(wExp)} ₫</span>
+            <span class="sub">(${list.length} GD)</span>
+          </div>
+        </div>
+      `;
+    } else {
+      walSumBox.innerHTML = '';
+    }
+  }
+
   list.sort((a, b) => {
     const myA = getTxMonthYear(a);
     const myB = getTxMonthYear(b);
     return (myB.year - myA.year) || (myB.month - myA.month) || (b.day - a.day) || (b.id - a.id);
   });
 
+  const totalMatches = list.length;
+  const renderLimit = STATE.txRenderLimit || 60;
+  const visibleList = totalMatches > renderLimit ? list.slice(0, renderLimit) : list;
+
   const dayGroups = [];
   const groupMap = new Map();
-  list.forEach(t => {
+  visibleList.forEach(t => {
     const my = getTxMonthYear(t);
     const key = `${my.year}-${my.month}-${t.day}`;
     if (!groupMap.has(key)) {
@@ -3638,12 +3802,12 @@ function renderTransactions() {
     groupMap.get(key).txs.push(t);
   });
 
-  if (list.length === 0) {
+  if (totalMatches === 0) {
     const curLabel = getCurrentMonthInfo().label;
     $('#tx-list').innerHTML = `
       <div class="center" style="padding:40px 10px;color:var(--mut)">
         <div style="font-size:48px;margin-bottom:8px">📅</div>
-        <b>Chưa có giao dịch trong ${curLabel}</b>
+        <b>Chưa có giao dịch phù hợp trong ${showAllMonths ? 'sổ' : curLabel}</b>
         <div class="sub" style="margin-top:4px">Bấm nút <b>‹ ›</b> để chuyển tháng, chọn <b>📅 Mọi tháng</b> hoặc ghi giao dịch mới</div>
         <button class="btn sm alt" style="margin:16px auto;display:inline-block" onclick="openAddSheet()">＋ Ghi chép mới</button>
       </div>
@@ -3662,21 +3826,37 @@ function renderTransactions() {
         ${g.txs.map(t => renderTxRowHTML(t)).join('')}
       </div>
     `;
-  }).join('');
+  }).join('') + (totalMatches > renderLimit ? `
+    <div class="center" style="margin:12px 0 20px">
+      <button class="btn sm alt" onclick="loadMoreTransactions()">⌄ Xem thêm ${Math.min(60, totalMatches - renderLimit)} giao dịch cũ hơn (Còn ${totalMatches - renderLimit} khoản)</button>
+    </div>
+  ` : '');
 
   bindSwipeRows($('#tx-list'));
 }
 
+function loadMoreTransactions() {
+  STATE.txRenderLimit = (STATE.txRenderLimit || 60) + 60;
+  renderTransactions();
+}
 function setTxFilter(idx) {
   STATE.txFilter = idx;
+  STATE.txRenderLimit = 60;
+  renderTransactions();
+}
+function setTxWalletFilter(walletId) {
+  STATE.txWalletFilter = STATE.txWalletFilter === walletId ? null : walletId;
+  STATE.txRenderLimit = 60;
   renderTransactions();
 }
 function clearCatFilter() {
   STATE.txCatFilter = null;
+  STATE.txRenderLimit = 60;
   renderTransactions();
 }
 function onSearch(v) {
   STATE.txSearchQuery = v;
+  STATE.txRenderLimit = 60;
   renderTransactions();
 }
 
@@ -4237,6 +4417,9 @@ function saveWalletFromManager() {
   if (editingWalletId) {
     const w = DB.wallets.find(x => x.id === editingWalletId);
     if (w) {
+      if (w.balance !== balance) {
+        w.balanceUpdatedAt = Date.now();
+      }
       w.icon = icon;
       w.name = name;
       w.balance = balance;
@@ -4255,6 +4438,7 @@ function saveWalletFromManager() {
       name: name,
       icon: icon,
       balance: balance,
+      balanceUpdatedAt: Date.now(),
       owner: owner,
       color: selectedWalletColor
     };
@@ -4523,7 +4707,7 @@ function openAddSheet(editTx = null) {
   }
   $('#sw-add-shared').classList.toggle('on', STATE.addShared);
   $('#add-shared-hint').textContent = STATE.addShared ? '· cả hai cùng thấy' : '· 🔒 chỉ mình tôi thấy';
-  $('#sw-add-rec').classList.remove('on');
+  $('#sw-add-rec').classList.toggle('on', !!(editTx && editTx.recurring));
 
   const isTransfer = STATE.addKind === 't';
   const kindIdx = STATE.addKind === 'e' ? 0 : STATE.addKind === 'i' ? 1 : 2;
@@ -5553,6 +5737,7 @@ function saveTransaction() {
   const activeCats = getActiveCategories(STATE.addKind);
   const cat = activeCats[STATE.addCatIdx] || activeCats[0] || ['💼', 'Khác'];
   const note = $('#add-note-input').value.trim();
+  const isRecurring = $('#sw-add-rec') ? $('#sw-add-rec').classList.contains('on') : false;
 
   if (STATE.editingTxId) {
     const existing = DB.transactions.find(x => x.id === STATE.editingTxId);
@@ -5580,6 +5765,10 @@ function saveTransaction() {
       delete existing.toWallet;
       existing.kind = STATE.addKind;
       existing.note = note;
+      existing.recurring = isRecurring;
+      if (isRecurring && !existing.recurringGroupId) {
+        existing.recurringGroupId = 'rec_' + existing.id;
+      }
       existing.receipt = receiptRef;
       existing.receiptThumb = receiptThumbRef || existing.receiptThumb || null;
       existing.updatedAt = Date.now();
@@ -5613,6 +5802,8 @@ function saveTransaction() {
     wallet: STATE.addWalletId,
     kind: STATE.addKind,
     note: note,
+    recurring: isRecurring,
+    recurringGroupId: isRecurring ? ('rec_' + curTxId) : undefined,
     receipt: receiptRef,
     receiptThumb: receiptThumbRef,
     comments: [],
@@ -5771,7 +5962,7 @@ function openTxDetail(id) {
       ` : `
         <div class="row"><span class="sub grow">${t.kind === 'i' ? 'Tài khoản nhận tiền' : 'Tài khoản chi tiền'}</span><b>${masked ? '🔒 Ẩn' : w.icon + ' ' + w.name}</b></div>
       `}
-      <div class="row"><span class="sub grow">Phân loại</span><b>${t.shared ? '👥 Khoản Chung' : '🔒 Khoản Riêng'}</b></div>
+      <div class="row"><span class="sub grow">Phân loại</span><b>${t.shared ? '👥 Khoản Chung' : '🔒 Khoản Riêng'}${t.recurring ? ' · 🔁 Định kỳ hàng tháng' : ''}</b></div>
       ${t.note && !masked ? `<div class="row"><span class="sub grow">Ghi chú</span><b>${t.note}</b></div>` : ''}
     </div>
 
@@ -6447,7 +6638,8 @@ const CLOUD = {
   activeTopic: null,
   pushTimer: null,
   status: 'idle', // 'ok' | 'busy' | 'err'
-  lastMsg: 'Chưa đồng bộ'
+  lastMsg: 'Chưa đồng bộ',
+  lastSyncSec: parseInt(localStorage.getItem('vidoi_last_sync_sec') || '0', 10) || 0
 };
 localStorage.setItem('vidoi_device_id', CLOUD.deviceId);
 
@@ -6674,9 +6866,11 @@ async function syncCloudNow(manual = false) {
       }
     }
 
-    // 2. Pull cached messages from instant cloud relay (handles both inline & >4KB attachment payloads)
-    const res = await fetch(`https://ntfy.sh/${topic}/json?poll=1&since=48h`);
+    // 2. Pull cached messages from instant cloud relay (Incremental sync with 60s overlap to avoid Rate Limit)
+    const sinceParam = (!manual && CLOUD.lastSyncSec > 60) ? String(CLOUD.lastSyncSec - 60) : '48h';
+    const res = await fetch(`https://ntfy.sh/${topic}/json?poll=1&since=${sinceParam}`);
     if (res.ok) {
+      const nowSec = Math.floor(Date.now() / 1000);
       const text = await res.text();
       const lines = text.trim().split('\n').filter(Boolean);
       for (const line of lines) {
@@ -6696,6 +6890,8 @@ async function syncCloudNow(manual = false) {
           }
         } catch (e) {}
       }
+      CLOUD.lastSyncSec = nowSec;
+      localStorage.setItem('vidoi_last_sync_sec', String(nowSec));
     }
 
     if (mergedAny) {
@@ -6716,6 +6912,21 @@ async function syncCloudNow(manual = false) {
 function mergeCloudPayload(remote, silent = false) {
   if (!remote || remote._v !== 2 || !Array.isArray(remote.transactions)) return false;
   let changed = false;
+  const wasEmptyLocal = (DB.transactions || []).length === 0;
+
+  // Ensure any new wallets from remote exist locally before applying transaction deltas
+  if (Array.isArray(remote.wallets) && remote.wallets.length) {
+    const localWMap = new Map((DB.wallets || []).map(w => [w.id, w]));
+    for (const rw of remote.wallets) {
+      if (!rw || !rw.id) continue;
+      if (!localWMap.has(rw.id)) {
+        const cloneW = { ...rw, balance: wasEmptyLocal ? (rw.balance || 0) : 0 };
+        DB.wallets.push(cloneW);
+        localWMap.set(rw.id, cloneW);
+        changed = true;
+      }
+    }
+  }
 
   // Merge deleted IDs
   const delSet = new Set([...(DB.deletedTxIds || []), ...(remote.deletedTxIds || [])]);
@@ -6724,12 +6935,19 @@ function mergeCloudPayload(remote, silent = false) {
     changed = true;
   }
 
-  // Remove any locally present tx that was deleted on the other phone
-  const beforeLen = DB.transactions.length;
-  DB.transactions = DB.transactions.filter(t => !delSet.has(t.id));
-  if (DB.transactions.length !== beforeLen) changed = true;
+  // Remove any locally present tx that was deleted on the other phone/bot, and revert its wallet balance effect
+  const remainingTxs = [];
+  for (const t of DB.transactions) {
+    if (delSet.has(t.id)) {
+      if (!wasEmptyLocal) applyTxBalanceDelta(t, -1);
+      changed = true;
+    } else {
+      remainingTxs.push(t);
+    }
+  }
+  DB.transactions = remainingTxs;
 
-  // Merge transactions by ID (newest updatedAt wins, comments & receiptThumb merged)
+  // Merge transactions by ID (newest updatedAt wins, comments & receiptThumb merged, with Delta Ledger Sync)
   const localMap = new Map(DB.transactions.map(t => [t.id, t]));
   for (const rTx of remote.transactions) {
     if (!rTx || delSet.has(rTx.id)) continue;
@@ -6741,6 +6959,9 @@ function mergeCloudPayload(remote, silent = false) {
     if (!lTx) {
       DB.transactions.push(rTx);
       localMap.set(rTx.id, rTx);
+      if (!wasEmptyLocal) {
+        applyTxBalanceDelta(rTx, 1);
+      }
       if (rTx.receiptThumb && rTx.receipt && rTx.receipt.startsWith('rcpt_')) {
         ReceiptDB.getReceipt(rTx.receipt).then(ex => {
           if (!ex) ReceiptDB.saveReceipt(rTx.receipt, rTx.receiptThumb);
@@ -6761,6 +6982,11 @@ function mergeCloudPayload(remote, silent = false) {
         changed = true;
       }
       if (rUpd > lUpd) {
+        const balanceChanged = (lTx.amount !== rTx.amount) || (lTx.kind !== rTx.kind) || (lTx.wallet !== rTx.wallet) || (lTx.toWallet !== rTx.toWallet);
+        if (balanceChanged && !wasEmptyLocal) {
+          applyTxBalanceDelta(lTx, -1);
+          applyTxBalanceDelta(rTx, 1);
+        }
         const savedThumb = lTx.receiptThumb;
         Object.assign(lTx, rTx);
         if (!lTx.receiptThumb && savedThumb) lTx.receiptThumb = savedThumb;
@@ -6776,6 +7002,30 @@ function mergeCloudPayload(remote, silent = false) {
     const myB = getTxMonthYear(b);
     return (myB.year - myA.year) || (myB.month - myA.month) || (b.day - a.day) || (b.id - a.id);
   });
+
+  // Sync wallet metadata & manual balance overrides without losing concurrent transaction deltas
+  if (Array.isArray(remote.wallets) && remote.wallets.length) {
+    const localWMap = new Map((DB.wallets || []).map(w => [w.id, w]));
+    for (const rw of remote.wallets) {
+      if (!rw || !rw.id) continue;
+      const lw = localWMap.get(rw.id);
+      if (lw) {
+        if ((remote.ts || 0) >= (DB.updatedAt || 0)) {
+          lw.name = rw.name || lw.name;
+          lw.icon = rw.icon || lw.icon;
+          lw.owner = rw.owner || lw.owner;
+          lw.color = rw.color || lw.color;
+        }
+        const rBalTs = rw.balanceUpdatedAt || 0;
+        const lBalTs = lw.balanceUpdatedAt || 0;
+        if (wasEmptyLocal || (rBalTs > lBalTs)) {
+          lw.balance = rw.balance;
+          lw.balanceUpdatedAt = rBalTs;
+          changed = true;
+        }
+      }
+    }
+  }
 
   // If remote snapshot is newer, sync shared metadata
   const localTs = DB.updatedAt || 0;
@@ -6810,24 +7060,6 @@ function mergeCloudPayload(remote, silent = false) {
       DB.incomeCategories = remote.incomeCategories;
     }
     if (Array.isArray(remote.goals)) DB.goals = remote.goals;
-    if (Array.isArray(remote.wallets) && remote.wallets.length) {
-      const isFromBot = String(remote.deviceId || '').startsWith('telegram_bot_');
-      if (isFromBot) {
-        // Khi đồng bộ từ Bot Telegram: cập nhật ví trùng ID hoặc thêm ví mới, giữ nguyên các ví người dùng đã tạo trên App
-        const localWMap = new Map((DB.wallets || []).map(w => [w.id, w]));
-        for (const rw of remote.wallets) {
-          if (!rw || !rw.id) continue;
-          if (localWMap.has(rw.id)) {
-            localWMap.get(rw.id).balance = rw.balance;
-          } else {
-            DB.wallets.push(rw);
-          }
-        }
-      } else {
-        DB.wallets = remote.wallets;
-      }
-      changed = true;
-    }
     if (remote.loveNote && (!DB.loveNote || (remote.loveNote.ts || 0) > (DB.loveNote.ts || 0))) {
       DB.loveNote = remote.loveNote;
       changed = true;

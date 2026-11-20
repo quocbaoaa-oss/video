@@ -124,9 +124,31 @@ function saveDB() {
   fs.writeFileSync(DB_FILE, JSON.stringify(DB, null, 2), 'utf8');
 }
 
-// 4. Đồng bộ Realtime 2 chiều (PWA ⇄ Telegram Bot) qua ntfy.sh + Giải mã E2EE
+// 4. Đồng bộ Realtime 2 chiều (PWA ⇄ Telegram Bot) qua ntfy.sh + Mã hóa / Giải mã E2EE 2 chiều
 function getBotE2EEKey() {
   return crypto.pbkdf2Sync(FAMILY_PIN, 'ViDoi_E2EE_' + FAMILY_CODE, 100000, 32, 'sha256');
+}
+
+function encryptE2EE(dataObj) {
+  try {
+    const key = getBotE2EEKey();
+    const iv = crypto.randomBytes(12);
+    const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
+    const plaintext = Buffer.from(JSON.stringify(dataObj), 'utf8');
+    const encrypted = Buffer.concat([cipher.update(plaintext), cipher.final()]);
+    const authTag = cipher.getAuthTag();
+    const fullCipher = Buffer.concat([encrypted, authTag]);
+    return {
+      _e2ee: 1,
+      code: FAMILY_CODE,
+      iv: iv.toString('base64'),
+      cipher: fullCipher.toString('base64'),
+      ts: Date.now()
+    };
+  } catch (e) {
+    console.warn('⚠️ Lỗi mã hóa E2EE trên Bot:', e.message);
+    return dataObj;
+  }
 }
 
 function decryptE2EE(packet) {
@@ -148,6 +170,22 @@ function decryptE2EE(packet) {
   }
 }
 
+function applyBotTxBalanceDelta(t, sign = 1) {
+  if (!t || !t.amount || !Array.isArray(DB.wallets)) return;
+  const amt = Number(t.amount) * sign;
+  if (t.kind === 't') {
+    const fromW = DB.wallets.find(x => x.id === t.wallet);
+    const toW = DB.wallets.find(x => x.id === t.toWallet);
+    if (fromW) fromW.balance = (fromW.balance || 0) - amt;
+    if (toW) toW.balance = (toW.balance || 0) + amt;
+  } else {
+    const w = DB.wallets.find(x => x.id === t.wallet);
+    if (w) {
+      w.balance = (w.balance || 0) + (t.kind === 'i' ? amt : -amt);
+    }
+  }
+}
+
 let lastCloudPullTime = 0;
 
 async function pullFromPWA(force = false) {
@@ -155,8 +193,10 @@ async function pullFromPWA(force = false) {
   if (!force && (now - lastCloudPullTime < 12000)) return false;
   lastCloudPullTime = now;
   try {
-    const res = await fetch(`https://ntfy.sh/${CLOUD_TOPIC}/json?poll=1&since=24h`);
+    const sinceParam = (!force && DB.lastCloudSyncSec > 60) ? String(DB.lastCloudSyncSec - 60) : '24h';
+    const res = await fetch(`https://ntfy.sh/${CLOUD_TOPIC}/json?poll=1&since=${sinceParam}`);
     if (!res.ok) return false;
+    const nowSec = Math.floor(Date.now() / 1000);
     const text = await res.text();
     const lines = text.trim().split('\n').filter(Boolean);
     let updated = false;
@@ -174,51 +214,88 @@ async function pullFromPWA(force = false) {
         if (remote && remote._e2ee) remote = decryptE2EE(remote);
         if (!remote || remote._v !== 2 || String(remote.deviceId || '').startsWith('telegram_bot_')) continue;
 
-        // Đồng bộ danh sách Ví & Tài khoản từ App điện thoại sang Bot
+        const wasEmptyBot = (DB.transactions || []).length === 0;
+
+        // 1. Đảm bảo các ví mới từ App có mặt trong DB.wallets trước khi cộng/trừ biến thiên giao dịch
         if (Array.isArray(remote.wallets) && remote.wallets.length > 0) {
           const localWMap = new Map((DB.wallets || []).map(w => [w.id, w]));
           for (const rw of remote.wallets) {
             if (!rw || !rw.id) continue;
-            if (localWMap.has(rw.id)) {
-              const lw = localWMap.get(rw.id);
-              lw.name = rw.name || lw.name;
-              lw.icon = rw.icon || lw.icon;
-              lw.owner = rw.owner || lw.owner;
-              lw.color = rw.color || lw.color;
-              if ((remote.ts || 0) >= (DB.updatedAt || 0)) {
-                lw.balance = rw.balance;
-              }
-            } else {
-              DB.wallets.push(rw);
-              localWMap.set(rw.id, rw);
+            if (!localWMap.has(rw.id)) {
+              const cloneW = { ...rw, balance: wasEmptyBot ? (rw.balance || 0) : 0 };
+              DB.wallets.push(cloneW);
+              localWMap.set(rw.id, cloneW);
+              updated = true;
             }
           }
-          updated = true;
         }
 
-        // Đồng bộ danh sách Giao dịch & ID đã xóa từ App điện thoại sang Bot để kiểm tra trùng lặp chính xác 100%
+        // 2. Đồng bộ danh sách ID đã xóa và hoàn trả số dư ví tương ứng (Delta Ledger Sync)
         if (Array.isArray(remote.deletedTxIds) && remote.deletedTxIds.length > 0) {
           const delSet = new Set([...(DB.deletedTxIds || []), ...remote.deletedTxIds]);
           if (delSet.size !== (DB.deletedTxIds || []).length) {
             DB.deletedTxIds = Array.from(delSet);
-            DB.transactions = (DB.transactions || []).filter(t => !delSet.has(t.id));
-            updated = true;
+            const remaining = [];
+            for (const t of (DB.transactions || [])) {
+              if (delSet.has(t.id)) {
+                if (!wasEmptyBot) applyBotTxBalanceDelta(t, -1);
+                updated = true;
+              } else {
+                remaining.push(t);
+              }
+            }
+            DB.transactions = remaining;
           }
         }
+
+        // 3. Đồng bộ danh sách Giao dịch mới / sửa từ App điện thoại sang Bot
         if (Array.isArray(remote.transactions) && remote.transactions.length > 0) {
           const delSet = new Set(DB.deletedTxIds || []);
           const localTxMap = new Map((DB.transactions || []).map(t => [t.id, t]));
           for (const rTx of remote.transactions) {
             if (!rTx || !rTx.id || delSet.has(rTx.id)) continue;
-            if (!localTxMap.has(rTx.id)) {
+            const lTx = localTxMap.get(rTx.id);
+            if (!lTx) {
               DB.transactions.push(rTx);
               localTxMap.set(rTx.id, rTx);
+              if (!wasEmptyBot) applyBotTxBalanceDelta(rTx, 1);
               updated = true;
+            } else if ((rTx.updatedAt || 0) > (lTx.updatedAt || 0)) {
+              const balChanged = (lTx.amount !== rTx.amount) || (lTx.kind !== rTx.kind) || (lTx.wallet !== rTx.wallet) || (lTx.toWallet !== rTx.toWallet);
+              if (balChanged && !wasEmptyBot) {
+                applyBotTxBalanceDelta(lTx, -1);
+                applyBotTxBalanceDelta(rTx, 1);
+              }
+              Object.assign(lTx, rTx);
+              updated = true;
+            }
+          }
+        }
+
+        // 4. Đồng bộ thông tin Ví & cập nhật số dư nếu người dùng chủ động sửa số dư trên App (balanceUpdatedAt)
+        if (Array.isArray(remote.wallets) && remote.wallets.length > 0) {
+          const localWMap = new Map((DB.wallets || []).map(w => [w.id, w]));
+          for (const rw of remote.wallets) {
+            if (!rw || !rw.id) continue;
+            const lw = localWMap.get(rw.id);
+            if (lw) {
+              lw.name = rw.name || lw.name;
+              lw.icon = rw.icon || lw.icon;
+              lw.owner = rw.owner || lw.owner;
+              lw.color = rw.color || lw.color;
+              const rBalTs = rw.balanceUpdatedAt || 0;
+              const lBalTs = lw.balanceUpdatedAt || 0;
+              if (wasEmptyBot || (rBalTs > lBalTs) || (!DB.updatedAt && (remote.ts || 0) > 0)) {
+                lw.balance = rw.balance;
+                lw.balanceUpdatedAt = rBalTs;
+                updated = true;
+              }
             }
           }
         }
       } catch (e) {}
     }
+    DB.lastCloudSyncSec = nowSec;
     if (updated) {
       ensureBotWallets(DB);
       saveDB();
@@ -255,13 +332,15 @@ async function broadcastToPWA(payload) {
       ...payload
     };
 
+    const encryptedPayload = encryptE2EE(compactPayload);
+
     const res = await fetch(`https://ntfy.sh/${CLOUD_TOPIC}`, {
       method: 'POST',
       headers: {
         'Title': 'ViDoiTelegramSync',
         'Priority': 'default'
       },
-      body: JSON.stringify(compactPayload)
+      body: JSON.stringify(encryptedPayload)
     });
 
     return res.ok;
@@ -271,12 +350,12 @@ async function broadcastToPWA(payload) {
   }
 }
 
-// Đồng bộ ảnh hóa đơn độ phân giải cao từ Telegram Bot lên kênh đám mây cho 2 điện thoại
+// Đồng bộ ảnh hóa đơn độ phân giải cao (Mã hóa E2EE) từ Telegram Bot lên kênh đám mây cho 2 điện thoại
 async function pushReceiptToCloudFromBot(rcptId, dataUrl) {
   if (!rcptId || !dataUrl) return false;
   try {
     const topic = `${CLOUD_TOPIC}_rcpt`;
-    const bodyObj = { _rcpt: true, id: rcptId, data: dataUrl, ts: Date.now() };
+    const bodyObj = encryptE2EE({ _rcpt: true, id: rcptId, data: dataUrl, ts: Date.now() });
     const res = await fetch(`https://ntfy.sh/${topic}`, {
       method: 'POST',
       headers: {
@@ -1747,20 +1826,56 @@ Trả về CHỈ DUY NHẤT một chuỗi JSON hợp lệ (không kèm markdown)
 
     let totalExp = 0;
     let totalInc = 0;
+    const catMap = {};
     for (const t of DB.transactions) {
       const txM = t.month || (t.id > 1000000000000 ? (new Date(t.id).getMonth() + 1) : curMonth);
       const txY = t.year || (t.id > 1000000000000 ? new Date(t.id).getFullYear() : curYear);
       if (txM !== curMonth || txY !== curYear) continue;
-      if (t.kind === 'e') totalExp += t.amount;
-      else if (t.kind === 'i') totalInc += t.amount;
+      if (t.kind === 'e') {
+        totalExp += t.amount;
+        catMap[t.category || 'Khác'] = (catMap[t.category || 'Khác'] || 0) + t.amount;
+      } else if (t.kind === 'i') {
+        totalInc += t.amount;
+      }
     }
+
+    const topCats = Object.entries(catMap)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([c, amt]) => `  • ${c}: <code>-${formatVND(amt)} ₫</code>`)
+      .join('\n');
 
     return sendMessage(chatId, `📊 <b>Báo cáo Chi tiêu Tháng ${curMonth}/${curYear}:</b>\n\n` +
       `💰 <b>Tổng thu nhập:</b> +${formatVND(totalInc)} ₫\n` +
       `💸 <b>Tổng chi tiêu:</b> -${formatVND(totalExp)} ₫\n` +
-      `⚖️ <b>Số dư ròng:</b> ${formatVND(totalInc - totalExp)} ₫\n\n` +
-      `<i>Mở ứng dụng Ví Đôi PWA để xem biểu đồ và cơ cấu chi tiết.</i>`
+      `⚖️ <b>Số dư ròng:</b> ${formatVND(totalInc - totalExp)} ₫\n` +
+      (topCats ? `\n🏆 <b>Top danh mục chi nhiều nhất:</b>\n${topCats}\n` : '') +
+      `\n<i>Gõ <code>/hoi Tháng này chi ăn uống bao nhiêu?</code> để hỏi AI chi tiết!</i>`
     );
+  }
+
+  // Lệnh /tongket hoặc /homnay: Xem báo cáo tổng kết thu chi trong ngày hôm nay
+  if (text === '/tongket' || text === '/homnay') {
+    const summaryMsg = buildDailySummaryReport(false);
+    return sendMessage(chatId, summaryMsg);
+  }
+
+  // Lệnh /hoi, /ai, /tuvan <câu hỏi>: Hỏi đáp tài chính thông minh bằng AI
+  if (/^\/(hoi|ai|tuvan)\b/i.test(text)) {
+    const q = text.replace(/^\/(hoi|ai|tuvan)\s*/i, '').trim();
+    if (!q) {
+      return sendMessage(chatId,
+        `🤖 <b>Trợ lý AI Tài chính Gia đình Bảo & Oanh:</b>\n\n` +
+        `Bạn có thể hỏi bất kỳ câu hỏi nào về chi tiêu, số dư ngân hàng, so sánh tháng bằng cách gõ:\n` +
+        `• <code>/hoi Tháng này ăn uống hết bao nhiêu rồi?</code>\n` +
+        `• <code>/hoi Tài khoản ACB tuần này chi những khoản nào?</code>\n` +
+        `• <code>/hoi Tháng này Bảo và Oanh ai chi nhiều hơn?</code>\n` +
+        `• Hoặc gõ trực tiếp câu hỏi có dấu <b>?</b> ở cuối câu!`
+      );
+    }
+    await sendMessage(chatId, `🤖 <i>AI đang phân tích sổ thu chi của Bảo & Oanh...</i>`);
+    const aiAnswer = await askFinancialAdvisorAI(q, myRole);
+    return sendMessage(chatId, aiAnswer);
   }
 
   // Lệnh /backup hoặc /saoluu: Đóng gói và gửi file sao lưu database về Telegram
@@ -1799,13 +1914,24 @@ Trả về CHỈ DUY NHẤT một chuỗi JSON hợp lệ (không kèm markdown)
       `• <b>Chuyển tiền giữa bất kỳ 2 tài khoản nào:</b>\n` +
       `  <code>chuyển 5tr acb sang vib</code>\n` +
       `  <code>chuyển 2tr mb qua tiền mặt</code>\n\n` +
-      `• <b>Quét hóa đơn bằng AI:</b> Gửi trực tiếp ảnh chụp hóa đơn vào chat, bot sẽ tự động đọc tên cửa hàng, tổng tiền và đồng bộ cả ảnh hóa đơn sang 2 điện thoại!\n\n` +
+      `• <b>Quét 1 hoặc nhiều giao dịch từ ảnh bằng AI:</b> Gửi trực tiếp ảnh chụp hóa đơn hoặc màn hình lịch sử ngân hàng vào chat (tự động lọc trùng lặp)!\n\n` +
+      `• <b>Hỏi đáp tài chính với AI:</b>\n` +
+      `  <code>/hoi Tháng này ăn uống hết bao nhiêu?</code>\n` +
+      `  <i>(Hoặc gõ câu hỏi kết thúc bằng dấu <b>?</b>)</i>\n\n` +
+      `• <b>Tổng kết hôm nay:</b> gõ <code>/tongket</code> (Tự động báo lúc 21:30 tối)\n` +
       `• <b>Xem số dư tất cả tài khoản:</b> gõ <code>/vi</code>\n` +
       `• <b>Thêm tài khoản mới:</b> gõ <code>/themvi Tên_Ngân_Hàng</code>\n` +
       `• <b>Báo cáo tháng:</b> gõ <code>/baocao</code>\n` +
       `• <b>Sao lưu máy chủ:</b> gõ <code>/backup</code>\n` +
       `• <b>Đổi vai trò:</b> gõ <code>/role him</code> (Bảo) hoặc <code>/role her</code> (Oanh)`
     );
+  }
+
+  // Nếu là câu hỏi tự nhiên về tài chính (có dấu ? hoặc từ để hỏi mà không phải câu nhập số tiền)
+  if (isNaturalFinancialQuestion(text) && !parseAmount(text)) {
+    await sendMessage(chatId, `🤖 <i>AI đang kiểm tra sổ thu chi của Bảo & Oanh...</i>`);
+    const aiAnswer = await askFinancialAdvisorAI(text, myRole);
+    return sendMessage(chatId, aiAnswer);
   }
 
   // C. Phân tích tin nhắn thành Giao dịch (Ưu tiên Regex siêu tốc, nếu không khớp thì gọi AI)
@@ -1815,8 +1941,13 @@ Trả về CHỈ DUY NHẤT một chuỗi JSON hợp lệ (không kèm markdown)
   }
 
   if (!parsed) {
+    // Nếu không phải giao dịch nhưng có vẻ là câu hỏi tư vấn
+    if (GEMINI_API_KEY && (text.includes('?') || text.split(/\s+/).length >= 5)) {
+      const aiAnswer = await askFinancialAdvisorAI(text, myRole);
+      return sendMessage(chatId, aiAnswer);
+    }
     // Không nhận diện được số tiền
-    return sendMessage(chatId, `🤔 Chưa nhận diện được số tiền trong tin nhắn của bạn.\n\nVí dụ mẫu:\n• <code>cf 45k</code>\n• <code>ăn trưa 80k vcb</code>\n• <code>lương 25tr</code>\n\n<i>Gõ <b>/help</b> để xem hướng dẫn đầy đủ.</i>`);
+    return sendMessage(chatId, `🤔 Chưa nhận diện được số tiền trong tin nhắn của bạn.\n\nVí dụ mẫu:\n• <code>cf 45k</code>\n• <code>ăn trưa 80k acb</code>\n• <code>lương 25tr</code>\n• Hỏi AI: <code>/hoi Tháng này tiêu bao nhiêu rồi?</code>\n\n<i>Gõ <b>/help</b> để xem hướng dẫn đầy đủ.</i>`);
   }
 
   // Tạo ID giao dịch kèm Ngày / Tháng / Năm chuẩn xác
@@ -1876,6 +2007,184 @@ Trả về CHỈ DUY NHẤT một chuỗi JSON hợp lệ (không kèm markdown)
   return sendMessage(chatId, card.text, {
     reply_markup: card.reply_markup
   });
+}
+
+function isNaturalFinancialQuestion(text) {
+  if (!text) return false;
+  const norm = removeAccents(text).trim();
+  if (text.trim().endsWith('?')) return true;
+  if (/^(hoi|cho hoi|bot oi|ai oi|thong ke|kiem tra|bao nhieu|tong chi|tong thu|so du|tai khoan nao)\b/.test(norm)) {
+    return true;
+  }
+  if (/\b(het bao nhieu|chi bao nhieu|con bao nhieu|nhung khoan nao|ai chi nhieu)\b/.test(norm)) {
+    return true;
+  }
+  return false;
+}
+
+function buildDailySummaryReport(onlyIfHasTodayTx = false) {
+  const now = new Date();
+  const curDay = now.getDate();
+  const curMonth = now.getMonth() + 1;
+  const curYear = now.getFullYear();
+
+  let todayExp = 0, todayInc = 0;
+  let monthExp = 0, monthInc = 0;
+  const todayTxs = [];
+
+  for (const t of (DB.transactions || [])) {
+    if (!t) continue;
+    const txM = t.month || (t.id > 1000000000000 ? (new Date(t.id).getMonth() + 1) : curMonth);
+    const txY = t.year || (t.id > 1000000000000 ? new Date(t.id).getFullYear() : curYear);
+    if (txM !== curMonth || txY !== curYear) continue;
+
+    if (t.kind === 'e') monthExp += t.amount;
+    else if (t.kind === 'i') monthInc += t.amount;
+
+    if (t.day === curDay) {
+      todayTxs.push(t);
+      if (t.kind === 'e') todayExp += t.amount;
+      else if (t.kind === 'i') todayInc += t.amount;
+    }
+  }
+
+  if (onlyIfHasTodayTx && todayTxs.length === 0) {
+    return null;
+  }
+
+  const pad = n => String(n).padStart(2, '0');
+  const dateStr = `${pad(curDay)}/${pad(curMonth)}/${curYear}`;
+
+  const txLines = todayTxs.slice(0, 12).map((t, i) => {
+    const w = DB.wallets.find(x => x.id === t.wallet);
+    const wName = w ? w.name : 'Ví';
+    const sign = t.kind === 'i' ? '+' : t.kind === 't' ? '🔄 ' : '-';
+    return `${i + 1}. ${t.icon || '🧾'} <b>${t.title}</b>: <code>${sign}${formatVND(t.amount)} ₫</code> <i>(${wName})</i>`;
+  }).join('\n');
+
+  const walletsTotal = (DB.wallets || []).reduce((s, w) => s + (w.balance || 0), 0);
+  const walletLines = (DB.wallets || []).map(w =>
+    `  • ${w.icon} ${w.name}: <code>${formatVND(w.balance)} ₫</code>`
+  ).join('\n');
+
+  return `🌙 <b>TỔNG KẾT THU CHI NGÀY ${dateStr}</b>\n` +
+    `══════════════════════\n` +
+    `💸 <b>Chi hôm nay:</b> <code>-${formatVND(todayExp)} ₫</code> (${todayTxs.filter(t => t.kind === 'e').length} khoản)\n` +
+    (todayInc > 0 ? `💰 <b>Thu hôm nay:</b> <code>+${formatVND(todayInc)} ₫</code>\n` : '') +
+    (todayTxs.length > 0
+      ? `\n🧾 <b>Chi tiết trong ngày:</b>\n${txLines}${todayTxs.length > 12 ? `\n<i>...và ${todayTxs.length - 12} giao dịch khác</i>` : ''}\n`
+      : `\n✨ <i>Hôm nay chưa phát sinh giao dịch nào.</i>\n`) +
+    `\n📅 <b>Lũy kế Tháng ${curMonth}/${curYear}:</b>\n` +
+    `  • Tổng thu: <code>+${formatVND(monthInc)} ₫</code>\n` +
+    `  • Tổng chi: <code>-${formatVND(monthExp)} ₫</code>\n` +
+    `\n🏦 <b>Số dư các tài khoản (${formatVND(walletsTotal)} ₫):</b>\n${walletLines}`;
+}
+
+async function askFinancialAdvisorAI(question, myRole = 'him') {
+  if (!GEMINI_API_KEY) {
+    return `⚠️ Chưa cấu hình GEMINI_API_KEY trên máy chủ.`;
+  }
+  try {
+    const now = new Date();
+    const curDay = now.getDate();
+    const curMonth = now.getMonth() + 1;
+    const curYear = now.getFullYear();
+    const prevMonth = curMonth === 1 ? 12 : curMonth - 1;
+    const prevYear = curMonth === 1 ? curYear - 1 : curYear;
+
+    let curExp = 0, curInc = 0, prevExp = 0, prevInc = 0;
+    let himExp = 0, herExp = 0;
+    const catTotals = {};
+    const walletTotals = {};
+
+    for (const t of (DB.transactions || [])) {
+      if (!t) continue;
+      const txM = t.month || (t.id > 1000000000000 ? (new Date(t.id).getMonth() + 1) : curMonth);
+      const txY = t.year || (t.id > 1000000000000 ? new Date(t.id).getFullYear() : curYear);
+
+      if (txM === curMonth && txY === curYear) {
+        if (t.kind === 'e') {
+          curExp += t.amount;
+          if (t.who === 'her') herExp += t.amount;
+          else himExp += t.amount;
+          const c = t.category || 'Khác';
+          catTotals[c] = (catTotals[c] || 0) + t.amount;
+          const wObj = DB.wallets.find(w => w.id === t.wallet);
+          const wName = wObj ? wObj.name : (t.wallet || 'Ví');
+          walletTotals[wName] = (walletTotals[wName] || 0) + t.amount;
+        } else if (t.kind === 'i') {
+          curInc += t.amount;
+        }
+      } else if (txM === prevMonth && txY === prevYear) {
+        if (t.kind === 'e') prevExp += t.amount;
+        else if (t.kind === 'i') prevInc += t.amount;
+      }
+    }
+
+    const walletsSummary = (DB.wallets || []).map(w => `${w.icon} ${w.name}: ${formatVND(w.balance)} ₫`).join(' | ');
+    const catSummary = Object.entries(catTotals)
+      .sort((a, b) => b[1] - a[1])
+      .map(([c, amt]) => `${c}: ${formatVND(amt)} ₫`)
+      .join(', ') || 'Chưa có';
+    const walletSpendSummary = Object.entries(walletTotals)
+      .sort((a, b) => b[1] - a[1])
+      .map(([w, amt]) => `${w}: -${formatVND(amt)} ₫`)
+      .join(', ') || 'Chưa có';
+
+    const recentTxs = (DB.transactions || []).slice(0, 45).map(t => {
+      const txM = t.month || curMonth;
+      const txY = t.year || curYear;
+      const wObj = DB.wallets.find(w => w.id === t.wallet);
+      const wName = wObj ? wObj.name : (t.wallet || 'Ví');
+      const whoName = t.who === 'her' ? 'Oanh' : 'Bảo';
+      const sign = t.kind === 'i' ? '+' : t.kind === 't' ? 'Chuyển ' : '-';
+      return `[${t.day}/${txM}/${txY}] ${whoName} | ${t.title} (${t.category}) | ${sign}${formatVND(t.amount)}đ | TK: ${wName}`;
+    }).join('\n');
+
+    const askerName = myRole === 'her' ? 'Oanh (Vợ)' : 'Bảo (Chồng)';
+    const prompt = `Bạn là Trợ lý Tài chính AI riêng của vợ chồng Bảo (Chồng) & Oanh (Vợ) trên ứng dụng Ví Đôi.
+Hôm nay là ngày ${curDay}/${curMonth}/${curYear}. Người đang hỏi bạn là: ${askerName}.
+
+DỮ LIỆU SỔ THU CHI THỰC TẾ HIỆN TẠI:
+1. Số dư các tài khoản/ví: ${walletsSummary}
+2. Tháng hiện tại (${curMonth}/${curYear}):
+   - Tổng thu nhập: +${formatVND(curInc)} ₫
+   - Tổng chi tiêu: -${formatVND(curExp)} ₫ (Trong đó Bảo chi: ${formatVND(himExp)} ₫, Oanh chi: ${formatVND(herExp)} ₫)
+   - Chi theo danh mục tháng này: ${catSummary}
+   - Chi theo từng tài khoản/ngân hàng tháng này: ${walletSpendSummary}
+3. Tháng trước (${prevMonth}/${prevYear}): Tổng thu +${formatVND(prevInc)} ₫ | Tổng chi -${formatVND(prevExp)} ₫
+4. Danh sách 45 giao dịch gần nhất:
+${recentTxs || 'Chưa có giao dịch nào'}
+
+CÂU HỎI CỦA ${askerName.toUpperCase()}: "${question}"
+
+Hãy trả lời ngắn gọn, chính xác tuyệt đối theo số liệu trên, thân thiện, ấm áp bằng tiếng Việt. Chỉ dùng thẻ HTML cơ bản của Telegram là <b>, <i>, <code> (KHÔNG dùng Markdown ** hay bảng).`;
+
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${encodeURIComponent(GEMINI_API_KEY)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0.2 }
+      })
+    });
+
+    if (!res.ok) throw new Error('Không kết nối được Gemini AI');
+    const data = await res.json();
+    let ans = '';
+    if (data.candidates && data.candidates[0] && data.candidates[0].content && Array.isArray(data.candidates[0].content.parts)) {
+      for (const p of data.candidates[0].content.parts) {
+        if (p.text) ans += p.text;
+      }
+    }
+    ans = ans.trim()
+      .replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')
+      .replace(/```[\s\S]*?```/g, '');
+    return `🤖 <b>Trợ lý AI Ví Đôi:</b>\n\n${ans || 'Chưa tìm thấy thông tin phù hợp.'}`;
+  } catch (err) {
+    console.warn('Lỗi askFinancialAdvisorAI:', err.message);
+    return `⚠️ Trợ lý AI đang bận, bạn thử lại sau giây lát hoặc gõ <code>/baocao</code>, <code>/vi</code> để xem nhanh nhé!`;
+  }
 }
 
 async function sendWalletsOverview(chatId) {
@@ -1943,21 +2252,48 @@ async function startBot() {
   console.log(`🏦 Danh sách tài khoản hiện tại (${DB.wallets.length}): ${DB.wallets.map(w => w.name).join(', ')}`);
   console.log('🚀 Đang lắng nghe tin nhắn ghi chép từ hai vợ chồng...');
 
-  // Tiến trình tự động gửi bản sao lưu máy chủ mỗi đêm lúc 02:00 AM
+  // Tiến trình tự động:
+  // 1) 21:30 tối hàng ngày: Gửi báo cáo tổng kết thu chi trong ngày (nếu hôm đó có phát sinh giao dịch)
+  // 2) 02:00 sáng hàng ngày: Tự động gửi bản sao lưu JSON máy chủ
   let lastBackupDay = -1;
+  let lastSummaryDay = -1;
   setInterval(async () => {
     const now = new Date();
-    if (now.getHours() === 2 && now.getDate() !== lastBackupDay) {
-      lastBackupDay = now.getDate();
+    // Chuyển sang giờ Việt Nam (UTC+7) để luôn chuẩn xác dù VPS đặt múi giờ UTC hay Asia/Ho_Chi_Minh
+    const vnTime = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Ho_Chi_Minh' }));
+    const vnHour = vnTime.getHours();
+    const vnMin = vnTime.getMinutes();
+    const vnDate = vnTime.getDate();
+
+    // Báo cáo tổng kết cuối ngày lúc 21:30 tối (Giờ VN)
+    if (vnHour === 21 && vnMin >= 30 && vnDate !== lastSummaryDay) {
+      lastSummaryDay = vnDate;
+      await pullFromPWA(false);
+      const summaryMsg = buildDailySummaryReport(true);
+      if (summaryMsg) {
+        const userIds = Object.keys(DB.telegramUsers || {});
+        for (const uid of userIds) {
+          try {
+            await sendMessage(uid, summaryMsg);
+          } catch (e) {
+            console.warn(`Lỗi gửi tổng kết 21:30 tới user ${uid}:`, e.message);
+          }
+        }
+      }
+    }
+
+    // Sao lưu tự động lúc 02:00 sáng (Giờ VN)
+    if (vnHour === 2 && vnDate !== lastBackupDay) {
+      lastBackupDay = vnDate;
       console.log('⏰ [Cronjob] Bắt đầu tiến trình tự động sao lưu đêm 02:00 AM...');
       const userIds = Object.keys(DB.telegramUsers || {});
       if (userIds.length > 0) {
         const backupJson = JSON.stringify(DB, null, 2);
         const pad = n => String(n).padStart(2, '0');
-        const nowStr = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}_020000`;
+        const nowStr = `${vnTime.getFullYear()}${pad(vnTime.getMonth() + 1)}${pad(vnDate)}_020000`;
         const fileName = `vidoi_nightly_backup_${nowStr}.json`;
         const caption = `🌙 <b>BẢN SAO LƯU ĐỊNH KỲ TỰ ĐỘNG (02:00 AM)</b>\n\n` +
-          `• <b>Ngày:</b> ${now.toLocaleDateString('vi-VN')}\n` +
+          `• <b>Ngày:</b> ${vnTime.toLocaleDateString('vi-VN')}\n` +
           `• <b>Tổng số giao dịch:</b> ${DB.transactions.length}\n` +
           `• <b>Trạng thái:</b> Dữ liệu máy chủ an toàn 100% ✅`;
 

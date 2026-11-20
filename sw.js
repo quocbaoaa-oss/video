@@ -1,4 +1,4 @@
-const CACHE_NAME = 'vidoi-pwa-v18-multi-tx-ocr-dedup';
+const CACHE_NAME = 'vidoi-pwa-v19-all-5-optimizations';
 const ASSETS = [
   './',
   './index.html',
