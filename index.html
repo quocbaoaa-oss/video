@@ -6564,7 +6564,24 @@ function mergeCloudPayload(remote, silent = false) {
       DB.incomeCategories = remote.incomeCategories;
     }
     if (Array.isArray(remote.goals)) DB.goals = remote.goals;
-    if (Array.isArray(remote.wallets)) DB.wallets = remote.wallets;
+    if (Array.isArray(remote.wallets) && remote.wallets.length) {
+      const isFromBot = String(remote.deviceId || '').startsWith('telegram_bot_');
+      if (isFromBot) {
+        // Khi đồng bộ từ Bot Telegram: cập nhật ví trùng ID hoặc thêm ví mới, giữ nguyên các ví người dùng đã tạo trên App
+        const localWMap = new Map((DB.wallets || []).map(w => [w.id, w]));
+        for (const rw of remote.wallets) {
+          if (!rw || !rw.id) continue;
+          if (localWMap.has(rw.id)) {
+            localWMap.get(rw.id).balance = rw.balance;
+          } else {
+            DB.wallets.push(rw);
+          }
+        }
+      } else {
+        DB.wallets = remote.wallets;
+      }
+      changed = true;
+    }
     if (remote.loveNote && (!DB.loveNote || (remote.loveNote.ts || 0) > (DB.loveNote.ts || 0))) {
       DB.loveNote = remote.loveNote;
       changed = true;

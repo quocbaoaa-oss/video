@@ -6,6 +6,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 
 // Tự động đọc cấu hình từ file .env (không cần thư viện ngoài)
 const envPath = path.join(__dirname, '.env');
@@ -123,9 +124,92 @@ function saveDB() {
   fs.writeFileSync(DB_FILE, JSON.stringify(DB, null, 2), 'utf8');
 }
 
-// 4. Đồng bộ Realtime sang PWA Ví Đôi qua ntfy.sh
+// 4. Đồng bộ Realtime 2 chiều (PWA ⇄ Telegram Bot) qua ntfy.sh + Giải mã E2EE
+function getBotE2EEKey() {
+  return crypto.pbkdf2Sync(FAMILY_PIN, 'ViDoi_E2EE_' + FAMILY_CODE, 100000, 32, 'sha256');
+}
+
+function decryptE2EE(packet) {
+  if (!packet) return null;
+  if (!packet._e2ee || !packet.cipher || !packet.iv) return packet;
+  try {
+    const key = getBotE2EEKey();
+    const iv = Buffer.from(packet.iv, 'base64');
+    const fullCipher = Buffer.from(packet.cipher, 'base64');
+    if (fullCipher.length <= 16) return null;
+    const authTag = fullCipher.subarray(fullCipher.length - 16);
+    const data = fullCipher.subarray(0, fullCipher.length - 16);
+    const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv);
+    decipher.setAuthTag(authTag);
+    const dec = Buffer.concat([decipher.update(data), decipher.final()]);
+    return JSON.parse(dec.toString('utf8'));
+  } catch (e) {
+    return null;
+  }
+}
+
+let lastCloudPullTime = 0;
+
+async function pullFromPWA(force = false) {
+  const now = Date.now();
+  if (!force && (now - lastCloudPullTime < 12000)) return false;
+  lastCloudPullTime = now;
+  try {
+    const res = await fetch(`https://ntfy.sh/${CLOUD_TOPIC}/json?poll=1&since=24h`);
+    if (!res.ok) return false;
+    const text = await res.text();
+    const lines = text.trim().split('\n').filter(Boolean);
+    let updated = false;
+    for (const line of lines) {
+      try {
+        const ev = JSON.parse(line);
+        if (!ev || ev.event !== 'message') continue;
+        let rawMsg = ev.message;
+        if (ev.attachment && ev.attachment.url) {
+          const attRes = await fetch(ev.attachment.url);
+          if (attRes.ok) rawMsg = await attRes.text();
+        }
+        if (!rawMsg) continue;
+        let remote = JSON.parse(rawMsg);
+        if (remote && remote._e2ee) remote = decryptE2EE(remote);
+        if (!remote || remote._v !== 2 || String(remote.deviceId || '').startsWith('telegram_bot_')) continue;
+
+        // Đồng bộ danh sách Ví & Tài khoản từ App điện thoại sang Bot
+        if (Array.isArray(remote.wallets) && remote.wallets.length > 0) {
+          const localWMap = new Map((DB.wallets || []).map(w => [w.id, w]));
+          for (const rw of remote.wallets) {
+            if (!rw || !rw.id) continue;
+            if (localWMap.has(rw.id)) {
+              const lw = localWMap.get(rw.id);
+              lw.name = rw.name || lw.name;
+              lw.icon = rw.icon || lw.icon;
+              lw.owner = rw.owner || lw.owner;
+              lw.color = rw.color || lw.color;
+              if ((remote.ts || 0) >= (DB.updatedAt || 0)) {
+                lw.balance = rw.balance;
+              }
+            } else {
+              DB.wallets.push(rw);
+              localWMap.set(rw.id, rw);
+            }
+          }
+          updated = true;
+        }
+      } catch (e) {}
+    }
+    if (updated) {
+      ensureBotWallets(DB);
+      saveDB();
+    }
+    return updated;
+  } catch (err) {
+    return false;
+  }
+}
+
 async function broadcastToPWA(payload) {
   try {
+    DB.updatedAt = Date.now();
     let thumbQuota = 15;
     const compactTxs = (DB.transactions || []).slice(0, 100).map(t => {
       const copy = { ...t };
@@ -139,7 +223,7 @@ async function broadcastToPWA(payload) {
     const compactPayload = {
       _v: 2,
       deviceId: 'telegram_bot_' + Date.now().toString(36),
-      ts: Date.now(),
+      ts: DB.updatedAt,
       familyCode: FAMILY_CODE,
       familyPin: FAMILY_PIN,
       users: DB.users,
@@ -250,50 +334,131 @@ function matchKeyword(text, keyword) {
   return regex.test(text);
 }
 
+function removeAccents(str) {
+  return String(str || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'D')
+    .toLowerCase();
+}
+
 function findWalletByIdOrKeyword(kw) {
   if (!kw) return null;
-  const exact = DB.wallets.find(w => w.id.toLowerCase() === kw);
+  const cleanKw = removeAccents(kw).trim();
+  if (!cleanKw) return null;
+  const exact = DB.wallets.find(w => removeAccents(w.id) === cleanKw);
   if (exact) return exact.id;
-  const byName = DB.wallets.find(w => w.name && w.name.toLowerCase().includes(kw));
+  const byName = DB.wallets.find(w => removeAccents(w.name).includes(cleanKw));
   if (byName) return byName.id;
   return null;
 }
 
+function ensureDynamicBankWallet(id, name, icon = '🏦', owner = 'him', color = '#0066FF,#38bdf8') {
+  const existing = findWalletByIdOrKeyword(id) || findWalletByIdOrKeyword(name);
+  if (existing) return existing;
+  const newW = { id, name, icon, balance: 0, owner, color };
+  DB.wallets.push(newW);
+  saveDB();
+  return newW.id;
+}
+
+function getDefaultWalletForRole(role = 'him') {
+  if (DB.defaultWallet && DB.defaultWallet[role]) {
+    const exists = DB.wallets.some(w => w.id === DB.defaultWallet[role]);
+    if (exists) return DB.defaultWallet[role];
+  }
+  if (role === 'her') {
+    return findWalletByIdOrKeyword('momo') || findWalletByIdOrKeyword('oanh') || DB.wallets[0].id;
+  }
+  return findWalletByIdOrKeyword('cash') || findWalletByIdOrKeyword('tien mat') || DB.wallets[0].id;
+}
+
 function parseWallet(text) {
-  const t = ' ' + text.toLowerCase() + ' ';
-  // 1. Kiểm tra các ngân hàng cụ thể: ACB, MB, VIB, VCB, TCB, BIDV, Vietin, VPBank, TPBank, MoMo
-  if (/\bacb\b/.test(t) || t.includes('ngân hàng acb') || t.includes('ngan hang acb')) {
-    return findWalletByIdOrKeyword('acb') || 'acb';
+  if (!text) return null;
+  const norm = ' ' + removeAccents(text).replace(/[^a-z0-9]+/g, ' ').trim() + ' ';
+
+  // 1. Quét ưu tiên các từ khóa Ngân hàng & Tài khoản rõ ràng trong câu
+  if (/\s(acb|a chau)\s/.test(norm)) {
+    return ensureDynamicBankWallet('acb', 'Ngân hàng ACB', '🏦', 'S', '#0066FF,#38bdf8');
   }
-  if (/\bmb\b/.test(t) || /\bmbbank\b/.test(t) || t.includes('ngân hàng mb') || t.includes('ngan hang mb')) {
-    return findWalletByIdOrKeyword('mb') || 'mb';
+  if (/\s(mb|mbbank|quan doi)\s/.test(norm)) {
+    return ensureDynamicBankWallet('mb', 'Ngân hàng MB', '🏦', 'him', '#4F46E5,#818cf8');
   }
-  if (/\bvib\b/.test(t) || t.includes('ngân hàng vib') || t.includes('ngan hang vib')) {
-    return findWalletByIdOrKeyword('vib') || 'vib';
+  if (/\s(vib|myvib|quoc te)\s/.test(norm)) {
+    return ensureDynamicBankWallet('vib', 'Ngân hàng VIB', '🏦', 'him', '#F97316,#fb923c');
   }
-  if (t.includes('tin dung') || t.includes('tín dụng') || /\bcredit\b/.test(t) || /\bthe\b/.test(t) || /\bthẻ\b/.test(t) || /\btd\b/.test(t)) {
-    return findWalletByIdOrKeyword('tín dụng') || findWalletByIdOrKeyword('credit') || findWalletByIdOrKeyword('tcb') || 'tcb';
+  if (/\s(tin dung|the tin dung|credit|visa|mastercard|master|td)\s/.test(norm) || /\sthe\s/.test(norm)) {
+    return findWalletByIdOrKeyword('tin dung') || findWalletByIdOrKeyword('credit') || findWalletByIdOrKeyword('tcb') ||
+      ensureDynamicBankWallet('tcb', 'Thẻ tín dụng', '💳', 'him', '#EF4444,#fb7185');
   }
-  if (/\bvcb\b/.test(t) || t.includes('vietcombank') || t.includes('ví chung') || t.includes('vi chung')) {
-    return findWalletByIdOrKeyword('vcb') || findWalletByIdOrKeyword('acb') || DB.wallets[0].id;
+  if (/\s(tien mat|tm|cash)\s/.test(norm)) {
+    return findWalletByIdOrKeyword('cash') || findWalletByIdOrKeyword('tien mat') ||
+      ensureDynamicBankWallet('cash', 'Tiền mặt', '💵', 'him', '#22C55E,#4ade80');
   }
-  if (/\bmomo\b/.test(t) || t.includes('ví riêng') || t.includes('vi rieng')) {
-    return findWalletByIdOrKeyword('momo') || 'momo';
+  if (/\s(vcb|vietcombank|vi chung)\s/.test(norm)) {
+    return findWalletByIdOrKeyword('vcb') || findWalletByIdOrKeyword('vietcombank') ||
+      ensureDynamicBankWallet('vcb', 'Ngân hàng VCB', '🏦', 'S', '#10B981,#34d399');
   }
-  if (/\btcb\b/.test(t) || t.includes('techcombank')) {
-    return findWalletByIdOrKeyword('tech') || findWalletByIdOrKeyword('tcb') || 'tcb';
+  if (/\s(tcb|techcombank|tech)\s/.test(norm)) {
+    return findWalletByIdOrKeyword('tech') || findWalletByIdOrKeyword('tcb') ||
+      ensureDynamicBankWallet('tech', 'Techcombank', '🏦', 'him', '#DC2626,#f87171');
   }
-  if (t.includes('tien mat') || t.includes('tiền mặt') || /\btm\b/.test(t) || /\bcash\b/.test(t)) {
-    return findWalletByIdOrKeyword('cash') || findWalletByIdOrKeyword('tiền mặt') || 'cash';
+  if (/\s(bidv)\s/.test(norm)) {
+    return ensureDynamicBankWallet('bidv', 'Ngân hàng BIDV', '🏦', 'S', '#0284C7,#38bdf8');
   }
-  // 2. Quét động theo danh sách DB.wallets mà người dùng đã tạo
+  if (/\s(vietin|vietinbank|ctg|incombank)\s/.test(norm)) {
+    return ensureDynamicBankWallet('vietin', 'VietinBank', '🏦', 'S', '#2563EB,#60a5fa');
+  }
+  if (/\s(vpbank|vpb)\s/.test(norm)) {
+    return ensureDynamicBankWallet('vpbank', 'VPBank', '🏦', 'him', '#16A34A,#4ade80');
+  }
+  if (/\s(tpbank|tpb)\s/.test(norm)) {
+    return ensureDynamicBankWallet('tpbank', 'TPBank', '🏦', 'her', '#7C3AED,#a78bfa');
+  }
+  if (/\s(sacombank|stb)\s/.test(norm)) {
+    return ensureDynamicBankWallet('stb', 'Sacombank', '🏦', 'him', '#0284C7,#38bdf8');
+  }
+  if (/\s(agribank|agri)\s/.test(norm)) {
+    return ensureDynamicBankWallet('agri', 'Agribank', '🏦', 'S', '#DC2626,#f87171');
+  }
+  if (/\s(momo|vi momo|vi rieng|vi oanh)\s/.test(norm)) {
+    return findWalletByIdOrKeyword('momo') || findWalletByIdOrKeyword('oanh') ||
+      ensureDynamicBankWallet('momo', 'Ví riêng (Oanh)', '📱', 'her', '#EC4899,#f9a8d4');
+  }
+
+  // 2. Quét khớp động với tất cả các ví hiện có trong DB.wallets (kể cả ví người dùng tự đặt tên trên App)
   for (const w of DB.wallets) {
-    const wId = (w.id || '').toLowerCase();
-    const wName = (w.name || '').toLowerCase();
-    if (wId && wId.length >= 2 && new RegExp(`\\b${wId}\\b`, 'i').test(t)) return w.id;
-    if (wName && t.includes(wName)) return w.id;
+    const wId = removeAccents(w.id).replace(/[^a-z0-9]+/g, '').trim();
+    const wName = removeAccents(w.name).replace(/[^a-z0-9]+/g, ' ').trim();
+    const shortName = wName
+      .replace(/\b(ngan hang|tai khoan|tk|vi|chung|rieng|cua|bao|oanh)\b/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    if (wName && norm.includes(' ' + wName + ' ')) return w.id;
+    if (shortName && shortName.length >= 2 && norm.includes(' ' + shortName + ' ')) return w.id;
+    if (wId && wId.length >= 2 && norm.includes(' ' + wId + ' ')) return w.id;
   }
+
   return null;
+}
+
+function stripWalletKeywordsFromTitle(rawText) {
+  let out = rawText;
+  // Xóa tên các ví hiện có trong DB.wallets khỏi tiêu đề
+  for (const w of DB.wallets) {
+    if (w.name) {
+      const esc = w.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      out = out.replace(new RegExp(esc, 'gi'), '');
+    }
+  }
+  return out
+    .replace(/(?:ngân hàng|ngan hang|tài khoản|tai khoan|bằng ví|bang vi|bằng thẻ|bang the|qua ví|qua thẻ|trừ ví)/gi, '')
+    .replace(/(?:^|\s)(?:acb|mb|mbbank|vib|myvib|vcb|vietcombank|momo|tcb|techcombank|tech|bidv|vietin|vietinbank|vpbank|vpb|tpbank|tpb|sacombank|agribank|tien mat|tiền mặt|tm|cash|the tin dung|thẻ tín dụng|tin dung|tín dụng|credit|td)(?=\s|$|[.,!?;:])/gi, ' ')
+    .replace(/(?:\d+(?:\.\d+)?\s*(?:tr|k|vnd|đ|₫)?|\b\d{4,10}\b)/gi, '')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 function parseTextToTransaction(rawText, defaultWho = 'him') {
@@ -313,7 +478,7 @@ function parseTextToTransaction(rawText, defaultWho = 'him') {
       fromW = parseWallet(splitMatch[1]);
       toW = parseWallet(splitMatch[2]);
     }
-    if (!fromW) fromW = parseWallet(lower) || (DB.wallets.find(w => w.id === 'acb') ? 'acb' : DB.wallets[0].id);
+    if (!fromW) fromW = parseWallet(lower) || getDefaultWalletForRole(defaultWho);
     if (!toW || toW === fromW) {
       const other = DB.wallets.find(w => w.id !== fromW);
       toW = other ? other.id : 'cash';
@@ -355,20 +520,12 @@ function parseTextToTransaction(rawText, defaultWho = 'him') {
     catName = matchedCat.cat;
   }
 
-  // Xác định ví tài khoản
-  let walletId = parseWallet(text);
-  if (!walletId) {
-    // Mặc định ví của người gửi
-    walletId = defaultWho === 'her' ? 'momo' : 'cash';
-  }
+  // Xác định ví tài khoản: ưu tiên từ khóa trong tin nhắn, nếu không có thì lấy ví mặc định của người gửi
+  const explicitWallet = parseWallet(text);
+  const walletId = explicitWallet || getDefaultWalletForRole(defaultWho);
 
   // Tách title sạch khỏi tên ngân hàng và số tiền
-  let cleanTitle = text
-    .replace(/\b(?:ngân hàng|ngan hang|acb|mb|mbbank|vib|vcb|vietcombank|momo|tcb|techcombank|bidv|vpbank|tpbank|tien mat|tiền mặt|tm|the tin dung|thẻ tín dụng|tin dung|tín dụng|td)\b/gi, '')
-    .replace(/(?:\d+(?:\.\d+)?\s*(?:tr|k|vnd|đ|₫)?|\b\d{4,10}\b)/gi, '')
-    .replace(/\s+/g, ' ')
-    .trim();
-
+  let cleanTitle = stripWalletKeywordsFromTitle(text);
   if (!cleanTitle) cleanTitle = catName;
 
   return {
@@ -388,6 +545,7 @@ function parseTextToTransaction(rawText, defaultWho = 'him') {
 async function parseExpenseWithAI(rawText, defaultWho = 'him') {
   if (!GEMINI_API_KEY) return null;
   try {
+    const explicitWallet = parseWallet(rawText);
     const walletsPromptList = DB.wallets.map(w => `${w.id} (${w.name})`).join(' | ');
     const promptText = `Bạn là trợ lý tài chính thông minh cho gia đình Bảo & Oanh.
 Hãy phân tích tin nhắn chi tiêu hoặc thu nhập sau: "${rawText}".
@@ -397,10 +555,10 @@ Trả về CHỈ DUY NHẤT một chuỗi JSON hợp lệ (không kèm markdown)
 {
   "isFinancial": true,
   "amount": <số tiền nguyên VND, ví dụ 50000, 1500000>,
-  "title": "<mô tả nội dung ngắn gọn, ví dụ Cà phê, Ăn trưa, Đổ xăng, Mua đồ>",
+  "title": "<mô tả nội dung ngắn gọn, không kèm tên ngân hàng, ví dụ Cà phê, Ăn trưa, Đổ xăng, Mua đồ>",
   "category": "<một trong các danh mục: Ăn uống | Chợ & Siêu thị | Nhà cửa | Hóa đơn | Đi lại | Con cái | Mua sắm | Giải trí | Sức khỏe | Khác>",
   "icon": "<icon emoji phù hợp với danh mục>",
-  "wallet": "<mã id tài khoản khớp nhất trong danh sách: ${DB.wallets.map(w => w.id).join(' | ')}>",
+  "wallet": "<mã id hoặc tên ngân hàng/tài khoản nếu có nhắc tới trong câu: ${DB.wallets.map(w => w.id).join(' | ')}, hoặc null>",
   "kind": "<e nếu là chi tiêu, i nếu là thu nhập, t nếu là chuyển tiền>"
 }
 Nếu tin nhắn không chứa số tiền hoặc không liên quan tài chính, trả về:
@@ -432,6 +590,10 @@ Nếu tin nhắn không chứa số tiền hoặc không liên quan tài chính,
     if (!parsed || !parsed.isFinancial || !parsed.amount || parsed.amount <= 0) return null;
 
     const catItem = CATEGORY_MAP.find(c => c.cat === parsed.category) || { cat: parsed.category || 'Ăn uống', icon: parsed.icon || '💸' };
+    const resolvedWallet = explicitWallet ||
+      parseWallet(parsed.wallet || '') ||
+      findWalletByIdOrKeyword(parsed.wallet || '') ||
+      getDefaultWalletForRole(defaultWho);
 
     return {
       kind: parsed.kind || 'e',
@@ -439,7 +601,7 @@ Nếu tin nhắn không chứa số tiền hoặc không liên quan tài chính,
       title: parsed.title || rawText,
       category: catItem.cat,
       icon: catItem.icon,
-      wallet: parsed.wallet || (defaultWho === 'her' ? 'momo' : 'cash'),
+      wallet: resolvedWallet,
       who: defaultWho,
       shared: true,
       note: rawText
@@ -511,7 +673,61 @@ function formatRole(role) {
   return role === 'her' ? `👩 ${u.name} (Vợ)` : `👨 ${u.name} (Chồng)`;
 }
 
-// Hàm hiển thị Thẻ Xem lại & Tự động điền hóa đơn AI
+// Tạo các hàng nút bấm 1 chạm chọn nhanh Tài khoản chi / nhận
+function buildQuickWalletRows(prefix, currentWalletId) {
+  const rows = [];
+  const wallets = DB.wallets || [];
+  for (let i = 0; i < wallets.length; i += 2) {
+    const w1 = wallets[i];
+    const row = [
+      { text: `${w1.id === currentWalletId ? '✅ ' : ''}${w1.icon} ${w1.name}`, callback_data: `${prefix}${w1.id}` }
+    ];
+    if (wallets[i + 1]) {
+      const w2 = wallets[i + 1];
+      row.push({ text: `${w2.id === currentWalletId ? '✅ ' : ''}${w2.icon} ${w2.name}`, callback_data: `${prefix}${w2.id}` });
+    }
+    rows.push(row);
+  }
+  return rows;
+}
+
+// Tạo nội dung thẻ & bàn phím nút bấm cho một giao dịch đã lưu (cho phép đổi tài khoản 1 chạm ngay tại thẻ)
+function buildSavedTxCard(tx) {
+  const isInc = tx.kind === 'i';
+  const isTrans = tx.kind === 't';
+  const headerIcon = isInc ? '💰' : isTrans ? '🔄' : '💸';
+  const amtStr = isInc ? `+${formatVND(tx.amount)} ₫` : isTrans ? `🔄 ${formatVND(tx.amount)} ₫` : `-${formatVND(tx.amount)} ₫`;
+
+  let details = '';
+  if (isTrans) {
+    details = `• <b>Từ ví:</b> ${getWalletName(tx.wallet)}\n• <b>Đến ví:</b> ${getWalletName(tx.toWallet)}`;
+  } else {
+    details = `• <b>Tài khoản:</b> ${getWalletName(tx.wallet)}\n• <b>Danh mục:</b> ${tx.icon} ${tx.category}`;
+  }
+
+  const text = `${headerIcon} <b>Đã ghi chép thành công!</b>\n\n` +
+    `<b>${tx.title}</b>: <code>${amtStr}</code>\n` +
+    `${details}\n` +
+    `• <b>Người ghi:</b> ${formatRole(tx.who)} (${tx.shared ? '👥 Chung' : '🔒 Riêng'})` +
+    `${tx.receipt ? '\n• <b>Đính kèm:</b> 📎 Đã đồng bộ ảnh hóa đơn' : ''}\n\n` +
+    `💡 <i>Chạm trực tiếp tên ngân hàng bên dưới nếu muốn đổi tài khoản chi:</i>`;
+
+  const inline_keyboard = [];
+  if (!isTrans) {
+    inline_keyboard.push(...buildQuickWalletRows(`set_tx_wal_${tx.id}_`, tx.wallet));
+  }
+  inline_keyboard.push([
+    { text: tx.shared ? '🔒 Đổi sang Riêng' : '👥 Đổi sang Chung', callback_data: `toggle_shared_${tx.id}` },
+    { text: '🗑 Hủy / Xóa', callback_data: `del_tx_${tx.id}` }
+  ]);
+  inline_keyboard.push([
+    { text: '📊 Xem số dư tất cả ví', callback_data: 'view_wallets' }
+  ]);
+
+  return { text, reply_markup: { inline_keyboard } };
+}
+
+// Hàm hiển thị Thẻ Xem lại & Tự động điền hóa đơn AI (Tích hợp chọn nhanh Tài khoản 1 chạm ngay trên thẻ)
 async function renderBillPreviewCard(chatId, messageId, bill) {
   let itemsListStr = '';
   if (Array.isArray(bill.items) && bill.items.length > 0) {
@@ -524,20 +740,21 @@ async function renderBillPreviewCard(chatId, messageId, bill) {
     `📅 <b>Ngày:</b> ${bill.date || 'Hôm nay'}\n` +
     `💰 <b>Tổng tiền:</b> <code>-${formatVND(bill.amount)} ₫</code>\n` +
     `📁 <b>Danh mục:</b> ${bill.icon} ${bill.category}\n` +
-    `💳 <b>Tài khoản:</b> ${getWalletName(bill.wallet)}\n` +
+    `💳 <b>Tài khoản chi:</b> <b>${getWalletName(bill.wallet)}</b>\n` +
     `👤 <b>Người chi:</b> ${formatRole(bill.who)}\n` +
     itemsListStr +
-    `\n\n💡 <i>Vui lòng bấm Xác nhận để lưu vào sổ Ví Đôi và đồng bộ PWA:</i>`;
+    `\n\n💡 <i>Chạm chọn Tài khoản chi bên dưới rồi bấm <b>Xác nhận lưu</b>:</i>`;
 
+  const walletRows = buildQuickWalletRows(`set_wal_${bill.id}_`, bill.wallet);
   const keyboard = {
     inline_keyboard: [
+      ...walletRows,
       [
-        { text: '✅ Xác nhận lưu vào Ví Đôi', callback_data: `confirm_bill_${bill.id}` },
-        { text: '🗑 Hủy bỏ', callback_data: `cancel_bill_${bill.id}` }
+        { text: '✅ XÁC NHẬN LƯU VÀO VÍ ĐÔI', callback_data: `confirm_bill_${bill.id}` }
       ],
       [
         { text: '📁 Đổi danh mục', callback_data: `change_cat_${bill.id}` },
-        { text: '💳 Đổi tài khoản', callback_data: `change_wal_${bill.id}` }
+        { text: '🗑 Hủy bỏ', callback_data: `cancel_bill_${bill.id}` }
       ]
     ]
   };
@@ -557,6 +774,9 @@ async function renderBillPreviewCard(chatId, messageId, bill) {
 
 // 7. Xử lý Lệnh & Tin nhắn người dùng
 async function handleUpdate(update) {
+  // Đồng bộ danh sách ví mới nhất từ App điện thoại (PWA) trước khi xử lý
+  await pullFromPWA(false);
+
   // A. Xử lý Callback Button (Inline keyboard)
   if (update.callback_query) {
     const cq = update.callback_query;
@@ -573,6 +793,9 @@ async function handleUpdate(update) {
         return;
       }
       PENDING_BILLS.delete(billId);
+
+      if (!DB.defaultWallet) DB.defaultWallet = {};
+      DB.defaultWallet[bill.who] = bill.wallet;
 
       const curTxId = Date.now();
       const nowD = new Date();
@@ -607,26 +830,14 @@ async function handleUpdate(update) {
       }
       await broadcastToPWA();
 
-      await sendTelegram('answerCallbackQuery', { callback_query_id: cq.id, text: 'Đã lưu hóa đơn & đồng bộ ảnh thành công!' });
+      const card = buildSavedTxCard(newTx);
+      await sendTelegram('answerCallbackQuery', { callback_query_id: cq.id, text: `Đã lưu vào ${getWalletName(bill.wallet)}!` });
       await sendTelegram('editMessageText', {
         chat_id: chatId,
         message_id: msgId,
-        text: `✅ <b>ĐÃ LƯU THÀNH CÔNG VÀO VÍ ĐÔI!</b>\n\n` +
-          `🏪 <b>${bill.merchant}</b>: <code>-${formatVND(bill.amount)} ₫</code>\n` +
-          `• <b>Danh mục:</b> ${bill.icon} ${bill.category}\n` +
-          `• <b>Tài khoản:</b> ${getWalletName(bill.wallet)}\n` +
-          `• <b>Người chi:</b> ${formatRole(bill.who)}\n` +
-          `• <b>Đính kèm:</b> 📎 Đã đồng bộ ảnh hóa đơn sang 2 điện thoại\n\n` +
-          `⚡ <i>Đã đồng bộ tức thì sang Ví Đôi PWA của cả hai vợ chồng!</i>`,
+        text: card.text,
         parse_mode: 'HTML',
-        reply_markup: {
-          inline_keyboard: [
-            [
-              { text: '🗑 Hủy / Xóa', callback_data: `del_tx_${curTxId}` },
-              { text: '📊 Xem số dư ví', callback_data: 'view_wallets' }
-            ]
-          ]
-        }
+        reply_markup: card.reply_markup
       });
       return;
     }
@@ -677,10 +888,16 @@ async function handleUpdate(update) {
     }
 
     if (data.startsWith('set_cat_')) {
-      const parts = data.replace('set_cat_', '').split('_');
-      const billId = parts[0];
-      const catIdx = parseInt(parts[1], 10);
-      const bill = PENDING_BILLS.get(billId);
+      const raw = data.replace('set_cat_', '');
+      let bill = null;
+      let catIdx = -1;
+      for (const [k, b] of PENDING_BILLS.entries()) {
+        if (raw.startsWith(k + '_')) {
+          bill = b;
+          catIdx = parseInt(raw.slice(k.length + 1), 10);
+          break;
+        }
+      }
       if (bill && CATEGORY_MAP[catIdx]) {
         bill.category = CATEGORY_MAP[catIdx].cat;
         bill.icon = CATEGORY_MAP[catIdx].icon;
@@ -690,7 +907,7 @@ async function handleUpdate(update) {
       return;
     }
 
-    // Đổi tài khoản cho hóa đơn
+    // Đổi tài khoản cho hóa đơn (Hỗ trợ mọi định dạng billId và walletId có dấu gạch dưới)
     if (data.startsWith('change_wal_')) {
       const billId = data.replace('change_wal_', '');
       const bill = PENDING_BILLS.get(billId);
@@ -699,7 +916,7 @@ async function handleUpdate(update) {
         return;
       }
       const walButtons = DB.wallets.map(w => [
-        { text: `${w.icon} ${w.name} (${formatVND(w.balance)} ₫)`, callback_data: `set_wal_${billId}_${w.id}` }
+        { text: `${w.id === bill.wallet ? '✅ ' : ''}${w.icon} ${w.name} (${formatVND(w.balance)} ₫)`, callback_data: `set_wal_${billId}_${w.id}` }
       ]);
       walButtons.push([{ text: '‹ Quay lại hóa đơn', callback_data: `back_bill_${billId}` }]);
 
@@ -715,14 +932,25 @@ async function handleUpdate(update) {
     }
 
     if (data.startsWith('set_wal_')) {
-      const parts = data.replace('set_wal_', '').split('_');
-      const billId = parts[0];
-      const walId = parts[1];
-      const bill = PENDING_BILLS.get(billId);
-      if (bill) {
+      const raw = data.replace('set_wal_', '');
+      let bill = null;
+      let walId = '';
+      for (const [k, b] of PENDING_BILLS.entries()) {
+        if (raw.startsWith(k + '_')) {
+          bill = b;
+          walId = raw.slice(k.length + 1);
+          break;
+        }
+      }
+      if (bill && walId) {
         bill.wallet = walId;
-        await sendTelegram('answerCallbackQuery', { callback_query_id: cq.id, text: `Đã đổi tài khoản: ${getWalletName(walId)}` });
+        if (!DB.defaultWallet) DB.defaultWallet = {};
+        DB.defaultWallet[bill.who] = walId;
+        saveDB();
+        await sendTelegram('answerCallbackQuery', { callback_query_id: cq.id, text: `Đã chọn tài khoản: ${getWalletName(walId)}` });
         await renderBillPreviewCard(chatId, msgId, bill);
+      } else {
+        await sendTelegram('answerCallbackQuery', { callback_query_id: cq.id, text: 'Hóa đơn đã hết hạn hoặc đã lưu.' });
       }
       return;
     }
@@ -785,10 +1013,18 @@ async function handleUpdate(update) {
       const tx = DB.transactions.find(t => t.id === txId);
       if (tx) {
         tx.shared = !tx.shared;
+        tx.updatedAt = Date.now();
         saveDB();
         await broadcastToPWA();
+        const card = buildSavedTxCard(tx);
         await sendTelegram('answerCallbackQuery', { callback_query_id: cq.id, text: tx.shared ? 'Đã đổi thành Khoản Chung!' : 'Đã đổi thành Khoản Riêng!' });
-        await sendMessage(chatId, `🔄 Giao dịch <b>${tx.title}</b> đã đổi thành: <b>${tx.shared ? '👥 Khoản Chung' : '🔒 Khoản Riêng'}</b>.`);
+        await sendTelegram('editMessageText', {
+          chat_id: chatId,
+          message_id: msgId,
+          text: card.text,
+          parse_mode: 'HTML',
+          reply_markup: card.reply_markup
+        });
       }
       return;
     }
@@ -801,21 +1037,14 @@ async function handleUpdate(update) {
         await sendTelegram('answerCallbackQuery', { callback_query_id: cq.id, text: 'Giao dịch không tồn tại hoặc đã xóa.' });
         return;
       }
-      const walButtons = [];
-      for (let i = 0; i < DB.wallets.length; i += 2) {
-        const w1 = DB.wallets[i];
-        const row = [
-          { text: `${w1.id === tx.wallet ? '✅ ' : ''}${w1.icon} ${w1.name}`, callback_data: `set_tx_wal_${txId}_${w1.id}` }
-        ];
-        if (DB.wallets[i + 1]) {
-          const w2 = DB.wallets[i + 1];
-          row.push({ text: `${w2.id === tx.wallet ? '✅ ' : ''}${w2.icon} ${w2.name}`, callback_data: `set_tx_wal_${txId}_${w2.id}` });
-        }
-        walButtons.push(row);
-      }
+      const card = buildSavedTxCard(tx);
       await sendTelegram('answerCallbackQuery', { callback_query_id: cq.id });
-      await sendMessage(chatId, `💳 <b>Chọn tài khoản / ngân hàng cho giao dịch "${tx.title}" (${formatVND(tx.amount)} ₫):</b>`, {
-        reply_markup: { inline_keyboard: walButtons }
+      await sendTelegram('editMessageText', {
+        chat_id: chatId,
+        message_id: msgId,
+        text: card.text,
+        parse_mode: 'HTML',
+        reply_markup: card.reply_markup
       });
       return;
     }
@@ -839,15 +1068,19 @@ async function handleUpdate(update) {
         newW.balance += (tx.kind === 'i' ? tx.amount : -tx.amount);
         tx.wallet = newWalId;
         tx.updatedAt = Date.now();
+        if (!DB.defaultWallet) DB.defaultWallet = {};
+        DB.defaultWallet[tx.who] = newWalId;
         saveDB();
         await broadcastToPWA();
       }
-      await sendTelegram('answerCallbackQuery', { callback_query_id: cq.id, text: `Đã chuyển sang: ${newW.name}!` });
+      const card = buildSavedTxCard(tx);
+      await sendTelegram('answerCallbackQuery', { callback_query_id: cq.id, text: `Đã đổi sang: ${newW.icon} ${newW.name}!` });
       await sendTelegram('editMessageText', {
         chat_id: chatId,
         message_id: msgId,
-        text: `✅ Đã chuyển giao dịch <b>${tx.title} (${formatVND(tx.amount)} ₫)</b> sang tài khoản: <b>${newW.icon} ${newW.name}</b>\n• Số dư hiện tại: <code>${formatVND(newW.balance)} ₫</code>`,
-        parse_mode: 'HTML'
+        text: card.text,
+        parse_mode: 'HTML',
+        reply_markup: card.reply_markup
       });
       return;
     }
@@ -903,14 +1136,18 @@ async function handleUpdate(update) {
         } catch (e) {}
       }
 
-      // 3. Gọi Google Gemini Vision 1.5 Flash bóc tách chi tiết từng mặt hàng & tổng tiền
-      const promptText = `Bạn là chuyên gia phân tích hóa đơn tài chính cho gia đình Bảo & Oanh.
-Hãy đọc thật kỹ ảnh hóa đơn này và trích xuất thông tin.
+      // 3. Gọi Google Gemini Vision bóc tách chi tiết từng mặt hàng, tổng tiền VÀ ngân hàng/tài khoản chi
+      const walletsPromptList = DB.wallets.map(w => `${w.id} (${w.name})`).join(' | ');
+      const captionHint = msg.caption ? `\nChú thích người dùng gửi kèm ảnh: "${msg.caption}".` : '';
+      const promptText = `Bạn là chuyên gia phân tích hóa đơn và biên lai chuyển khoản ngân hàng cho gia đình Bảo & Oanh.
+Hãy đọc thật kỹ ảnh hóa đơn hoặc màn hình chuyển khoản này và trích xuất thông tin.${captionHint}
+Danh sách tài khoản hiện có của gia đình: ${walletsPromptList}.
 Trả về CHỈ DUY NHẤT một chuỗi JSON hợp lệ (không kèm markdown):
 {
   "amount": <tổng số tiền thanh toán cuối cùng bằng số nguyên VND, ví dụ 345000>,
-  "merchant": "<tên cửa hàng, siêu thị, nhà hàng hoặc bên bán ngắn gọn, ví dụ WinMart, Highlands Coffee, Circle K>",
+  "merchant": "<tên cửa hàng, siêu thị, nhà hàng, người nhận hoặc nội dung chuyển khoản ngắn gọn, ví dụ WinMart, Highlands Coffee, Chuyển khoản>",
   "category": "<một trong các danh mục sau: Ăn uống | Chợ & Siêu thị | Nhà cửa | Hóa đơn | Đi lại | Con cái | Mua sắm | Giải trí | Sức khỏe | Khác>",
+  "paymentAccount": "<tên ngân hàng, ví hoặc phương thức thanh toán nhận diện được từ logo/chữ trên ảnh hoặc chú thích, ví dụ: ACB | MB | VIB | VCB | Techcombank | BIDV | VietinBank | VPBank | TPBank | MoMo | Thẻ tín dụng | Tiền mặt | null>",
   "date": "<ngày tháng nếu thấy trên bill dạng DD/MM/YYYY hoặc null>",
   "items": [
     { "name": "<tên món hoặc mặt hàng ngắn gọn>", "price": <giá tiền số nguyên VND nếu thấy hoặc null> }
@@ -951,10 +1188,14 @@ Trả về CHỈ DUY NHẤT một chuỗi JSON hợp lệ (không kèm markdown)
 
       const amt = parseInt(parsed.amount, 10);
       const day = new Date().getDate();
-      const walletId = myRole === 'her' ? 'momo' : 'cash';
+      // Ưu tiên tài khoản từ chú thích ảnh -> đến ngân hàng AI đọc trên ảnh -> đến tài khoản mặc định
+      const walletId = (msg.caption && parseWallet(msg.caption)) ||
+        (parsed.paymentAccount && parseWallet(parsed.paymentAccount)) ||
+        (parsed.paymentAccount && findWalletByIdOrKeyword(parsed.paymentAccount)) ||
+        getDefaultWalletForRole(myRole);
       const catItem = CATEGORY_MAP.find(c => c.cat === parsed.category) || { cat: parsed.category || 'Ăn uống', icon: '🧾' };
 
-      const billId = 'b_' + Date.now();
+      const billId = 'b' + Date.now();
       const billDraft = {
         id: billId,
         amount: amt,
@@ -1171,43 +1412,19 @@ Trả về CHỈ DUY NHẤT một chuỗi JSON hợp lệ (không kèm markdown)
   }
 
   DB.transactions.unshift(newTx);
+  if (!DB.defaultWallet) DB.defaultWallet = {};
+  if (parsed.kind !== 't') {
+    DB.defaultWallet[parsed.who] = parsed.wallet;
+  }
   saveDB();
 
   // Bắn realtime sang PWA
   broadcastToPWA();
 
-  // Phản hồi Telegram với thẻ thông tin đẹp mắt
-  const isInc = parsed.kind === 'i';
-  const isTrans = parsed.kind === 't';
-  const headerIcon = isInc ? '💰' : isTrans ? '🔄' : '💸';
-  const amtStr = isInc ? `+${formatVND(parsed.amount)} ₫` : isTrans ? `🔄 ${formatVND(parsed.amount)} ₫` : `-${formatVND(parsed.amount)} ₫`;
-
-  let details = '';
-  if (isTrans) {
-    details = `• <b>Từ ví:</b> ${getWalletName(parsed.wallet)}\n• <b>Đến ví:</b> ${getWalletName(parsed.toWallet)}`;
-  } else {
-    details = `• <b>Tài khoản:</b> ${getWalletName(parsed.wallet)}\n• <b>Danh mục:</b> ${parsed.icon} ${parsed.category}`;
-  }
-
-  const replyText = `${headerIcon} <b>Đã ghi chép thành công!</b>\n\n` +
-    `<b>${parsed.title}</b>: <code>${amtStr}</code>\n` +
-    `${details}\n` +
-    `• <b>Người ghi:</b> ${formatRole(parsed.who)} (${parsed.shared ? '👥 Chung' : '🔒 Riêng'})\n\n` +
-    `⚡ <i>Đã đồng bộ tức thì sang Ví Đôi PWA của cả hai vợ chồng!</i>`;
-
-  return sendMessage(chatId, replyText, {
-    reply_markup: {
-      inline_keyboard: [
-        [
-          { text: '💳 Đổi tài khoản', callback_data: `change_tx_wal_${curTxId}` },
-          { text: parsed.shared ? '🔒 Đổi sang Riêng' : '👥 Đổi sang Chung', callback_data: `toggle_shared_${curTxId}` }
-        ],
-        [
-          { text: '🗑 Hủy / Xóa', callback_data: `del_tx_${curTxId}` },
-          { text: '📊 Xem số dư ví', callback_data: 'view_wallets' }
-        ]
-      ]
-    }
+  // Phản hồi Telegram với thẻ thông tin kèm dãy nút chọn nhanh Tài khoản 1 chạm
+  const card = buildSavedTxCard(newTx);
+  return sendMessage(chatId, card.text, {
+    reply_markup: card.reply_markup
   });
 }
 
@@ -1272,6 +1489,8 @@ async function startBot() {
     process.exit(1);
   }
   console.log(`✅ Kết nối thành công tới Bot: @${me.result.username} (${me.result.first_name})`);
+  await pullFromPWA(true);
+  console.log(`🏦 Danh sách tài khoản hiện tại (${DB.wallets.length}): ${DB.wallets.map(w => w.name).join(', ')}`);
   console.log('🚀 Đang lắng nghe tin nhắn ghi chép từ hai vợ chồng...');
 
   // Tiến trình tự động gửi bản sao lưu máy chủ mỗi đêm lúc 02:00 AM

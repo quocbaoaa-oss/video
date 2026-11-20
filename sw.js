@@ -1,4 +1,4 @@
-const CACHE_NAME = 'vidoi-pwa-v16-multi-bank-wallets-manager';
+const CACHE_NAME = 'vidoi-pwa-v17-two-way-wallet-sync';
 const ASSETS = [
   './',
   './index.html',
