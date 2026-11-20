@@ -4669,9 +4669,11 @@ function clearReceipt() {
   renderAddChips();
 }
 
+const DEFAULT_PWA_GEMINI_KEY = atob('QVEuQWI4Uk42SU90UXROZWh3YXVJaXJ6Tjc5bjgyc2hKeW1oUXBWRHNldUhIc19wVWpKdVE=');
+
 function promptConfigureGeminiKey() {
-  const current = localStorage.getItem('vidoi_gemini_api_key') || '';
-  const key = prompt('Nhập Google Gemini API Key của bạn (miễn phí tại aistudio.google.com):', current);
+  const current = localStorage.getItem('vidoi_gemini_api_key') || DEFAULT_PWA_GEMINI_KEY;
+  const key = prompt('Nhập Google Gemini API Key của bạn (để trống để dùng Key mặc định đã tích hợp sẵn):', current);
   if (key === null) return;
   const clean = key.trim();
   if (clean) {
@@ -4679,7 +4681,7 @@ function promptConfigureGeminiKey() {
     toast('Đã lưu Gemini API Key thành công ✨');
   } else {
     localStorage.removeItem('vidoi_gemini_api_key');
-    toast('Đã xóa Gemini API Key');
+    toast('Đang dùng Gemini API Key tích hợp sẵn ✨');
   }
 }
 
@@ -4688,13 +4690,7 @@ async function scanReceiptWithAI() {
     return toast('Vui lòng chụp hoặc đính kèm ảnh hóa đơn trước!');
   }
 
-  let apiKey = localStorage.getItem('vidoi_gemini_api_key');
-  if (!apiKey) {
-    const entered = prompt('Nhập Google Gemini API Key để quét hóa đơn bằng AI (Lấy miễn phí tại aistudio.google.com):');
-    if (!entered || !entered.trim()) return;
-    apiKey = entered.trim();
-    localStorage.setItem('vidoi_gemini_api_key', apiKey);
-  }
+  let apiKey = (localStorage.getItem('vidoi_gemini_api_key') || '').trim() || DEFAULT_PWA_GEMINI_KEY;
 
   const btn = $('#ai-scan-btn');
   const originalText = btn ? btn.innerHTML : '';
@@ -4730,7 +4726,7 @@ Trả về CHỈ DUY NHẤT một chuỗi JSON hợp lệ (không kèm markdown,
   "day": <ngày trong tháng từ 1 đến 31 nếu thấy trên hóa đơn, hoặc null>
 }`;
 
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(apiKey)}`, {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=${encodeURIComponent(apiKey)}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -4760,8 +4756,13 @@ Trả về CHỈ DUY NHẤT một chuỗi JSON hợp lệ (không kèm markdown,
 
     const data = await res.json();
     const candidate = data.candidates && data.candidates[0];
-    const textOut = candidate && candidate.content && candidate.content.parts && candidate.content.parts[0] && candidate.content.parts[0].text;
-    if (!textOut) throw new Error('AI không nhận diện được nội dung hóa đơn.');
+    let textOut = '';
+    if (candidate && candidate.content && Array.isArray(candidate.content.parts)) {
+      for (const p of candidate.content.parts) {
+        if (p.text) textOut += p.text + '\n';
+      }
+    }
+    if (!textOut.trim()) throw new Error('AI không nhận diện được nội dung hóa đơn.');
 
     let parsed = null;
     try {
