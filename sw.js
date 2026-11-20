@@ -1,4 +1,4 @@
-const CACHE_NAME = 'vidoi-pwa-v17-two-way-wallet-sync';
+const CACHE_NAME = 'vidoi-pwa-v18-multi-tx-ocr-dedup';
 const ASSETS = [
   './',
   './index.html',

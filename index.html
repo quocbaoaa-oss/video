@@ -5054,6 +5054,111 @@ function promptConfigureGeminiKey() {
   }
 }
 
+function removePwaAccents(str) {
+  return String(str || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'D')
+    .toLowerCase();
+}
+
+function matchPwaWalletByKeyword(kw) {
+  if (!kw) return null;
+  const norm = removePwaAccents(kw).trim();
+  if (!norm) return null;
+  for (const w of DB.wallets) {
+    const wId = removePwaAccents(w.id);
+    const wName = removePwaAccents(w.name);
+    if (wId === norm || wName.includes(norm) || norm.includes(wId)) return w.id;
+  }
+  if (norm.includes('acb')) return (DB.wallets.find(w => removePwaAccents(w.name).includes('acb')) || {}).id || null;
+  if (norm.includes('mb')) return (DB.wallets.find(w => removePwaAccents(w.name).includes('mb')) || {}).id || null;
+  if (norm.includes('vib')) return (DB.wallets.find(w => removePwaAccents(w.name).includes('vib')) || {}).id || null;
+  if (norm.includes('tin dung') || norm.includes('credit') || norm.includes('the')) {
+    return (DB.wallets.find(w => removePwaAccents(w.name).includes('tin dung') || w.id === 'tcb') || {}).id || null;
+  }
+  if (norm.includes('tien mat') || norm.includes('cash')) {
+    return (DB.wallets.find(w => w.id === 'cash' || removePwaAccents(w.name).includes('tien mat')) || {}).id || null;
+  }
+  return null;
+}
+
+function parsePwaDateToDMY(dateStr) {
+  const sel = getCurrentMonthInfo();
+  const now = new Date();
+  let day = STATE.addDay || now.getDate();
+  let month = sel.month;
+  let year = sel.year;
+
+  if (typeof dateStr === 'number' && dateStr >= 1 && dateStr <= 31) {
+    day = dateStr;
+  } else if (typeof dateStr === 'string' && dateStr.trim()) {
+    const clean = dateStr.trim();
+    const mYMD = clean.match(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
+    const mDMY = clean.match(/(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{2,4}))?/);
+    if (mYMD) {
+      year = parseInt(mYMD[1], 10);
+      month = parseInt(mYMD[2], 10);
+      day = parseInt(mYMD[3], 10);
+    } else if (mDMY) {
+      day = parseInt(mDMY[1], 10);
+      month = parseInt(mDMY[2], 10);
+      if (mDMY[3]) {
+        const yRaw = parseInt(mDMY[3], 10);
+        year = yRaw < 100 ? (2000 + yRaw) : yRaw;
+      }
+    }
+  }
+  if (day < 1 || day > 31) day = now.getDate();
+  if (month < 1 || month > 12) month = sel.month;
+  return { day, month, year };
+}
+
+function findPwaDuplicateTransaction(cand, existingList) {
+  if (!cand || !cand.amount || !Array.isArray(existingList)) return null;
+  const cAmt = Number(cand.amount);
+  const cKind = cand.kind || 'e';
+  const cDay = cand.day;
+  const cMonth = cand.month;
+  const cYear = cand.year;
+  const cRef = removePwaAccents(cand.refCode || '').replace(/[^a-z0-9]/g, '');
+  const cTitle = removePwaAccents(cand.title || '')
+    .replace(/\b(chuyen khoan|thanh toan|hoa don|ai|gd|giao dich|ngan hang|mua|chi|thu)\b/g, ' ')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+
+  for (const ex of existingList) {
+    if (!ex || Number(ex.amount) !== cAmt) continue;
+    if ((ex.kind || 'e') !== cKind) continue;
+
+    const exNoteNorm = removePwaAccents((ex.note || '') + ' ' + (ex.title || '')).replace(/[^a-z0-9]/g, '');
+    if (cRef && cRef.length >= 4 && exNoteNorm.includes(cRef)) {
+      return ex;
+    }
+
+    const exMY = getTxMonthYear(ex);
+    if (cDay !== ex.day || cMonth !== exMY.month || cYear !== exMY.year) continue;
+
+    const exTitle = removePwaAccents((ex.title || '') + ' ' + (ex.note || ''))
+      .replace(/\b(chuyen khoan|thanh toan|hoa don|ai|gd|giao dich|ngan hang|mua|chi|thu)\b/g, ' ')
+      .replace(/[^a-z0-9]+/g, ' ')
+      .trim();
+
+    if (!cTitle || !exTitle || cTitle === exTitle || exTitle.includes(cTitle) || cTitle.includes(exTitle)) {
+      return ex;
+    }
+    const cWords = cTitle.split(/\s+/).filter(w => w.length >= 3);
+    if (cWords.some(w => exTitle.includes(w))) {
+      return ex;
+    }
+    if (cand.wallet && ex.wallet === cand.wallet && cand.category && ex.category === cand.category) {
+      return ex;
+    }
+  }
+  return null;
+}
+
 async function scanReceiptWithAI() {
   if (!STATE.addReceipt) {
     return toast('Vui lòng chụp hoặc đính kèm ảnh hóa đơn trước!');
@@ -5086,13 +5191,25 @@ async function scanReceiptWithAI() {
       throw new Error('Không đọc được dữ liệu ảnh.');
     }
 
-    const promptText = `Bạn là trợ lý tài chính thông minh cho gia đình Bảo & Oanh. Hãy đọc kỹ ảnh hóa đơn/bill mua sắm này và trích xuất thông tin.
-Trả về CHỈ DUY NHẤT một chuỗi JSON hợp lệ (không kèm markdown, không giải thích thêm) với định dạng:
+    const walletsPromptList = DB.wallets.map(w => `${w.id} (${w.name})`).join(' | ');
+    const promptText = `Bạn là trợ lý tài chính thông minh cho gia đình Bảo & Oanh. Hãy đọc kỹ bức ảnh này (có thể là 1 hóa đơn lẻ hoặc màn hình lịch sử nhiều giao dịch ngân hàng).
+Danh sách tài khoản hiện có: ${walletsPromptList}.
+1. Nếu ảnh là MÀN HÌNH LỊCH SỬ GIAO DỊCH / SAO KÊ có nhiều giao dịch độc lập: đặt "isMultiList": true và trích xuất TẤT CẢ từng giao dịch vào mảng "transactions" (khoản trừ tiền - đặt "kind": "e", khoản cộng tiền + đặt "kind": "i").
+2. Nếu ảnh là 1 TỜ HÓA ĐƠN MUA HÀNG ĐƠN LẺ (nhiều món cộng lại thành 1 tổng tiền) hoặc 1 BIÊN LAI CHUYỂN KHOẢN ĐƠN LẺ: đặt "isMultiList": false và mảng "transactions" chỉ chứa 1 phần tử tổng tiền thanh toán cuối cùng.
+Trả về CHỈ DUY NHẤT một chuỗi JSON hợp lệ (không kèm markdown):
 {
-  "amount": <tổng số tiền thanh toán cuối cùng bằng số nguyên VND, ví dụ 150000>,
-  "merchant": "<tên cửa hàng, siêu thị, nhà hàng hoặc bên bán ngắn gọn, ví dụ WinMart, Highlands Coffee, Circle K>",
-  "category": "<một trong các danh mục sau: Ăn uống | Chợ & Siêu thị | Nhà cửa | Hóa đơn | Đi lại | Con cái | Mua sắm | Giải trí | Sức khỏe | Khác>",
-  "day": <ngày trong tháng từ 1 đến 31 nếu thấy trên hóa đơn, hoặc null>
+  "isMultiList": <true hoặc false>,
+  "paymentAccount": "<tên ngân hàng hoặc ví nhận diện từ ảnh: ACB | MB | VIB | VCB | Techcombank | BIDV | VietinBank | VPBank | TPBank | MoMo | Thẻ tín dụng | Tiền mặt | null>",
+  "transactions": [
+    {
+      "amount": <số tiền nguyên dương VND, ví dụ 150000>,
+      "kind": "<'e' nếu chi tiêu/trừ tiền, 'i' nếu thu nhập/cộng tiền>",
+      "title": "<tên cửa hàng, người nhận hoặc nội dung ngắn gọn>",
+      "category": "<Ăn uống | Chợ & Siêu thị | Nhà cửa | Hóa đơn | Đi lại | Con cái | Mua sắm | Giải trí | Sức khỏe | Lương & Thưởng | Kinh doanh | Khác>",
+      "date": "<DD/MM/YYYY hoặc DD/MM nếu thấy trên ảnh, hoặc null>",
+      "refCode": "<mã giao dịch hoặc giờ giao dịch HH:mm nếu thấy, hoặc null>"
+    }
+  ]
 }`;
 
     const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=${encodeURIComponent(apiKey)}`, {
@@ -5141,35 +5258,164 @@ Trả về CHỈ DUY NHẤT một chuỗi JSON hợp lệ (không kèm markdown,
       console.warn('JSON parse error:', e);
     }
 
-    if (!parsed || !parsed.amount) {
-      throw new Error('Không tìm thấy tổng số tiền trên hóa đơn.');
+    let rawTxs = (parsed && Array.isArray(parsed.transactions)) ? parsed.transactions : [];
+    if (rawTxs.length === 0 && parsed && parsed.amount) {
+      rawTxs = [{
+        amount: parsed.amount,
+        kind: 'e',
+        title: parsed.merchant || parsed.category || 'Hóa đơn',
+        category: parsed.category,
+        date: parsed.day ? String(parsed.day) : null
+      }];
     }
 
-    const amt = parseInt(parsed.amount, 10);
-    if (amt > 0) {
-      STATE.addExp = String(amt);
+    if (rawTxs.length === 0) {
+      throw new Error('Không tìm thấy số tiền giao dịch trên ảnh.');
+    }
+
+    // Tự động chọn tài khoản ngân hàng nếu AI nhận diện được từ ảnh
+    const detectedWalletId = parsed.paymentAccount ? matchPwaWalletByKeyword(parsed.paymentAccount) : null;
+    if (detectedWalletId) {
+      selectAddWallet(detectedWalletId);
+    }
+    const targetWalletId = detectedWalletId || STATE.addWalletId;
+
+    const validTxs = [];
+    const duplicates = [];
+
+    for (const item of rawTxs) {
+      const amt = parseInt(String(item.amount || '').replace(/[^0-9]/g, ''), 10);
+      if (!amt || amt <= 0) continue;
+      const kind = item.kind === 'i' ? 'i' : 'e';
+      const dmy = parsePwaDateToDMY(item.date || item.day);
+      const activeCats = getActiveCategories(kind);
+      const rawCat = String(item.category || '').trim();
+      const matchedCatPair = activeCats.find(c =>
+        removePwaAccents(c[1]) === removePwaAccents(rawCat) ||
+        removePwaAccents(rawCat).includes(removePwaAccents(c[1]))
+      ) || activeCats[0] || ['🧾', 'Ăn uống'];
+
+      const cand = {
+        amount: amt,
+        kind: kind,
+        title: (item.title || item.merchant || matchedCatPair[1]).trim(),
+        category: matchedCatPair[1],
+        icon: matchedCatPair[0],
+        day: dmy.day,
+        month: dmy.month,
+        year: dmy.year,
+        refCode: item.refCode ? String(item.refCode).trim() : null,
+        wallet: targetWalletId
+      };
+
+      const dupInDB = findPwaDuplicateTransaction(cand, DB.transactions);
+      const dupInBatch = cand.refCode
+        ? validTxs.find(v => v.refCode === cand.refCode && v.amount === cand.amount)
+        : null;
+
+      if (dupInDB || dupInBatch) {
+        duplicates.push(cand);
+      } else {
+        validTxs.push(cand);
+      }
+    }
+
+    // Nếu TẤT CẢ giao dịch trên ảnh đều bị trùng lặp
+    if (validTxs.length === 0 && duplicates.length > 0) {
+      haptic('heavy');
+      return confirmDlg(
+        '🛡 Phát hiện giao dịch trùng lặp!',
+        `Tất cả ${duplicates.length} giao dịch trong ảnh đều đã có trong sổ Ví Đôi (ví dụ: ${duplicates[0].title} — ${formatVND(duplicates[0].amount)} ₫ ngày ${duplicates[0].day}/${duplicates[0].month}). Hệ thống tự động bỏ qua để không cộng đúp!`,
+        'Đã hiểu',
+        () => {}
+      );
+    }
+
+    // Nếu ảnh chứa NHIỀU GIAO DỊCH MỚI (hoặc là danh sách nhiều giao dịch đã lọc trùng)
+    if (validTxs.length > 1 || (parsed.isMultiList && validTxs.length >= 1)) {
+      const totalExp = validTxs.filter(t => t.kind === 'e').reduce((s, t) => s + t.amount, 0);
+      const totalInc = validTxs.filter(t => t.kind === 'i').reduce((s, t) => s + t.amount, 0);
+      const wObj = DB.wallets.find(w => w.id === targetWalletId) || DB.wallets[0];
+      const previewLines = validTxs.slice(0, 6).map((t, i) =>
+        `${i + 1}. ${t.title}: ${t.kind === 'i' ? '+' : '-'}${formatShort(t.amount)} (${t.day}/${t.month})`
+      ).join('\n');
+      const dupMsg = duplicates.length > 0 ? `\n🛡 Đã tự động loại bỏ ${duplicates.length} giao dịch trùng lặp.` : '';
+
+      haptic('medium');
+      return confirmDlg(
+        `✨ Quét được ${validTxs.length} giao dịch mới!`,
+        `Tài khoản: ${wObj.icon} ${wObj.name}${totalExp > 0 ? ` · Chi: -${formatShort(totalExp)}` : ''}${totalInc > 0 ? ` · Thu: +${formatShort(totalInc)}` : ''}${dupMsg}\n\n${previewLines}${validTxs.length > 6 ? `\n...và ${validTxs.length - 6} khoản khác` : ''}`,
+        `Lưu ${validTxs.length} khoản`,
+        () => {
+          const baseTs = Date.now();
+          const rcptId = 'rcpt_' + baseTs;
+          if (STATE.addReceipt && STATE.addReceipt.startsWith('data:image')) {
+            ReceiptDB.saveReceipt(rcptId, STATE.addReceipt);
+            if (typeof pushReceiptToCloud === 'function') pushReceiptToCloud(rcptId, STATE.addReceipt);
+          }
+          let savedCnt = 0;
+          validTxs.forEach((item, idx) => {
+            if (findPwaDuplicateTransaction(item, DB.transactions)) return;
+            const txId = baseTs + idx;
+            const newTx = {
+              id: txId,
+              day: item.day,
+              month: item.month,
+              year: item.year,
+              icon: item.icon,
+              title: item.title,
+              category: item.category,
+              amount: item.amount,
+              who: STATE.addWho,
+              shared: STATE.addShared,
+              wallet: targetWalletId,
+              kind: item.kind,
+              note: item.refCode ? `AI [${item.refCode}]: ${item.title}` : item.title,
+              receipt: rcptId,
+              receiptThumb: idx === 0 ? (STATE.addReceiptThumb || null) : null,
+              comments: [],
+              updatedAt: txId
+            };
+            DB.transactions.unshift(newTx);
+            const w = DB.wallets.find(x => x.id === targetWalletId);
+            if (w) w.balance += (item.kind === 'i' ? item.amount : -item.amount);
+            savedCnt++;
+          });
+          DB.settled = false;
+          saveData();
+          closeAddSheet();
+          renderApp();
+          toast(`✅ Đã lưu ${savedCnt} giao dịch mới${duplicates.length > 0 ? ` (bỏ qua ${duplicates.length} khoản trùng)` : ''}!`);
+        }
+      );
+    }
+
+    // Trường hợp 1 hóa đơn đơn lẻ chưa trùng: tự điền vào form
+    const single = validTxs[0];
+    if (single.amount > 0) {
+      STATE.addExp = String(single.amount);
       updateAddAmountDisplay();
     }
 
-    if (parsed.merchant && $('#add-note-input')) {
-      $('#add-note-input').value = parsed.merchant;
+    if (single.title && $('#add-note-input')) {
+      $('#add-note-input').value = single.title;
     }
 
-    if (parsed.category) {
+    if (single.category) {
       const activeCats = getActiveCategories(STATE.addKind);
-      const catIdx = activeCats.findIndex(c => c[1].toLowerCase() === parsed.category.toLowerCase() || parsed.category.toLowerCase().includes(c[1].toLowerCase()));
+      const catIdx = activeCats.findIndex(c => c[1].toLowerCase() === single.category.toLowerCase() || single.category.toLowerCase().includes(c[1].toLowerCase()));
       if (catIdx >= 0) {
         selectAddCat(catIdx);
       }
     }
 
-    if (parsed.day && Number(parsed.day) >= 1 && Number(parsed.day) <= 31) {
-      STATE.addDay = Number(parsed.day);
+    if (single.day >= 1 && single.day <= 31) {
+      STATE.addDay = single.day;
       renderAddChips();
     }
 
     haptic('medium');
-    toast(`✨ AI đã đọc: ${parsed.merchant || 'Hóa đơn'} — ${formatVND(amt)} ₫ ✅`);
+    toast(`✨ AI đã đọc: ${single.title || 'Hóa đơn'} — ${formatVND(single.amount)} ₫${duplicates.length > 0 ? ` (Đã lọc ${duplicates.length} khoản trùng)` : ''} ✅`);
   } catch (err) {
     haptic('heavy');
     console.error('Scan receipt error:', err);
